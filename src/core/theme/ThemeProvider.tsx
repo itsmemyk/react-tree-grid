@@ -7,7 +7,7 @@ import styles from './theme.module.css'
 
 export type ThemeName = 'light' | 'dark'
 
-const RGS_THEME_ATTR = 'data-rgs-theme'
+const RTG_THEME_ATTR = 'data-react-tree-grid-theme'
 
 interface ThemeContextValue {
   theme: ThemeName
@@ -56,7 +56,7 @@ export function ThemeProvider({
       <div
         className={styles.themeRoot}
         style={cssVars}
-        {...{ [RGS_THEME_ATTR]: theme }}
+        {...{ [RTG_THEME_ATTR]: theme }}
       >
         {children}
       </div>
@@ -65,30 +65,30 @@ export function ThemeProvider({
 }
 
 /**
- * Detect parent theme by walking up the DOM to find the nearest [data-rgs-theme] attribute.
+ * Detect parent theme by walking up the DOM to find the nearest [data-react-tree-grid-theme] attribute.
  * Returns the theme name or null if not found.
  */
 export function detectTheme(element: HTMLElement): ThemeName | null {
-  const themed = element.closest(`[${RGS_THEME_ATTR}]`)
+  const themed = element.closest(`[${RTG_THEME_ATTR}]`)
   if (themed) {
-    return themed.getAttribute(RGS_THEME_ATTR) as ThemeName
+    return themed.getAttribute(RTG_THEME_ATTR) as ThemeName
   }
   return null
 }
 
 /**
  * Imperative theme setter — faithful conversion of DHTMLX setTheme (suite.js lines 173-183).
- * Sets data-rgs-theme attribute on a container (defaults to document.documentElement).
- * If no container is given, clears all existing data-rgs-theme attributes first.
+ * Sets data-react-tree-grid-theme attribute on a container (defaults to document.documentElement).
+ * If no container is given, clears all existing data-react-tree-grid-theme attributes first.
  */
 export function setTheme(
   theme: ThemeName = 'light',
   container?: HTMLElement,
 ): void {
   if (!container) {
-    const elements = document.querySelectorAll(`[${RGS_THEME_ATTR}]`)
-    elements.forEach((el) => el.removeAttribute(RGS_THEME_ATTR))
+    const elements = document.querySelectorAll(`[${RTG_THEME_ATTR}]`)
+    elements.forEach((el) => el.removeAttribute(RTG_THEME_ATTR))
   }
   const target = container || document.documentElement
-  target.setAttribute(RGS_THEME_ATTR, theme)
+  target.setAttribute(RTG_THEME_ATTR, theme)
 }

@@ -2,20 +2,20 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { ThemeProvider } from './ThemeProvider'
 
 const DemoContent = () => (
-  <div style={{ padding: 'var(--rgs-spacing-md)' }}>
+  <div style={{ padding: 'var(--react-tree-grid-spacing-md)' }}>
     <h2 style={{ margin: 0 }}>Theme Demo</h2>
-    <p style={{ color: 'var(--rgs-color-text-secondary)' }}>
+    <p style={{ color: 'var(--react-tree-grid-color-text-secondary)' }}>
       This text uses theme tokens via CSS custom properties.
     </p>
     <button
       style={{
-        backgroundColor: 'var(--rgs-color-primary)',
+        backgroundColor: 'var(--react-tree-grid-color-primary)',
         color: '#fff',
         border: 'none',
-        padding: 'var(--rgs-spacing-sm) var(--rgs-spacing-md)',
-        borderRadius: 'var(--rgs-radius-md)',
+        padding: 'var(--react-tree-grid-spacing-sm) var(--react-tree-grid-spacing-md)',
+        borderRadius: 'var(--react-tree-grid-radius-md)',
         cursor: 'pointer',
-        fontSize: 'var(--rgs-font-size-md)',
+        fontSize: 'var(--react-tree-grid-font-size-md)',
       }}
     >
       Primary Button

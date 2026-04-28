@@ -34,8 +34,8 @@ describe('ThemeProvider', () => {
     )
     const wrapper = container.firstElementChild as HTMLElement
     const style = wrapper.getAttribute('style') || ''
-    expect(style).toContain('--rgs-color-primary')
-    expect(style).toContain('--rgs-color-background')
+    expect(style).toContain('--react-tree-grid-color-primary')
+    expect(style).toContain('--react-tree-grid-color-background')
   })
 
   it('applies overrides on top of preset', () => {
@@ -46,6 +46,6 @@ describe('ThemeProvider', () => {
     )
     const wrapper = container.firstElementChild as HTMLElement
     const style = wrapper.getAttribute('style') || ''
-    expect(style).toContain('--rgs-color-primary: #ff0000')
+    expect(style).toContain('--react-tree-grid-color-primary: #ff0000')
   })
 })

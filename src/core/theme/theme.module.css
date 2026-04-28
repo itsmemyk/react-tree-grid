@@ -1,7 +1,7 @@
 .themeRoot {
-  font-family: var(--rgs-font-family);
-  font-size: var(--rgs-font-size-md);
-  color: var(--rgs-color-text);
-  background-color: var(--rgs-color-background);
+  font-family: var(--react-tree-grid-font-family);
+  font-size: var(--react-tree-grid-font-size-md);
+  color: var(--react-tree-grid-color-text);
+  background-color: var(--react-tree-grid-color-background);
   line-height: 1.5;
 }

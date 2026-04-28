@@ -66,18 +66,18 @@ function UtilitiesDemo() {
 
   const btnStyle: React.CSSProperties = {
     padding: '6px 14px',
-    borderRadius: 'var(--rgs-radius-md)',
-    border: '1px solid var(--rgs-color-border)',
-    background: 'var(--rgs-color-surface)',
-    color: 'var(--rgs-color-text)',
+    borderRadius: 'var(--react-tree-grid-radius-md)',
+    border: '1px solid var(--react-tree-grid-color-border)',
+    background: 'var(--react-tree-grid-color-surface)',
+    color: 'var(--react-tree-grid-color-text)',
     cursor: 'pointer',
-    fontSize: 'var(--rgs-font-size-sm)',
+    fontSize: 'var(--react-tree-grid-font-size-sm)',
   }
 
   return (
-    <div style={{ padding: 'var(--rgs-spacing-md)', fontFamily: 'var(--rgs-font-family)' }}>
+    <div style={{ padding: 'var(--react-tree-grid-spacing-md)', fontFamily: 'var(--react-tree-grid-font-family)' }}>
       <h2 style={{ margin: '0 0 8px' }}>Core Utilities Demo</h2>
-      <p style={{ color: 'var(--rgs-color-text-secondary)', margin: '0 0 16px' }}>
+      <p style={{ color: 'var(--react-tree-grid-color-text-secondary)', margin: '0 0 16px' }}>
         Faithful conversions of DHTMLX utility functions.
       </p>
 
@@ -96,9 +96,9 @@ function UtilitiesDemo() {
           onClick={demoLocate}
           style={{
             padding: '12px 20px',
-            background: 'var(--rgs-color-primary)',
+            background: 'var(--react-tree-grid-color-primary)',
             color: '#fff',
-            borderRadius: 'var(--rgs-radius-md)',
+            borderRadius: 'var(--react-tree-grid-radius-md)',
             cursor: 'pointer',
           }}
         >
@@ -109,9 +109,9 @@ function UtilitiesDemo() {
           onClick={demoLocate}
           style={{
             padding: '12px 20px',
-            background: 'var(--rgs-color-secondary)',
+            background: 'var(--react-tree-grid-color-secondary)',
             color: '#fff',
-            borderRadius: 'var(--rgs-radius-md)',
+            borderRadius: 'var(--react-tree-grid-radius-md)',
             cursor: 'pointer',
           }}
         >
@@ -124,7 +124,7 @@ function UtilitiesDemo() {
           background: '#1e1e1e',
           color: '#d4d4d4',
           padding: 12,
-          borderRadius: 'var(--rgs-radius-md)',
+          borderRadius: 'var(--react-tree-grid-radius-md)',
           fontFamily: 'monospace',
           fontSize: 12,
           height: 300,

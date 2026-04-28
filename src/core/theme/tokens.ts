@@ -1,4 +1,4 @@
-/** All design token keys. Values map to CSS custom properties as --rgs-{key-in-kebab-case}. */
+/** All design token keys. Values map to CSS custom properties as --react-tree-grid-{key-in-kebab-case}. */
 export interface ThemeTokens {
   colorPrimary: string
   colorPrimaryHover: string
@@ -40,10 +40,10 @@ export interface ThemeTokens {
   zIndexTooltip: string
 }
 
-/** Convert a camelCase token key to a CSS custom property name: colorPrimary → --rgs-color-primary */
+/** Convert a camelCase token key to a CSS custom property name: colorPrimary → --react-tree-grid-color-primary */
 export function tokenToCssVar(key: string): string {
   const kebab = key.replace(/([A-Z])/g, '-$1').toLowerCase()
-  return `--rgs-${kebab}`
+  return `--react-tree-grid-${kebab}`
 }
 
 /** Convert a full token set into a CSS variable style object */
