@@ -1,0 +1,386 @@
+.grid {
+  border: 1px solid var(--react-tree-grid-color-border);
+  color: var(--react-tree-grid-color-text);
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  outline: none;
+  overflow: hidden;
+}
+
+.header {
+  background: var(--react-tree-grid-color-surface);
+  border-bottom: 1px solid var(--react-tree-grid-color-border);
+  flex: 0 0 auto;
+  overflow: hidden;
+  position: relative;
+}
+
+.headerScroller {
+  height: 100%;
+  overflow: hidden;
+  position: relative;
+  /* Scrollbar hidden — scrollLeft synced from body via JS */
+  scrollbar-width: none;
+}
+
+.headerScroller::-webkit-scrollbar {
+  display: none;
+}
+
+.headerTrack {
+  display: flex;
+}
+
+.fixedHeader {
+  background: var(--react-tree-grid-color-surface);
+  bottom: 0;
+  display: flex;
+  overflow: hidden;
+  position: absolute;
+  top: 0;
+  z-index: 4;
+}
+
+.fixedHeaderLeft {
+  left: 0;
+}
+
+.fixedHeaderRight {
+  right: 0;
+}
+
+.headerColumn {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+
+.headerCell {
+  align-items: center;
+  border-bottom: 1px solid var(--react-tree-grid-color-border);
+  border-right: 1px solid var(--react-tree-grid-color-border);
+  box-sizing: border-box;
+  display: flex;
+  font-weight: var(--react-tree-grid-font-weight-medium);
+  min-width: 0;
+  padding: 0 var(--react-tree-grid-spacing-sm);
+  position: relative;
+}
+
+.headerCell:last-child {
+  border-bottom: none;
+}
+
+.footer {
+  background: var(--react-tree-grid-color-surface);
+  border-top: 1px solid var(--react-tree-grid-color-border);
+  flex: 0 0 auto;
+  overflow: hidden;
+  position: relative;
+}
+
+.footerCell {
+  align-items: center;
+  border-right: 1px solid var(--react-tree-grid-color-border);
+  border-top: 1px solid var(--react-tree-grid-color-border);
+  box-sizing: border-box;
+  display: flex;
+  font-weight: var(--react-tree-grid-font-weight-medium);
+  min-width: 0;
+  padding: 0 var(--react-tree-grid-spacing-sm);
+}
+
+.footerCell:first-child {
+  border-top: none;
+}
+
+.body {
+  flex: 1 1 auto;
+  overflow: auto;
+  position: absolute;
+  inset: 0;
+}
+
+.bodyViewport {
+  flex: 1 1 auto;
+  min-height: 0;
+  position: relative;
+}
+
+.bodyInner {
+  position: relative;
+}
+
+.rows {
+  position: absolute;
+  top: 0;
+}
+
+/* Frozen column/row overlays.
+   These are position:absolute children of .body (the scroll container).
+   In CSS, position:absolute inside a scroll container stays in the VIEWPORT,
+   not the content — so they don't scroll. Internal content is offset by
+   -scrollTop/-scrollLeft to show the matching portion.
+   (DHTMLX: dhx_grid-fixed-cols-wrap, dhx_grid-fixed-data-rows-wrap) */
+
+.fixedColumns {
+  background: var(--react-tree-grid-color-background);
+  overflow: hidden;
+  position: absolute;
+  z-index: 2;
+}
+
+.fixedRows {
+  background: var(--react-tree-grid-color-background);
+  left: 0;
+  overflow: hidden;
+  position: absolute;
+  z-index: 3;
+}
+
+.fixedRowsTop {
+  border-bottom: 1px solid var(--react-tree-grid-color-border);
+  top: 0;
+}
+
+.fixedRowsBottom {
+  border-top: 1px solid var(--react-tree-grid-color-border);
+  /* bottom is set dynamically via style prop */
+  position: absolute;
+}
+
+.fixedColumnsLeft {
+  left: 0;
+}
+
+.fixedColumnsRight {
+  right: auto;
+}
+
+.row {
+  border-bottom: 1px solid var(--react-tree-grid-color-border);
+  box-sizing: border-box;
+  display: flex;
+}
+
+.rowDraggable {
+  cursor: grab;
+}
+
+.rowDraggable:active {
+  cursor: grabbing;
+}
+
+.cell {
+  align-items: center;
+  border-right: 1px solid var(--react-tree-grid-color-border);
+  box-sizing: border-box;
+  display: flex;
+  min-width: 0;
+  overflow: hidden;
+  padding: 0 var(--react-tree-grid-spacing-sm);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Auto-height rows: cells wrap text instead of clipping (DHTMLX .dhx_grid-cell__content_auto-height). */
+.gridAutoHeight .cell {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+  word-break: break-word;
+}
+
+.gridHeaderAutoHeight .headerCell {
+  white-space: normal;
+  word-break: break-word;
+}
+
+.gridFooterAutoHeight .footerCell {
+  white-space: normal;
+  word-break: break-word;
+}
+
+/* Span overlay cell — absolutely positioned over normal cells.
+   Must have opaque background so covered cells don't show through.
+   (DHTMLX: .dhx_span-cell) */
+.spanCell {
+  background: var(--react-tree-grid-color-background, #fff);
+  border-bottom: 1px solid var(--react-tree-grid-color-border);
+  z-index: 1;
+}
+
+.alignLeft {
+  justify-content: flex-start;
+  text-align: left;
+}
+
+.alignCenter {
+  justify-content: center;
+  text-align: center;
+}
+
+.alignRight {
+  justify-content: flex-end;
+  text-align: right;
+}
+
+/* ─── Sort Indicator ───────────────────────────────────────────────── */
+
+.headerCellSortable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.headerCellSortable:hover {
+  background: var(--react-tree-grid-color-hover, rgba(0, 0, 0, 0.04));
+}
+
+.sortIndicator {
+  align-items: center;
+  display: inline-flex;
+  margin-left: 4px;
+}
+
+.sortAsc::after {
+  content: '▲';
+  font-size: 8px;
+}
+
+.sortDesc::after {
+  content: '▼';
+  font-size: 8px;
+}
+
+.sortIndex {
+  font-size: 10px;
+  margin-left: 2px;
+  opacity: 0.6;
+}
+
+.columnDropIndicator {
+  background: var(--react-tree-grid-color-primary, #0288d1);
+  bottom: -1px;
+  pointer-events: none;
+  position: absolute;
+  top: -1px;
+  width: 2px;
+  z-index: 5;
+}
+
+.headerDropLine {
+  background: var(--react-tree-grid-color-primary, #0288d1);
+  pointer-events: none;
+  position: absolute;
+  top: 0;
+  width: 1px;
+  z-index: 6;
+}
+
+.rowDropLine {
+  background: var(--react-tree-grid-color-primary, #0288d1);
+  height: 2px;
+  left: 0;
+  pointer-events: none;
+  position: absolute;
+  right: 0;
+  z-index: 6;
+}
+
+/* ─── Selection ────────────────────────────────────────────────────── */
+
+.rowSelected {
+  background-color: var(--react-tree-grid-color-selected, rgba(2, 136, 209, 0.08));
+}
+
+.cellSelected {
+  outline: 2px solid var(--react-tree-grid-color-primary, #0288d1);
+  outline-offset: -2px;
+}
+
+/* ─── Tooltip (mirrors dhx_tooltip) ───────────────────────────────── */
+
+.tooltip {
+  background: var(--react-tree-grid-color-text, #333);
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.4;
+  max-width: 300px;
+  opacity: 0;
+  padding: 6px 12px;
+  pointer-events: none;
+  position: fixed;
+  transition: opacity 0.01s ease;
+  white-space: pre-wrap;
+  word-break: break-word;
+  z-index: 9999;
+}
+
+.tooltipVisible {
+  opacity: 1;
+  transition: opacity 0.15s ease-out;
+}
+
+/* ─── Inline Editor ────────────────────────────────────────────────── */
+
+.cellEditor {
+  background: var(--react-tree-grid-color-background, #fff);
+  border: 0;
+  box-shadow: inset 0 0 0 2px var(--react-tree-grid-color-primary, #0288d1);
+  box-sizing: border-box;
+  font-family: inherit;
+  font-size: inherit;
+  height: 100%;
+  outline: none;
+  padding: 0 8px;
+  width: 100%;
+}
+
+:global(.rgs-no-select-drag) {
+  user-select: none !important;
+}
+
+:global(.rgs-row-drag-ghost) {
+  background-color: var(--react-tree-grid-color-background, #fff);
+  opacity: 0.6 !important;
+  user-select: none;
+}
+
+:global(.rgs-row-drag-ghost > *) {
+  background-color: var(--react-tree-grid-color-background, #fff);
+  border: 1px solid var(--react-tree-grid-color-border) !important;
+  box-sizing: border-box;
+}
+
+/* ─── Freeze handle ─────────────────────────────────────────── */
+.freezeHandle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 6px;
+  cursor: col-resize;
+  background: transparent;
+  z-index: 10;
+  transform: translateX(-3px);
+}
+
+.freezeHandle::after {
+  content: '';
+  position: absolute;
+  left: 2px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--react-tree-grid-color-primary, #0288d1);
+  opacity: 0.6;
+  transition: opacity 0.15s;
+}
+
+.freezeHandle:hover::after,
+.freezeHandleDragging::after {
+  opacity: 1;
+}

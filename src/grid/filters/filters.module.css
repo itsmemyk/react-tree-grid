@@ -1,0 +1,123 @@
+.selectFilter {
+  background: var(--react-tree-grid-color-background);
+  border: 1px solid var(--react-tree-grid-color-border);
+  border-radius: 2px;
+  box-sizing: border-box;
+  color: var(--react-tree-grid-color-text);
+  font: inherit;
+  height: 28px;
+  max-width: 100%;
+  outline: none;
+  padding: 0 4px;
+  width: 100%;
+}
+
+.selectFilter:focus {
+  border-color: var(--react-tree-grid-color-primary, #0288d1);
+}
+
+.inputFilter {
+  background: var(--react-tree-grid-color-background);
+  border: 1px solid var(--react-tree-grid-color-border);
+  border-radius: 2px;
+  box-sizing: border-box;
+  color: var(--react-tree-grid-color-text);
+  font: inherit;
+  height: 28px;
+  max-width: 100%;
+  outline: none;
+  padding: 0 4px;
+  width: 100%;
+}
+
+.inputFilter:focus {
+  border-color: var(--react-tree-grid-color-primary, #0288d1);
+}
+
+/* ComboFilter */
+.comboFilter {
+  position: relative;
+  width: 100%;
+}
+
+.comboTrigger {
+  align-items: center;
+  background: var(--react-tree-grid-color-background);
+  border: 1px solid var(--react-tree-grid-color-border);
+  border-radius: 2px;
+  box-sizing: border-box;
+  color: var(--react-tree-grid-color-text);
+  cursor: pointer;
+  display: flex;
+  font: inherit;
+  height: 28px;
+  justify-content: space-between;
+  padding: 0 4px;
+  text-align: left;
+  width: 100%;
+}
+
+.comboTrigger:focus {
+  border-color: var(--react-tree-grid-color-primary, #0288d1);
+}
+
+.comboValue {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.comboArrow {
+  flex: 0 0 auto;
+  font-size: 10px;
+  margin-left: 4px;
+}
+
+.comboDropdown {
+  background: var(--react-tree-grid-color-background);
+  border: 1px solid var(--react-tree-grid-color-border);
+  border-radius: 2px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  left: 0;
+  max-height: 224px;
+  min-width: 100%;
+  position: absolute;
+  top: 100%;
+  z-index: 10;
+}
+
+.comboSearch {
+  border: none;
+  border-bottom: 1px solid var(--react-tree-grid-color-border);
+  box-sizing: border-box;
+  color: var(--react-tree-grid-color-text);
+  font: inherit;
+  height: 28px;
+  outline: none;
+  padding: 0 4px;
+  width: 100%;
+}
+
+.comboList {
+  max-height: 192px;
+  overflow-y: auto;
+}
+
+.comboOption {
+  align-items: center;
+  cursor: pointer;
+  display: flex;
+  height: 32px;
+  padding: 0 8px;
+}
+
+.comboOption:hover {
+  background: var(--react-tree-grid-color-surface);
+}
+
+.comboOptionSelected {
+  background: var(--react-tree-grid-color-surface);
+  font-weight: var(--react-tree-grid-font-weight-medium, 500);
+}
