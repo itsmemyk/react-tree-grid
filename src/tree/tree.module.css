@@ -1,0 +1,100 @@
+.tree {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px;
+  background: var(--react-tree-grid-tree-bg, #fff);
+  border: 1px solid var(--react-tree-grid-tree-border, #d9dee7);
+  border-radius: 12px;
+  box-sizing: border-box;
+}
+
+.rowWrap {
+  position: relative;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+  padding: 4px 8px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.row:hover,
+.rowSelected {
+  background: #e7eef8;
+}
+
+.rowDisabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.toggle {
+  width: 18px;
+  height: 18px;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  color: #475569;
+}
+
+.icon {
+  display: inline-flex;
+  align-items: center;
+}
+
+.label {
+  flex: 1;
+  min-width: 0;
+}
+
+.editInput {
+  flex: 1;
+  min-width: 0;
+  height: 28px;
+  padding: 0 8px;
+  border: 1px solid #c7d2e1;
+  border-radius: 6px;
+}
+
+.dropTop::before,
+.dropBottom::after,
+.dropIn .row {
+  content: "";
+}
+
+.dropTop::before {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: #2563eb;
+}
+
+.dropBottom::after {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: #2563eb;
+}
+
+.dropIn .row {
+  outline: 1px dashed #2563eb;
+}
+
+.dragGhost {
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: #0f172a;
+  color: #fff;
+  font-size: 13px;
+  pointer-events: none;
+}
