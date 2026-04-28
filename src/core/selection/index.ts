@@ -1,0 +1,5 @@
+export { Selection } from './Selection'
+export { useSelection } from './useSelection'
+export type { UseSelectionReturn } from './useSelection'
+export type { SelectionConfig } from './types'
+export { SelectionEvents } from './types'
