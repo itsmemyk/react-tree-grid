@@ -56,7 +56,8 @@
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
     "lint": "tsc --noEmit",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build",
+    "deploy-storybook": "storybook build && gh-pages -d storybook-static"
   },
   "peerDependencies": {
     "react": ">=18.0.0",
@@ -73,6 +74,7 @@
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^4.3.0",
+    "gh-pages": "^6.3.0",
     "happy-dom": "^15.0.0",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
