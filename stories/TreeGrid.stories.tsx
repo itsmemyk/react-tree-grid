@@ -328,6 +328,243 @@ export const BookLibraryExample: Story = {
   },
 }
 
+// ─── DHTMLX snippet recreation (https://snippet.dhtmlx.com/0gd4dn8p) ───────
+
+type ShowcaseRow = TreeGridRow & {
+  owner?: string
+  start_date?: string
+  end_date?: string
+  status?: string
+  hours?: number
+  cost?: number
+  budget?: number
+  balance?: number
+  paid?: boolean
+  renewals?: string
+  access?: string
+  project_id?: string
+}
+
+const srcPhoto = 'https://snippet.dhtmlx.com/codebase/data/common/img/02/'
+
+const showcaseUsers: Array<{ id: string; name: string; ava?: string; color?: string }> = [
+  { id: '1', name: 'Gary Ortiz', ava: 'avatar_01.jpg' },
+  { id: '2', name: 'Albert Williamson', ava: 'avatar_02.jpg' },
+  { id: '3', name: 'Mildred Fuller', ava: 'avatar_03.jpg' },
+  { id: '4', name: 'Russell Robinson', ava: 'avatar_04.jpg' },
+  { id: '5', name: 'Phyllis Webb', color: '#61C874' },
+  { id: '6', name: 'Louise Fisher', color: '#61C504' },
+  { id: '7', name: 'Daniel Peterson', color: '#61C456' },
+]
+
+const showcaseRawProjects = [
+  { name: 'Real Estate', owner: 'Louise Fisher', start_date: '02/02/2024', end_date: '05/06/2024', status: 'Done', hours: 92, cost: 3588, budget: 11768, balance: 8180, paid: true, renewals: '1-2 times', access: '4, 5, 7', project_id: 'ISS-124.5' },
+  { name: 'HR System', owner: 'Daniel Peterson', start_date: '03/03/2024', end_date: '07/02/2024', status: 'Done', hours: 340, cost: 15980, budget: 18856, balance: 2876, paid: true, renewals: '1 time', access: '2, 4', project_id: 'ISS-900.9' },
+  { name: 'Inventory', owner: 'Fred Duncan', start_date: '01/01/2024', end_date: '09/01/2024', status: 'Done', hours: 484, cost: 21296, budget: 14907, balance: -6389, paid: false, renewals: '1 time', access: '3, 1, 2', project_id: 'ISS-777.4' },
+  { name: 'Trip Planner', owner: 'Michael Rice', start_date: '01/01/2024', end_date: '11/06/2024', status: 'Done', hours: 345, cost: 14835, budget: 70911, balance: 56076, paid: false, renewals: '1-2 times', access: '5, 3, 6', project_id: 'ISS-642.2' },
+  { name: 'HR System', owner: 'Andrew Stewart', start_date: '01/01/2024', end_date: '09/02/2024', status: 'Done', hours: 57, cost: 2052, budget: 5068, balance: 3016, paid: true, renewals: '1-2 times', access: '4, 2, 1, 7', project_id: 'ISS-256.2' },
+  { name: 'HR System', owner: 'Martin Thompson', start_date: '02/06/2024', end_date: '06/01/2024', status: 'Done', hours: 211, cost: 8229, budget: 16540, balance: 8311, paid: false, renewals: 'more than 5 times', access: '3, 5, 2, 6', project_id: 'ISS-263.2' },
+  { name: 'Ticket System', owner: 'Martin Thompson', start_date: '05/06/2025', end_date: '07/03/2025', status: 'In Progress', hours: 3, cost: 144, budget: 122, balance: -22, paid: true, renewals: '1 time', access: '2, 3', project_id: 'ISS-634.3' },
+  { name: 'Education System', owner: 'Mark Harper', start_date: '04/02/2025', end_date: '08/03/2025', status: 'In Progress', hours: 76, cost: 3496, budget: 12515, balance: 9019, paid: true, renewals: 'more than 5 times', access: '1, 5, 4', project_id: 'ISS-256.7' },
+]
+
+function buildShowcaseData(): ShowcaseRow[] {
+  return showcaseUsers.map((user) => ({
+    id: user.id,
+    name: user.name,
+    $opened: true,
+    items: showcaseRawProjects
+      .filter((p) => p.access.split(', ').includes(user.id))
+      .map((p, pi) => ({ id: `${user.id}_${pi}`, ...p })),
+  }))
+}
+
+function renderAccessCell(value: unknown): ReactNode {
+  if (!value) return null
+  const ids = String(value).split(', ')
+  return (
+    <div style={{ display: 'flex', alignItems: 'center' }}>
+      {ids.map((id) => {
+        const user = showcaseUsers.find((u) => u.id === id)
+        if (!user) return null
+        return user.ava ? (
+          <img
+            key={id}
+            src={`${srcPhoto}${user.ava}`}
+            alt={user.name}
+            width={24}
+            height={24}
+            style={{ borderRadius: '50%', border: '1px solid #fff', marginRight: -3, objectFit: 'cover', display: 'block' }}
+          />
+        ) : (
+          <div
+            key={id}
+            style={{
+              width: 24, height: 24, borderRadius: '50%',
+              background: user.color ?? '#999',
+              border: '1px solid #fff', marginRight: -3,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: '#fff', fontSize: 11, fontWeight: 600, flexShrink: 0,
+            }}
+          >
+            {user.name[0]}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+function renderStatusCell(value: unknown): ReactNode {
+  if (!value) return null
+  const v = String(value)
+  const dot = v === 'Done' ? '#1fb26b' : v === 'In Progress' ? '#1d9bf0' : '#ff4d4f'
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+      <span style={{ width: 12, height: 12, borderRadius: '50%', background: dot, flexShrink: 0, display: 'inline-block' }} />
+      <span>{v}</span>
+    </span>
+  )
+}
+
+function renderBalanceCell(value: unknown, row: TreeGridRow): ReactNode {
+  if (value === null || value === undefined || value === '') return null
+  const balance = (row as ShowcaseRow).balance
+  if (balance === undefined) return null
+  const pos = balance > 0
+  return (
+    <span style={{ color: pos ? '#16a34a' : '#dc2626', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+      <span>{pos ? '⬆' : '⬇'}</span>
+      <span>${Number(value).toLocaleString()}</span>
+    </span>
+  )
+}
+
+const showcaseColumns = [
+  {
+    id: 'name',
+    header: [{ text: 'Project' }, { content: 'inputFilter' as const }],
+    footer: [{ text: 'Total' }],
+    minWidth: 200,
+    resizable: true,
+    sortable: true,
+    editorType: 'input' as const,
+  },
+  {
+    id: 'paid',
+    header: [{ text: 'Paid' }],
+    width: 60,
+    align: 'center' as const,
+    template: (value: unknown) => (
+      <input type="checkbox" checked={Boolean(value)} readOnly style={{ width: 16, height: 16, accentColor: '#1d9bf0' }} />
+    ),
+  },
+  {
+    id: 'access',
+    header: [{ text: 'Access' }, { content: 'inputFilter' as const }],
+    width: 160,
+    template: renderAccessCell,
+  },
+  {
+    id: 'status',
+    header: [{ text: 'Status' }, { content: 'selectFilter' as const }],
+    width: 140,
+    sortable: true,
+    editorType: 'input' as const,
+    template: renderStatusCell,
+  },
+  {
+    id: 'owner',
+    header: [{ text: 'Owner' }, { content: 'inputFilter' as const }],
+    width: 150,
+    sortable: true,
+    editorType: 'input' as const,
+  },
+  {
+    id: 'balance',
+    header: [{ text: 'Balance' }],
+    footer: [{ content: 'sum' as const }],
+    width: 130,
+    template: renderBalanceCell,
+  },
+  {
+    id: 'hours',
+    header: [{ text: 'Number of Hours' }, { content: 'inputFilter' as const }],
+    footer: [{ content: 'sum' as const }],
+    width: 150,
+    align: 'right' as const,
+    sortable: true,
+  },
+  {
+    id: 'renewals',
+    header: [{ text: 'Number of Renewals' }, { content: 'inputFilter' as const }],
+    width: 160,
+    editorType: 'input' as const,
+  },
+  {
+    id: 'start_date',
+    header: [{ text: 'Start Date' }],
+    width: 115,
+    align: 'center' as const,
+  },
+  {
+    id: 'end_date',
+    header: [{ text: 'End Date' }],
+    width: 115,
+    align: 'center' as const,
+  },
+  {
+    id: 'cost',
+    header: [{ text: 'Cost' }, { content: 'inputFilter' as const }],
+    footer: [{ content: 'sum' as const }],
+    width: 110,
+    align: 'right' as const,
+    sortable: true,
+  },
+  {
+    id: 'budget',
+    header: [{ text: 'Budget' }, { content: 'inputFilter' as const }],
+    footer: [{ content: 'sum' as const }],
+    width: 110,
+    align: 'right' as const,
+    sortable: true,
+  },
+  {
+    id: 'project_id',
+    header: [{ text: 'Project ID' }, { content: 'inputFilter' as const }],
+    width: 115,
+    align: 'center' as const,
+  },
+] satisfies NonNullable<Story['args']>['columns']
+
+export const DHtmlxShowcase: Story = {
+  render: () => {
+    const data = useMemo(() => buildShowcaseData(), [])
+    return (
+      <StoryFrame note="Faithful recreation of the DHTMLX TreeGrid snippet: users as root rows, their assigned projects as children. Drag to reorder, multiselect, inline edit, header filters, footer sums, avatar access column, status badges, signed balance.">
+        <TreeGrid
+          columns={showcaseColumns}
+          data={data}
+          dragItem="row"
+          selection="row"
+          editable
+          keyNavigation
+          multiselection
+          sortable
+          style={{ width: '100%', height: 640 }}
+        />
+      </StoryFrame>
+    )
+  },
+  parameters: {
+    docs: {
+      description: {
+        story: 'Recreation of the DHTMLX TreeGrid showcase (snippet.dhtmlx.com/0gd4dn8p). Users as root rows; projects where each user has access are child rows. Features header filters, footer aggregation sums, custom templates for access avatars, colored status badges, signed balance, drag-row reorder, and multi-row selection.',
+      },
+    },
+  },
+}
+
 // ─── GroupBy Stories ──────────────────────────────────────────────────────────
 
 const GROUP_NAMES = ['Alice', 'Bob', 'Cara', 'Dan', 'Eva', 'Frank', 'Grace', 'Hans']
