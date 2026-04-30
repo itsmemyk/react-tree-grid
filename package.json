@@ -57,7 +57,7 @@
     "build-storybook": "storybook build",
     "lint": "tsc --noEmit",
     "prepublishOnly": "npm run build",
-    "deploy-storybook": "storybook build && gh-pages -d storybook-static"
+    "deploy-storybook": "storybook build && touch storybook-static/.nojekyll && gh-pages -d storybook-static -t"
   },
   "peerDependencies": {
     "react": ">=18.0.0",
