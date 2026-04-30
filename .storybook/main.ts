@@ -14,6 +14,7 @@ const config: StorybookConfig = {
       ...config.resolve.alias,
       '@core': resolve(__dirname, '../src/core'),
     }
+    config.base = '/react-tree-grid/'
     return config
   },
 }
