@@ -1,4 +1,4 @@
-import { useMemo, useRef, type ReactNode } from 'react'
+import { useCallback, useMemo, useRef, useState, type ReactNode } from 'react'
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { ThemeProvider } from '../src/core/theme'
 import { TreeGrid } from '../src/treegrid'
@@ -455,9 +455,6 @@ const showcaseColumns = [
     header: [{ text: 'Paid' }],
     width: 60,
     align: 'center' as const,
-    template: (value: unknown) => (
-      <input type="checkbox" checked={Boolean(value)} readOnly style={{ width: 16, height: 16, accentColor: '#1d9bf0' }} />
-    ),
   },
   {
     id: 'access',
@@ -537,24 +534,75 @@ const showcaseColumns = [
   },
 ] satisfies NonNullable<Story['args']>['columns']
 
-export const DHtmlxShowcase: Story = {
-  render: () => {
-    const data = useMemo(() => buildShowcaseData(), [])
-    return (
-      <StoryFrame note="Faithful recreation of the DHTMLX TreeGrid snippet: users as root rows, their assigned projects as children. Drag to reorder, multiselect, inline edit, header filters, footer sums, avatar access column, status badges, signed balance.">
-        <TreeGrid
-          columns={showcaseColumns}
-          data={data}
-          dragItem="row"
-          selection="row"
-          editable
-          keyNavigation
-          multiselection
-          sortable
-          style={{ width: '100%', height: 640 }}
-        />
-      </StoryFrame>
+function DHtmlxShowcaseGrid({ dragDrop }: { dragDrop: boolean }) {
+  const [data, setData] = useState<ShowcaseRow[]>(() => buildShowcaseData())
+
+  const togglePaid = useCallback((rowId: string) => {
+    setData((prev) =>
+      prev.map((user) => {
+        if (user.id === rowId) return { ...user, paid: !user.paid }
+        const items = user.items as ShowcaseRow[] | undefined
+        if (!items) return user
+        const updated = items.map((child) =>
+          child.id === rowId ? { ...child, paid: !child.paid } : child,
+        )
+        return updated === items ? user : { ...user, items: updated }
+      }),
     )
+  }, [])
+
+  const columns = useMemo(
+    () =>
+      showcaseColumns.map((col) =>
+        col.id === 'paid'
+          ? {
+              ...col,
+              template: (value: unknown, row: ShowcaseRow) => (
+                <input
+                  type="checkbox"
+                  checked={Boolean(value)}
+                  onChange={() => togglePaid(row.id)}
+                  style={{ width: 16, height: 16, accentColor: '#1d9bf0', cursor: 'pointer' }}
+                />
+              ),
+            }
+          : col,
+      ),
+    [togglePaid],
+  )
+
+  return (
+    <StoryFrame note="Faithful recreation of the DHTMLX TreeGrid snippet: users as root rows, their assigned projects as children. Drag to reorder, multiselect, inline edit, header filters, footer sums, avatar access column, status badges, signed balance.">
+      <TreeGrid
+        columns={columns as typeof showcaseColumns}
+        data={data}
+        dragItem={dragDrop ? 'row' : undefined}
+        selection="row"
+        editable
+        keyNavigation
+        multiselection
+        sortable
+        style={{ width: '100%', height: 640 }}
+      />
+    </StoryFrame>
+  )
+}
+
+export const DHtmlxShowcase: Story = {
+  args: {
+    dragDrop: false,
+  } as { dragDrop: boolean },
+  argTypes: {
+    dragDrop: {
+      name: 'Drag & Drop rows',
+      description: 'Enable drag-and-drop row reordering',
+      control: 'boolean',
+      table: { defaultValue: { summary: 'false' } },
+    },
+  } as Record<string, unknown>,
+  render: (args) => {
+    const { dragDrop } = args as unknown as { dragDrop: boolean }
+    return <DHtmlxShowcaseGrid dragDrop={dragDrop} />
   },
   parameters: {
     docs: {
