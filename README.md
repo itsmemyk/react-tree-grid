@@ -17,7 +17,7 @@ The best open-source alternative to [DHTMLX TreeGrid](https://dhtmlx.com/docs/pr
 ## Installation
 
 ```bash
-npm install react-tree-grid
+npm install @itsmemyk/react-tree-grid
 ```
 
 ## Quick Start
