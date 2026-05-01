@@ -7,6 +7,7 @@ export function applyGroupBy(
   data: Record<string, unknown>[],
   groupBy: string[],
   aggregate?: GroupAggregateConfig,
+  _parentId: string = '',
 ): Record<string, unknown>[] {
   if (groupBy.length === 0) return data
 
@@ -26,13 +27,14 @@ export function applyGroupBy(
 
   return order.map((val) => {
     const children = buckets.get(val)!
+    const groupId = `${_parentId}__group__${currentKey}__${val}`
     const nestedChildren =
       remainingKeys.length > 0
-        ? applyGroupBy(children, remainingKeys, aggregate)
+        ? applyGroupBy(children, remainingKeys, aggregate, groupId)
         : children
 
     const groupRow: Record<string, unknown> = {
-      id: `__group__${currentKey}__${val}`,
+      id: groupId,
       $group: true,
       $editable: false,
       $selectable: false,
