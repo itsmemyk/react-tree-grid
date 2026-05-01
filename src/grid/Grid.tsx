@@ -433,7 +433,7 @@ function GridInner<T extends GridRow>({
       dataProxyHook.load(1, proxyOpts)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dataProxy])
+  }, [dataProxy?.url])
 
   // ─── Sorting ──────────────────────────────────────────────────────
   const gridSort = useGridSort(

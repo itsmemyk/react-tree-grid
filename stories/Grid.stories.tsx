@@ -878,21 +878,22 @@ export const Polling: StoryObj = {
   name: 'DataProxy — Polling (2s)',
   render: () => {
     const [tick, setTick] = useState(0)
+    const dataProxy = useMemo(() => ({
+      url: 'https://api.test/employees',
+      pageSize: 10,
+      polling: 2000,
+      fetchFn: async (url: string) => {
+        setTick((t) => t + 1)
+        return makeMockFetch(ALL_EMPLOYEES)(url)
+      },
+    }), [])
     return (
       <ThemeProvider>
         <p style={{ margin: '0 0 8px' }}>Tick: {tick} (data refreshes every 2s via polling)</p>
         <Grid
           columns={proxyColumns}
           data={[]}
-          dataProxy={{
-            url: 'https://api.test/employees',
-            pageSize: 10,
-            polling: 2000,
-            fetchFn: async (url) => {
-              setTick((t) => t + 1)
-              return makeMockFetch(ALL_EMPLOYEES)(url)
-            },
-          }}
+          dataProxy={dataProxy}
           style={{ height: 320, width: '100%' }}
         />
       </ThemeProvider>

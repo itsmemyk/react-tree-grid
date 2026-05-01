@@ -26,20 +26,34 @@ export function useDataProxy<T = Record<string, unknown>>(
   const { paginationMode = 'replace', onLoadStart, onLoadEnd, onLoadError } = options
 
   const proxyRef = useRef<DataProxy<T> | null>(null)
+  // Always keep a ref to the latest config so fetchFn/transforms stay current
+  // without recreating the DataProxy on every render.
+  const configRef = useRef(config)
+  configRef.current = config
+
   const [proxyData, setProxyData] = useState<T[]>([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<Error | null>(null)
   const [page, setPage] = useState(1)
 
+  // Recreate DataProxy only when the URL changes, not on every object reference change.
   useEffect(() => {
-    if (!config) {
+    if (!config?.url) {
       proxyRef.current = null
       return
     }
-    proxyRef.current = new DataProxy<T>(config)
+    proxyRef.current = new DataProxy<T>({
+      ...config,
+      // Wrap fetchFn through the ref so the latest version is always called
+      // even though the DataProxy instance is only recreated on URL changes.
+      fetchFn: config.fetchFn
+        ? (url: string) => configRef.current!.fetchFn!(url)
+        : undefined,
+    })
     return () => { proxyRef.current?.abort() }
-  }, [config])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [config?.url])
 
   // Polling
   useEffect(() => {
