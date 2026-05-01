@@ -174,7 +174,7 @@ All theme values are exposed as CSS custom properties prefixed with `--react-tre
 | `editable` | `boolean` | Enable inline editing |
 | `leftSplit` | `number` | Freeze N left columns |
 | `rightSplit` | `number` | Freeze N right columns |
-| `tooltip` | `boolean` | Enable cell tooltips |
+| `tooltip` | `boolean` | Enable cell tooltips (default `false`) |
 | `keyNavigation` | `boolean` | Keyboard navigation |
 | `style` | `CSSProperties` | Width/height for virtual scroll |
 

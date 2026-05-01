@@ -322,7 +322,7 @@ function GridInner<T extends GridRow>({
   footerRowHeight = 40,
   sortable = true,
   keyNavigation = true,
-  tooltip = true,
+  tooltip = false,
   selection: selectionProp = false,
   multiselection = false,
   editable = false,
