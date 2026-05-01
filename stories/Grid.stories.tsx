@@ -43,6 +43,7 @@ function generateData(count: number): Employee[] {
 
 const data50 = generateData(50)
 const data200 = generateData(200)
+const data5000 = generateData(5000)
 
 // ─── Column presets ───────────────────────────────────────────────────
 
@@ -99,10 +100,10 @@ export const Default: Story = {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 export const VirtualScroll: Story = {
-  name: 'Virtual Scroll (200 rows)',
+  name: 'Virtual Scroll (5000 rows)',
   args: {
     columns: baseColumns,
-    data: data200,
+    data: data5000,
     style: { width: '100%', height: GRID_HEIGHT },
   },
 }
@@ -113,15 +114,18 @@ export const VirtualScroll: Story = {
 
 function FrozenSplitsDemo() {
   const wideColumns: GridColumn<Employee>[] = [
-    { id: 'id', header: [{ text: '# (frozen)' }], width: 70 },
-    { id: 'name', header: [{ text: 'Name (frozen)' }], width: 160 },
-    { id: 'role', header: [{ text: 'Role' }], width: 180 },
-    { id: 'team', header: [{ text: 'Team' }], width: 180 },
-    { id: 'region', header: [{ text: 'Region' }], width: 180 },
-    { id: 'salary', header: [{ text: 'Salary' }], width: 160, align: 'right',
+    { id: 'id', header: [{ text: '# (frozen)' }], width: 80 },
+    { id: 'name', header: [{ text: 'Name (frozen)' }], width: 200 },
+    { id: 'role', header: [{ text: 'Role' }], width: 220 },
+    { id: 'team', header: [{ text: 'Team' }], width: 220 },
+    { id: 'region', header: [{ text: 'Region' }], width: 220 },
+    { id: 'salary', header: [{ text: 'Salary' }], width: 200, align: 'right',
       template: (v) => `$${Number(v).toLocaleString()}`,
     },
-    { id: 'age', header: [{ text: 'Age (frozen)' }], width: 100, align: 'center' },
+    { id: 'active', header: [{ text: 'Active' }], width: 200, align: 'center',
+      template: (v) => (v ? 'Yes' : 'No'),
+    },
+    { id: 'age', header: [{ text: 'Age (frozen)' }], width: 120, align: 'center' },
   ]
 
   return (
