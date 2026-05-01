@@ -1,12 +1,22 @@
 import { useState, useRef } from 'react'
 import type { Meta, StoryObj } from '@storybook/react-vite'
+import { ThemeProvider } from '../src/core/theme'
 import { Tree } from '../src/tree'
 import type { TreeNode, TreeRef } from '../src/tree'
 
 const meta: Meta<typeof Tree> = {
   title: 'Components/Tree',
   component: Tree,
-  parameters: { layout: 'centered' },
+  decorators: [
+    (Story) => (
+      <ThemeProvider>
+        <div style={{ padding: 24, fontFamily: 'system-ui, sans-serif' }}>
+          <Story />
+        </div>
+      </ThemeProvider>
+    ),
+  ],
+  parameters: { layout: 'fullscreen' },
 }
 
 export default meta
@@ -85,7 +95,11 @@ const mailData: TreeNode[] = [
 ]
 
 function cloneData(): TreeNode[] {
-  return JSON.parse(JSON.stringify(mailData)) as TreeNode[]
+  function cloneNode(node: TreeNode): TreeNode {
+    const { items, ...rest } = node
+    return items ? { ...rest, items: items.map(cloneNode) } : { ...rest }
+  }
+  return mailData.map(cloneNode)
 }
 
 // --- Stories ---
