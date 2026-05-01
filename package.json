@@ -3,6 +3,19 @@
   "version": "0.2.0",
   "type": "module",
   "description": "High-performance Grid, Tree, and TreeGrid components for React",
+  "keywords": [
+    "react",
+    "grid",
+    "tree",
+    "tree-grid",
+    "treegrid",
+    "data-grid",
+    "table",
+    "virtualization",
+    "hierarchical",
+    "component",
+    "typescript"
+  ],
   "license": "MIT",
   "repository": {
     "type": "git",
