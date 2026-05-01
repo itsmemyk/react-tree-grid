@@ -1,6 +1,13 @@
 # react-tree-grid
 
-High-performance **Grid**, **Tree**, and **TreeGrid** components for React 18+.
+The best open-source alternative to [DHTMLX TreeGrid](https://dhtmlx.com/docs/products/dhtmlxTreeGrid/) — high-performance **Grid**, **Tree**, and **TreeGrid** components for React 18+, with zero dependencies and a feature-complete API.
+
+![DHtmlx Showcase](assets/dhtmlx-showcase.png)
+
+> **[Live demo →](https://itsmemyk.github.io/react-tree-grid/?path=/story/components-treegrid--d-htmlx-showcase)**  
+> Faithful recreation of the DHTMLX TreeGrid showcase: tree rows, drag-and-drop reorder, multi-select, inline edit, header filters, footer sums, avatar columns, status badges, and signed balance.
+
+---
 
 - Zero runtime dependencies — React is the only peer
 - CSS Modules with CSS custom properties (`--react-tree-grid-*`) for theming
