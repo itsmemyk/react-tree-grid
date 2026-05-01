@@ -74,9 +74,8 @@ export function useGridTooltip(tooltipEnabled: boolean): GridTooltipResult {
           typeof rendered === 'boolean'
         ) {
           content = String(rendered)
-        } else {
-          content = rawValue === null || rawValue === undefined ? '' : String(rawValue)
         }
+        // JSX template with no tooltipTemplate → no tooltip
       } else {
         content = rawValue === null || rawValue === undefined ? '' : String(rawValue)
       }
