@@ -737,7 +737,7 @@ function CssApiAndMarksDemo() {
   const gridRef = useRef<GridApi<Employee>>(null)
   const [cityVisible, setCityVisible] = useState(true)
 
-  const cols: GridColumn<Employee>[] = [
+  const cols = useMemo<GridColumn<Employee>[]>(() => [
     { id: 'id', header: [{ text: '#' }], width: 60 },
     { id: 'name', header: [{ text: 'Name' }], width: 160 },
     { id: 'city', header: [{ text: 'City' }], width: 120 },
@@ -748,7 +748,7 @@ function CssApiAndMarksDemo() {
     { id: 'team', header: [{ text: 'Team' }], width: 120,
       mark: (_value, _values, row) => (row.team === 'Gamma' ? 'gridStoryMarkGamma' : false),
     },
-  ]
+  ], [])
 
   const rows = data50.slice(0, 12)
 
