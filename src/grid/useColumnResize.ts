@@ -31,6 +31,7 @@ export function useColumnResize<T extends GridRow>(
     minWidth: number
     maxWidth: number
   } | null>(null)
+  const suppressNextHeaderClick = useRef(false)
 
   /** Get the effective width for a column (override or configured) */
   const getWidth = useCallback(
@@ -67,6 +68,7 @@ export function useColumnResize<T extends GridRow>(
 
       e.preventDefault()
       cellEl.setPointerCapture(e.pointerId)
+      suppressNextHeaderClick.current = true
 
       resizeState.current = {
         colId,
@@ -138,6 +140,15 @@ export function useColumnResize<T extends GridRow>(
     [events, isNearRightEdge],
   )
 
+  const shouldPreventHeaderClick = useCallback((): boolean => {
+    if (!suppressNextHeaderClick.current) {
+      return false
+    }
+
+    suppressNextHeaderClick.current = false
+    return true
+  }, [])
+
   /** Pointer move on header cell — update cursor if near edge */
   const handleHeaderPointerMove = useCallback(
     (e: React.PointerEvent, col: GridColumn<T>): string | undefined => {
@@ -154,5 +165,6 @@ export function useColumnResize<T extends GridRow>(
     getWidth,
     handleHeaderPointerDown,
     handleHeaderPointerMove,
+    shouldPreventHeaderClick,
   }
 }

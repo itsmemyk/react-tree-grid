@@ -1028,7 +1028,10 @@ function GridInner<T extends GridRow>({
               onClick={
                 isSortableHeader
                   ? (e) => {
-                      if (columnReorder.shouldPreventHeaderClick()) {
+                      if (
+                        columnResize.shouldPreventHeaderClick() ||
+                        columnReorder.shouldPreventHeaderClick()
+                      ) {
                         return
                       }
                       gridSort.handleHeaderClick(column.id, e.ctrlKey || e.metaKey)

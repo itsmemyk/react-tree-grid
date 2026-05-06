@@ -414,6 +414,53 @@ describe('Grid', () => {
     expect(nameHeader.querySelector('[class*="sortIndex"]')?.textContent).toBe('2')
   })
 
+  it('does not sort when clicking after a column resize gesture', () => {
+    function ResizeSortGrid() {
+      const { items, store } = useDataStore({
+        data: [
+          { id: '1', name: 'Bob' },
+          { id: '2', name: 'Alice' },
+        ],
+      })
+
+      return (
+        <ThemeProvider>
+          <Grid
+            columns={[
+              { id: 'id', header: [{ text: 'ID' }], width: 80 },
+              { id: 'name', header: [{ text: 'Name' }], width: 140, resizable: true },
+            ]}
+            data={items}
+            store={store}
+            style={{ width: 260, height: 180 }}
+          />
+        </ThemeProvider>
+      )
+    }
+
+    const { container } = render(<ResizeSortGrid />)
+    const headerCell = screen.getByText('Name').closest('[data-rgs-col-id="name"]') as HTMLElement
+
+    Object.defineProperty(headerCell, 'setPointerCapture', {
+      configurable: true,
+      value: vi.fn(),
+    })
+    vi.spyOn(headerCell, 'getBoundingClientRect').mockReturnValue({
+      left: 80, right: 220, top: 0, bottom: 40, width: 140, height: 40, x: 80, y: 0, toJSON: () => {},
+    } as DOMRect)
+
+    fireEvent.pointerDown(headerCell, { pointerId: 1, clientX: 218, clientY: 10 })
+    fireEvent.pointerMove(headerCell, { pointerId: 1, clientX: 248, clientY: 10 })
+    fireEvent.pointerUp(headerCell, { pointerId: 1, clientX: 248, clientY: 10 })
+    fireEvent.click(headerCell)
+
+    const rowIds = Array.from(container.querySelectorAll('[data-rgs-id]')).map((row) =>
+      row.getAttribute('data-rgs-id'),
+    )
+    expect(rowIds.slice(0, 2)).toEqual(['1', '2'])
+    expect(headerCell.querySelector('[class*="sortAsc"]')).toBeFalsy()
+  })
+
   it('updates header width live while resizing a column', () => {
     const { container } = render(
       <ThemeProvider>
