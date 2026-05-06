@@ -985,13 +985,38 @@ function GridInner<T extends GridRow>({
           const cell = column.header[rowIdx]
           const sortOrder = rowIdx === 0 ? gridSort.getSortOrder(column.id) : undefined
           const sortIndex = rowIdx === 0 ? gridSort.getSortIndex(column.id) : -1
+          const isSortableHeader = sortable && column.sortable !== false && rowIdx === 0
+          const sortIndicator = isSortableHeader ? (
+            <span
+              className={[
+                styles.sortIndicator,
+                !sortOrder ? styles.sortIndicatorInactive : '',
+              ].filter(Boolean).join(' ')}
+            >
+              <span
+                className={
+                  sortOrder === 'desc'
+                    ? styles.sortDesc
+                    : sortOrder === 'asc'
+                      ? styles.sortAsc
+                      : styles.sortIdle
+                }
+              />
+              {sortIndex > 0 && <span className={styles.sortIndex}>{sortIndex}</span>}
+            </span>
+          ) : null
           return (
             <div
               key={cell?.id ?? `${column.id}-${rowIdx}`}
               className={[
                 styles.headerCell,
+                column.align === 'center'
+                  ? styles.alignCenter
+                  : column.align === 'right'
+                    ? styles.alignRight
+                    : styles.alignLeft,
                 cell?.css ?? '',
-                sortable && column.sortable !== false && rowIdx === 0 ? styles.headerCellSortable : '',
+                isSortableHeader ? styles.headerCellSortable : '',
               ].filter(Boolean).join(' ')}
               style={{
                 width: column.$width,
@@ -1001,7 +1026,7 @@ function GridInner<T extends GridRow>({
               }}
               data-rgs-col-id={column.id}
               onClick={
-                sortable && column.sortable !== false && rowIdx === 0
+                isSortableHeader
                   ? (e) => {
                       if (columnReorder.shouldPreventHeaderClick()) {
                         return
@@ -1045,13 +1070,9 @@ function GridInner<T extends GridRow>({
                   : undefined
               }
             >
+              {column.align === 'right' ? sortIndicator : null}
               {cell ? renderHeaderCellContent(column, cell, rowIdx) : ''}
-              {sortOrder && (
-                <span className={styles.sortIndicator}>
-                  <span className={sortOrder === 'asc' ? styles.sortAsc : styles.sortDesc} />
-                  {sortIndex > 0 && <span className={styles.sortIndex}>{sortIndex}</span>}
-                </span>
-              )}
+              {column.align === 'right' ? null : sortIndicator}
             </div>
           )
         })}

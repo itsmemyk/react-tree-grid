@@ -14,7 +14,7 @@ interface GridSortEvents {
  * Faithful conversion of DHTMLX suite.js Grid._initSort and _sortingStates.
  *
  * Behavior:
- * - Click header → cycle: asc → desc → none
+ * - Click header → cycle: asc → desc → asc
  * - Ctrl+click → add/modify secondary sort column (multi-sort)
  * - Fires events, then calls store.sort() with sort rules
  */
@@ -25,10 +25,9 @@ export function useGridSort<T extends GridRow>(
 ) {
   const [sortingStates, setSortingStates] = useState<SortState[]>([])
 
-  const cycleOrder = (current: SortOrder | undefined): SortOrder | null => {
+  const cycleOrder = (current: SortOrder | undefined): SortOrder => {
     if (!current) return 'asc'
-    if (current === 'asc') return 'desc'
-    return null // remove sort
+    return current === 'asc' ? 'desc' : 'asc'
   }
 
   const handleHeaderClick = useCallback(
@@ -44,9 +43,7 @@ export function useGridSort<T extends GridRow>(
           const existing = prev.find((s) => s.columnId === colId)
           const newOrder = cycleOrder(existing?.order)
 
-          if (newOrder === null) {
-            next = prev.filter((s) => s.columnId !== colId)
-          } else if (existing) {
+          if (existing) {
             next = prev.map((s) => (s.columnId === colId ? { ...s, order: newOrder } : s))
           } else {
             next = [...prev, { columnId: colId, order: newOrder }]
@@ -55,12 +52,7 @@ export function useGridSort<T extends GridRow>(
           // Single sort: replace all with this column
           const existing = prev.length === 1 ? prev.find((s) => s.columnId === colId) : undefined
           const newOrder = cycleOrder(existing?.order)
-
-          if (newOrder === null) {
-            next = []
-          } else {
-            next = [{ columnId: colId, order: newOrder }]
-          }
+          next = [{ columnId: colId, order: newOrder }]
         }
 
         // Fire before event

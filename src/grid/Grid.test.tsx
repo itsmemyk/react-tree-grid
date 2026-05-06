@@ -298,6 +298,79 @@ describe('Grid', () => {
     expect(headerTexts).toEqual(['ID', 'Role', 'Name'])
   })
 
+  it('keeps toggling sort between asc and desc on repeated header clicks', () => {
+    render(
+      <ThemeProvider>
+        <Grid
+          columns={[
+            { id: 'id', header: [{ text: 'ID' }], width: 80 },
+            { id: 'name', header: [{ text: 'Name' }], width: 140, sortable: true },
+          ]}
+          data={[
+            { id: '1', name: 'Bob' },
+            { id: '2', name: 'Alice' },
+          ]}
+          style={{ width: 260, height: 180 }}
+        />
+      </ThemeProvider>,
+    )
+
+    const headerCell = screen.getByText('Name').closest('[data-rgs-col-id="name"]') as HTMLElement
+
+    fireEvent.click(headerCell)
+    expect(screen.getByText('Alice')).toBeInTheDocument()
+    expect(headerCell.querySelector('[class*="sortAsc"]')).toBeTruthy()
+
+    fireEvent.click(headerCell)
+    expect(screen.getByText('Bob')).toBeInTheDocument()
+    expect(headerCell.querySelector('[class*="sortDesc"]')).toBeTruthy()
+
+    fireEvent.click(headerCell)
+    expect(screen.getByText('Alice')).toBeInTheDocument()
+    expect(headerCell.querySelector('[class*="sortAsc"]')).toBeTruthy()
+  })
+
+  it('renders an inactive sort indicator for unsorted sortable headers', () => {
+    const { container } = render(
+      <ThemeProvider>
+        <Grid
+          columns={[
+            { id: 'id', header: [{ text: 'ID' }], width: 80 },
+            { id: 'name', header: [{ text: 'Name' }], width: 140, sortable: true },
+          ]}
+          data={[{ id: '1', name: 'Bob' }]}
+          style={{ width: 260, height: 180 }}
+        />
+      </ThemeProvider>,
+    )
+
+    const headerCell = screen.getByText('Name').closest('[data-rgs-col-id="name"]') as HTMLElement
+
+    expect(headerCell.querySelector('[class*="sortIdle"]')).toBeTruthy()
+    expect(headerCell.querySelector('[class*="sortIndicatorInactive"]')).toBeTruthy()
+    expect(container.querySelector('[class*="headerCellSortable"]')).toBeTruthy()
+  })
+
+  it('renders the sort indicator before the label for right-aligned headers', () => {
+    render(
+      <ThemeProvider>
+        <Grid
+          columns={[
+            { id: 'salary', header: [{ text: 'Salary' }], width: 140, sortable: true, align: 'right' },
+          ]}
+          data={[{ id: '1', salary: '$100' }]}
+          style={{ width: 200, height: 180 }}
+        />
+      </ThemeProvider>,
+    )
+
+    const headerCell = screen.getByText('Salary').closest('[data-rgs-col-id="salary"]') as HTMLElement
+    const [firstChild] = Array.from(headerCell.children)
+
+    expect(firstChild.className).toContain('sortIndicator')
+    expect(headerCell.className).toContain('alignRight')
+  })
+
   it('updates header width live while resizing a column', () => {
     const { container } = render(
       <ThemeProvider>

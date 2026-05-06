@@ -241,17 +241,45 @@
 .sortIndicator {
   align-items: center;
   display: inline-flex;
-  margin-left: 4px;
+  margin-left: 6px;
+}
+
+.alignRight .sortIndicator {
+  margin-left: 0;
+  margin-right: 6px;
+}
+
+.sortIndicatorInactive {
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+
+.headerCellSortable:hover .sortIndicatorInactive {
+  opacity: 1;
 }
 
 .sortAsc::after {
-  content: '▲';
-  font-size: 8px;
+  color: var(--react-tree-grid-color-primary, #0288d1);
+  content: '↑';
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1;
 }
 
 .sortDesc::after {
-  content: '▼';
-  font-size: 8px;
+  color: var(--react-tree-grid-color-primary, #0288d1);
+  content: '↓';
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.sortIdle::after {
+  color: var(--react-tree-grid-color-primary, #0288d1);
+  content: '↑';
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1;
 }
 
 .sortIndex {
