@@ -3,7 +3,7 @@ import { DataStore } from './DataStore'
 import type {
   DataItem,
   DataStoreConfig,
-  SortRule,
+  SortInput,
   SortConfig,
   FilterRule,
   FilterConfig,
@@ -38,7 +38,7 @@ export interface UseDataStoreReturn<T extends DataItem> {
   /** Check existence */
   exists: (id: string) => boolean
   /** Sort */
-  sort: (rule: SortRule | null, config?: SortConfig) => void
+  sort: (rule: SortInput, config?: SortConfig) => void
   /** Filter */
   filter: (rule: FilterRule | null, config?: FilterConfig) => string | undefined
   /** Reset filter */
@@ -105,7 +105,7 @@ export function useDataStore<T extends DataItem>(
     [store],
   )
   const sort = useCallback(
-    (rule: SortRule | null, cfg?: SortConfig) => {
+    (rule: SortInput, cfg?: SortConfig) => {
       store.sort(rule, cfg)
       setItems([...store._order])
     },

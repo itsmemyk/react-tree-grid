@@ -34,54 +34,51 @@ export function useGridSort<T extends GridRow>(
       const col = columns.find((c) => c.id === colId)
       if (!col || col.sortable === false) return
 
-      setSortingStates((prev) => {
-        let next: SortState[]
+      let next: SortState[]
 
-        if (ctrlKey) {
-          // Multi-sort: add/modify this column in the sort chain
-          const existing = prev.find((s) => s.columnId === colId)
-          const newOrder = cycleOrder(existing?.order)
+      if (ctrlKey) {
+        // Multi-sort: add/modify this column in the sort chain
+        const existing = sortingStates.find((s) => s.columnId === colId)
+        const newOrder = cycleOrder(existing?.order)
 
-          if (existing) {
-            next = prev.map((s) => (s.columnId === colId ? { ...s, order: newOrder } : s))
-          } else {
-            next = [...prev, { columnId: colId, order: newOrder }]
-          }
+        if (existing) {
+          next = sortingStates.map((s) => (s.columnId === colId ? { ...s, order: newOrder } : s))
         } else {
-          // Single sort: replace all with this column
-          const existing = prev.length === 1 ? prev.find((s) => s.columnId === colId) : undefined
-          const newOrder = cycleOrder(existing?.order)
-          next = [{ columnId: colId, order: newOrder }]
+          next = [...sortingStates, { columnId: colId, order: newOrder }]
         }
+      } else {
+        // Single sort: replace all with this column
+        const existing = sortingStates.length === 1
+          ? sortingStates.find((s) => s.columnId === colId)
+          : undefined
+        const newOrder = cycleOrder(existing?.order)
+        next = [{ columnId: colId, order: newOrder }]
+      }
 
-        // Fire before event
-        if (events.onBeforeSort) {
-          const result = events.onBeforeSort(next)
-          if (result === false) return prev
+      // Fire before event
+      if (events.onBeforeSort) {
+        const result = events.onBeforeSort(next)
+        if (result === false) return
+      }
+
+      // Apply sort — remote or local
+      if (events.onRemoteSort) {
+        events.onRemoteSort(
+          next.length > 0 ? next[0].columnId : null,
+          next.length > 0 ? next[0].order : null,
+        )
+      } else if (store) {
+        if (next.length === 0) {
+          store.sort(null)
+        } else {
+          store.sort(next.map((rule) => ({ by: rule.columnId, dir: rule.order })))
         }
+      }
 
-        // Apply sort — remote or local
-        if (events.onRemoteSort) {
-          events.onRemoteSort(
-            next.length > 0 ? next[0].columnId : null,
-            next.length > 0 ? next[0].order : null,
-          )
-        } else if (store) {
-          if (next.length === 0) {
-            store.sort(null)
-          } else {
-            for (let i = next.length - 1; i >= 0; i--) {
-              const rule = next[i]
-              store.sort({ by: rule.columnId, dir: rule.order })
-            }
-          }
-        }
-
-        events.onAfterSort?.(next)
-        return next
-      })
+      events.onAfterSort?.(next)
+      setSortingStates(next)
     },
-    [columns, store, events],
+    [columns, store, events, sortingStates],
   )
 
   const getSortOrder = useCallback(

@@ -3,7 +3,7 @@ import { TreeStore } from './TreeStore'
 import type {
   TreeDataItem,
   DataStoreConfig,
-  SortRule,
+  SortInput,
   SortConfig,
   FilterRule,
   FilterConfig,
@@ -40,7 +40,7 @@ export interface UseTreeStoreReturn<T extends TreeDataItem> {
   /** Check existence */
   exists: (id: string) => boolean
   /** Sort */
-  sort: (rule: SortRule | null, config?: SortConfig) => void
+  sort: (rule: SortInput, config?: SortConfig) => void
   /** Filter */
   filter: (rule: FilterRule | null, config?: FilterConfig) => string | undefined
   /** Traverse each child */
@@ -103,7 +103,7 @@ export function useTreeStore<T extends TreeDataItem>(
     haveItems: useCallback((id: string) => store.haveItems(id), [store]),
     exists: useCallback((id: string) => store.exists(id), [store]),
     sort: useCallback(
-      (rule: SortRule | null, cfg?: SortConfig) => {
+      (rule: SortInput, cfg?: SortConfig) => {
         store.sort(rule, cfg)
         setItems([...store._order])
       },

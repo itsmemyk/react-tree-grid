@@ -5,6 +5,7 @@ import { ThemeProvider } from '../core/theme'
 import { Grid } from './Grid'
 import type { GridApi } from './types'
 import * as domUtils from '../core/utils/dom'
+import { useDataStore } from '../core/data/useDataStore'
 
 const columns = [
   { id: 'id', header: [{ text: 'ID' }], width: 80 },
@@ -369,6 +370,48 @@ describe('Grid', () => {
 
     expect(firstChild.className).toContain('sortIndicator')
     expect(headerCell.className).toContain('alignRight')
+  })
+
+  it('adds secondary sort columns with ctrl-click and shows their order', () => {
+    function MultiSortGrid() {
+      const { items, store } = useDataStore({
+        data: [
+          { id: '1', group: 'B', name: 'Bob' },
+          { id: '2', group: 'A', name: 'Charlie' },
+          { id: '3', group: 'A', name: 'Alice' },
+          { id: '4', group: 'B', name: 'Alice' },
+        ],
+      })
+
+      return (
+        <ThemeProvider>
+          <Grid
+            columns={[
+              { id: 'group', header: [{ text: 'Group' }], width: 120 },
+              { id: 'name', header: [{ text: 'Name' }], width: 140 },
+            ]}
+            data={items}
+            store={store}
+            style={{ width: 280, height: 220 }}
+          />
+        </ThemeProvider>
+      )
+    }
+
+    const { container } = render(<MultiSortGrid />)
+
+    const groupHeader = screen.getByText('Group').closest('[data-rgs-col-id="group"]') as HTMLElement
+    const nameHeader = screen.getByText('Name').closest('[data-rgs-col-id="name"]') as HTMLElement
+
+    fireEvent.click(groupHeader)
+    fireEvent.click(nameHeader, { ctrlKey: true })
+
+    const rowIds = Array.from(container.querySelectorAll('[data-rgs-id]')).map((row) =>
+      row.getAttribute('data-rgs-id'),
+    )
+    expect(rowIds.slice(0, 4)).toEqual(['3', '2', '4', '1'])
+    expect(groupHeader.querySelector('[class*="sortIndex"]')?.textContent).toBe('1')
+    expect(nameHeader.querySelector('[class*="sortIndex"]')?.textContent).toBe('2')
   })
 
   it('updates header width live while resizing a column', () => {

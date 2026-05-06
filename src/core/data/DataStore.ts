@@ -3,6 +3,7 @@ import { uid, extend, copy, isDefined, isId, isEmptyObj } from '../utils/common'
 import { Sort } from './Sort'
 import type {
   DataItem,
+  SortInput,
   SortRule,
   SortConfig,
   FilterRule,
@@ -325,7 +326,27 @@ export class DataStore<T extends DataItem = DataItem> {
   /**
    * Sort by a rule. Supports multi-column and smart sorting (click cycling).
    */
-  sort(rule: SortRule | null, config?: SortConfig, ignore = false): void {
+  sort(rule: SortInput, config?: SortConfig, ignore = false): void {
+    if (Array.isArray(rule)) {
+      if (!rule.length) {
+        this.sort(null, config, ignore)
+        return
+      }
+
+      if (!ignore) {
+        this._initSortOrder =
+          this._initSortOrder || [...(this._initFilterOrder || this._order)]
+        this._sortingStates = rule.map((sorter) => ({ ...sorter, ...config }))
+      }
+
+      this._applySorters()
+
+      if (!ignore) {
+        this.events.fire(DataEvents.change, [undefined, 'sort', rule])
+      }
+      return
+    }
+
     if (config?.smartSorting) {
       this._sorter = rule
     }

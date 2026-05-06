@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { ThemeProvider } from '../src/core/theme'
 import { useDataStore } from '../src/core/data/useDataStore'
@@ -16,6 +16,21 @@ type Employee = {
   salary: number
   age: number
   active: boolean
+}
+
+type AnimalTask = {
+  id: string
+  shift: string
+  animal_name: string
+  animal_type: 'Cat' | 'Dog'
+  animal_age: number
+  task: string
+  task_status: 'Open' | 'In Progress' | 'Completed'
+  volunteer_name: string
+  experience_level: number
+  contact: string
+  shelter_location: string
+  animal_photo: string
 }
 
 const ROLES = ['Lead', 'Developer', 'QA Engineer', 'DevOps', 'Designer', 'PM']
@@ -196,6 +211,114 @@ function SortingDemo() {
 export const Sorting: Story = {
   name: 'Sorting (click headers)',
   render: () => <SortingDemo />,
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// STORY: Animal Multi-Sort
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+const animalDataset: AnimalTask[] = [
+  { id: '1', shift: 'Morning Shift', animal_name: 'Bella', animal_type: 'Dog', animal_age: 5, task: 'Walk', task_status: 'Completed', volunteer_name: 'Anna Brown', experience_level: 3, contact: '(212) 555-0118', shelter_location: 'Western Branch', animal_photo: 'https://snippet.dhtmlx.com/codebase/data/grid/06/img/01.jpg' },
+  { id: '2', shift: 'Afternoon Shift', animal_name: 'Whiskers', animal_type: 'Cat', animal_age: 7, task: 'Feed', task_status: 'Open', volunteer_name: 'Ben Carter', experience_level: 2, contact: '(415) 555-0198', shelter_location: 'Southern Branch', animal_photo: 'https://snippet.dhtmlx.com/codebase/data/grid/06/img/02.jpg' },
+  { id: '3', shift: 'Evening Shift', animal_name: 'Max', animal_type: 'Dog', animal_age: 2, task: 'Walk', task_status: 'In Progress', volunteer_name: 'Sarah Johnson', experience_level: 3, contact: '(310) 555-0247', shelter_location: 'Southern Branch', animal_photo: 'https://snippet.dhtmlx.com/codebase/data/grid/06/img/03.jpg' },
+  { id: '4', shift: 'Morning Shift', animal_name: 'Luna', animal_type: 'Cat', animal_age: 0.5, task: 'Play', task_status: 'Completed', volunteer_name: 'Michael Green', experience_level: 1, contact: '(323) 555-0325', shelter_location: 'Northern Branch', animal_photo: 'https://snippet.dhtmlx.com/codebase/data/grid/06/img/04.jpg' },
+  { id: '5', shift: 'Evening Shift', animal_name: 'Charlie', animal_type: 'Dog', animal_age: 1, task: 'Medication', task_status: 'Completed', volunteer_name: 'Anna Brown', experience_level: 1, contact: '(212) 555-0118', shelter_location: 'Eastern Branch', animal_photo: 'https://snippet.dhtmlx.com/codebase/data/grid/06/img/05.jpg' },
+  { id: '6', shift: 'Morning Shift', animal_name: 'Bear', animal_type: 'Dog', animal_age: 6, task: 'Walk', task_status: 'Open', volunteer_name: 'John Smith', experience_level: 3, contact: '(415) 555-0734', shelter_location: 'Northern Branch', animal_photo: 'https://snippet.dhtmlx.com/codebase/data/grid/06/img/06.jpg' },
+  { id: '7', shift: 'Afternoon Shift', animal_name: 'Whiskers', animal_type: 'Cat', animal_age: 7, task: 'Train', task_status: 'In Progress', volunteer_name: 'Sarah Johnson', experience_level: 2, contact: '(310) 555-0247', shelter_location: 'Southern Branch', animal_photo: 'https://snippet.dhtmlx.com/codebase/data/grid/06/img/02.jpg' },
+  { id: '8', shift: 'Morning Shift', animal_name: 'Oscar', animal_type: 'Dog', animal_age: 3, task: 'Walk', task_status: 'Completed', volunteer_name: 'Emily White', experience_level: 3, contact: '(707) 555-0998', shelter_location: 'Eastern Branch', animal_photo: 'https://snippet.dhtmlx.com/codebase/data/grid/06/img/07.jpg' },
+  { id: '9', shift: 'Evening Shift', animal_name: 'Milo', animal_type: 'Cat', animal_age: 3, task: 'Medication', task_status: 'Open', volunteer_name: 'Jessica Brown', experience_level: 2, contact: '(818) 555-0876', shelter_location: 'Southern Branch', animal_photo: 'https://snippet.dhtmlx.com/codebase/data/grid/06/img/08.jpg' },
+  { id: '10', shift: 'Morning Shift', animal_name: 'Daisy', animal_type: 'Dog', animal_age: 7, task: 'Walk', task_status: 'Completed', volunteer_name: 'Daniel Harris', experience_level: 1, contact: '(323) 555-0411', shelter_location: 'Northern Branch', animal_photo: 'https://snippet.dhtmlx.com/codebase/data/grid/06/img/09.jpg' },
+  { id: '11', shift: 'Afternoon Shift', animal_name: 'Toby', animal_type: 'Dog', animal_age: 5, task: 'Clean cage', task_status: 'In Progress', volunteer_name: 'Monica Hill', experience_level: 2, contact: '(415) 555-0623', shelter_location: 'Western Branch', animal_photo: 'https://snippet.dhtmlx.com/codebase/data/grid/06/img/10.jpg' },
+  { id: '12', shift: 'Evening Shift', animal_name: 'Maggie', animal_type: 'Cat', animal_age: 2, task: 'Play', task_status: 'Completed', volunteer_name: 'Mark Foster', experience_level: 3, contact: '(408) 555-0217', shelter_location: 'Eastern Branch', animal_photo: 'https://snippet.dhtmlx.com/codebase/data/grid/06/img/11.jpg' },
+  { id: '13', shift: 'Afternoon Shift', animal_name: 'Max', animal_type: 'Dog', animal_age: 2, task: 'Walk', task_status: 'In Progress', volunteer_name: 'Sarah Johnson', experience_level: 3, contact: '(310) 555-0247', shelter_location: 'Southern Branch', animal_photo: 'https://snippet.dhtmlx.com/codebase/data/grid/06/img/03.jpg' },
+  { id: '14', shift: 'Evening Shift', animal_name: 'Whiskers', animal_type: 'Cat', animal_age: 7, task: 'Play', task_status: 'Completed', volunteer_name: 'Ben Carter', experience_level: 2, contact: '(415) 555-0198', shelter_location: 'Southern Branch', animal_photo: 'https://snippet.dhtmlx.com/codebase/data/grid/06/img/02.jpg' },
+  { id: '15', shift: 'Morning Shift', animal_name: 'Rocky', animal_type: 'Cat', animal_age: 4, task: 'Train', task_status: 'In Progress', volunteer_name: 'Sarah Johnson', experience_level: 3, contact: '(310) 555-0247', shelter_location: 'Western Branch', animal_photo: 'https://snippet.dhtmlx.com/codebase/data/grid/06/img/12.jpg' },
+  { id: '16', shift: 'Afternoon Shift', animal_name: 'Oliver', animal_type: 'Cat', animal_age: 3, task: 'Feed', task_status: 'In Progress', volunteer_name: 'Michael Green', experience_level: 2, contact: '(323) 555-0325', shelter_location: 'Western Branch', animal_photo: 'https://snippet.dhtmlx.com/codebase/data/grid/06/img/13.jpg' },
+  { id: '17', shift: 'Morning Shift', animal_name: 'Cleo', animal_type: 'Cat', animal_age: 4, task: 'Play', task_status: 'Completed', volunteer_name: 'Daniel Harris', experience_level: 2, contact: '(323) 555-0411', shelter_location: 'Western Branch', animal_photo: 'https://snippet.dhtmlx.com/codebase/data/grid/06/img/14.jpg' },
+  { id: '18', shift: 'Afternoon Shift', animal_name: 'Sasha', animal_type: 'Cat', animal_age: 7, task: 'Walk', task_status: 'In Progress', volunteer_name: 'John Smith', experience_level: 1, contact: '(415) 555-0734', shelter_location: 'Southern Branch', animal_photo: 'https://snippet.dhtmlx.com/codebase/data/grid/06/img/15.jpg' },
+  { id: '19', shift: 'Evening Shift', animal_name: 'Milo', animal_type: 'Cat', animal_age: 3, task: 'Medication', task_status: 'Completed', volunteer_name: 'Michael Green', experience_level: 3, contact: '(323) 555-0325', shelter_location: 'Southern Branch', animal_photo: 'https://snippet.dhtmlx.com/codebase/data/grid/06/img/08.jpg' },
+  { id: '20', shift: 'Morning Shift', animal_name: 'Bear', animal_type: 'Dog', animal_age: 6, task: 'Feed', task_status: 'Completed', volunteer_name: 'Sarah Johnson', experience_level: 2, contact: '(310) 555-0247', shelter_location: 'Northern Branch', animal_photo: 'https://snippet.dhtmlx.com/codebase/data/grid/06/img/06.jpg' },
+  { id: '21', shift: 'Evening Shift', animal_name: 'Bear', animal_type: 'Dog', animal_age: 6, task: 'Train', task_status: 'In Progress', volunteer_name: 'Monica Hill', experience_level: 2, contact: '(415) 555-0623', shelter_location: 'Northern Branch', animal_photo: 'https://snippet.dhtmlx.com/codebase/data/grid/06/img/06.jpg' },
+  { id: '22', shift: 'Afternoon Shift', animal_name: 'Oscar', animal_type: 'Dog', animal_age: 3, task: 'Walk', task_status: 'Completed', volunteer_name: 'Monica Hill', experience_level: 1, contact: '(415) 555-0623', shelter_location: 'Eastern Branch', animal_photo: 'https://snippet.dhtmlx.com/codebase/data/grid/06/img/07.jpg' },
+  { id: '23', shift: 'Evening Shift', animal_name: 'Cleo', animal_type: 'Cat', animal_age: 4, task: 'Feed', task_status: 'Completed', volunteer_name: 'Sarah Johnson', experience_level: 2, contact: '(310) 555-0247', shelter_location: 'Western Branch', animal_photo: 'https://snippet.dhtmlx.com/codebase/data/grid/06/img/14.jpg' },
+  { id: '24', shift: 'Morning Shift', animal_name: 'Bear', animal_type: 'Dog', animal_age: 6, task: 'Medication', task_status: 'In Progress', volunteer_name: 'Ben Carter', experience_level: 3, contact: '(415) 555-0198', shelter_location: 'Northern Branch', animal_photo: 'https://snippet.dhtmlx.com/codebase/data/grid/06/img/06.jpg' },
+]
+
+const statusColors: Record<AnimalTask['task_status'], string> = {
+  Open: '#f59e0b',
+  'In Progress': '#0288d1',
+  Completed: '#12a66a',
+}
+
+const animalColumns: GridColumn<AnimalTask>[] = [
+  {
+    id: 'animal_name',
+    header: [{ text: 'Animal name' }],
+    width: 140,
+    template: (_value, row) => (
+      <span style={{ alignItems: 'center', display: 'inline-flex', gap: 8 }}>
+        <img src={row.animal_photo} alt="" style={{ borderRadius: '50%', height: 28, width: 28 }} />
+        {row.animal_name}
+      </span>
+    ),
+  },
+  { id: 'animal_type', header: [{ text: 'Animal type' }], width: 130 },
+  { id: 'animal_age', type: 'number', header: [{ text: 'Age' }], width: 66, align: 'right' },
+  { id: 'task', header: [{ text: 'Task' }], width: 96 },
+  {
+    id: 'task_status',
+    header: [{ text: 'Task status' }],
+    width: 130,
+    template: (value) => {
+      const status = value as AnimalTask['task_status']
+      return (
+        <span style={{ alignItems: 'center', display: 'inline-flex', gap: 8 }}>
+          <span style={{ background: statusColors[status], borderRadius: '50%', height: 8, width: 8 }} />
+          {status}
+        </span>
+      )
+    },
+  },
+  { id: 'volunteer_name', header: [{ text: 'Volunteer name' }], width: 155 },
+  {
+    id: 'experience_level',
+    type: 'number',
+    header: [{ text: 'Experience Level', align: 'left' }],
+    width: 165,
+    align: 'left',
+    template: (value) => <span style={{ color: '#f59e0b', fontSize: 18 }}>{'★'.repeat(Number(value))}</span>,
+  },
+  { id: 'contact', header: [{ text: 'Contact', align: 'right' }], width: 124, align: 'right' },
+  { id: 'shelter_location', header: [{ text: 'Shelter location' }], width: 155 },
+  { id: 'shift', header: [{ text: 'Shift' }], width: 120 },
+]
+
+function AnimalMultiSortDemo() {
+  const { items, store } = useDataStore<AnimalTask>({ data: animalDataset })
+
+  useEffect(() => {
+    store.sort([
+      { by: 'volunteer_name', dir: 'desc' },
+      { by: 'task_status', dir: 'asc' },
+      { by: 'animal_type', dir: 'asc' },
+    ])
+  }, [store])
+
+  return (
+    <Grid<AnimalTask>
+      columns={animalColumns}
+      data={items}
+      store={store}
+      sortable
+      selection="row"
+      style={{ width: '100%', height: GRID_HEIGHT }}
+    />
+  )
+}
+
+export const AnimalMultiSort: Story = {
+  name: 'Multi sorting',
+  render: () => <AnimalMultiSortDemo />,
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

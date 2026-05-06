@@ -242,6 +242,7 @@
   align-items: center;
   display: inline-flex;
   margin-left: 6px;
+  white-space: nowrap;
 }
 
 .alignRight .sortIndicator {
@@ -283,8 +284,10 @@
 }
 
 .sortIndex {
+  align-self: flex-start;
   font-size: 10px;
-  margin-left: 2px;
+  line-height: 1;
+  margin-right: 2px;
   opacity: 0.6;
 }
 

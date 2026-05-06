@@ -21,6 +21,9 @@ export interface SortRule {
   smartSorting?: boolean
 }
 
+/** Sort input accepted by stores */
+export type SortInput = SortRule | SortRule[] | null
+
 /** Config-based filter rule */
 export interface FilterRuleConfig {
   /** Field to filter by */

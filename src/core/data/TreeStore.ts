@@ -227,7 +227,27 @@ export class TreeStore<T extends TreeDataItem = TreeDataItem> extends DataStore<
 
   // --- Sorting override ---
 
-  override sort(rule: SortRule | null, config?: SortConfig, ignore = false): void {
+  override sort(rule: SortRule | SortRule[] | null, config?: SortConfig, ignore = false): void {
+    if (Array.isArray(rule)) {
+      if (!rule.length) {
+        this.sort(null, config, ignore)
+        return
+      }
+
+      if (!ignore) {
+        this._initSortOrder =
+          this._initSortOrder || [...(this._initFilterOrder || this._order)]
+        this._sortingStates = rule.map((sorter) => ({ ...sorter, ...config }))
+      }
+
+      this._applySorters()
+
+      if (!ignore) {
+        this.events.fire(DataEvents.change, [undefined, 'sort', rule])
+      }
+      return
+    }
+
     if (config?.smartSorting) {
       (this as unknown as Record<string, unknown>)._sorter = rule
     }

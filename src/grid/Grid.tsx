@@ -993,6 +993,7 @@ function GridInner<T extends GridRow>({
                 !sortOrder ? styles.sortIndicatorInactive : '',
               ].filter(Boolean).join(' ')}
             >
+              {sortIndex > 0 && <span className={styles.sortIndex}>{sortIndex}</span>}
               <span
                 className={
                   sortOrder === 'desc'
@@ -1002,7 +1003,6 @@ function GridInner<T extends GridRow>({
                       : styles.sortIdle
                 }
               />
-              {sortIndex > 0 && <span className={styles.sortIndex}>{sortIndex}</span>}
             </span>
           ) : null
           return (
