@@ -48,15 +48,15 @@ const data5000 = generateData(5000)
 // ─── Column presets ───────────────────────────────────────────────────
 
 const baseColumns: GridColumn<Employee>[] = [
-  { id: 'id', header: [{ text: '#' }], width: 60, sortable: true },
-  { id: 'name', header: [{ text: 'Name' }], width: 160, sortable: true, resizable: true },
-  { id: 'role', header: [{ text: 'Role' }], width: 140, sortable: true, resizable: true },
-  { id: 'team', header: [{ text: 'Team' }], width: 120, sortable: true, resizable: true },
-  { id: 'region', header: [{ text: 'Region' }], width: 120, sortable: true, resizable: true },
-  { id: 'salary', header: [{ text: 'Salary' }], width: 120, sortable: true, resizable: true, align: 'right',
+  { id: 'id', header: [{ text: '#' }], width: 60 },
+  { id: 'name', header: [{ text: 'Name' }], width: 160, resizable: true },
+  { id: 'role', header: [{ text: 'Role' }], width: 140, resizable: true },
+  { id: 'team', header: [{ text: 'Team' }], width: 120, resizable: true },
+  { id: 'region', header: [{ text: 'Region' }], width: 120, resizable: true },
+  { id: 'salary', header: [{ text: 'Salary' }], width: 120, resizable: true, align: 'right',
     template: (v) => `$${Number(v).toLocaleString()}`,
   },
-  { id: 'age', header: [{ text: 'Age' }], width: 80, sortable: true, align: 'center' },
+  { id: 'age', header: [{ text: 'Age' }], width: 80, align: 'center' },
 ]
 
 // ─── Storybook meta ───────────────────────────────────────────────────
