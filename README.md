@@ -5,7 +5,7 @@ The best open-source alternative to [DHTMLX TreeGrid](https://dhtmlx.com/docs/pr
 ![DHtmlx Showcase](assets/dhtmlx-showcase.png)
 
 > **[Live demo →](https://itsmemyk.github.io/react-tree-grid/?path=/story/components-treegrid--d-htmlx-showcase)**  
-> Faithful recreation of the DHTMLX TreeGrid showcase: tree rows, drag-and-drop reorder, multi-select, inline edit, header filters, footer sums, avatar columns, status badges, and signed balance.
+> Full-featured showcase: tree rows, drag-and-drop reorder, multi-select, inline edit, header filters, footer sums, avatar columns, status badges, and signed balance.
 
 ---
 

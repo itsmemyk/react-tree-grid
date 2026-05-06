@@ -77,7 +77,7 @@ export function detectTheme(element: HTMLElement): ThemeName | null {
 }
 
 /**
- * Imperative theme setter — faithful conversion of DHTMLX setTheme (suite.js lines 173-183).
+ * Imperative theme setter.
  * Sets data-react-tree-grid-theme attribute on a container (defaults to document.documentElement).
  * If no container is given, clears all existing data-react-tree-grid-theme attributes first.
  */

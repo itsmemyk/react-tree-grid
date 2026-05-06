@@ -195,7 +195,7 @@ describe('Grid', () => {
     expect(screen.getAllByText('Bottom').length).toBeGreaterThan(0)
   })
 
-  it('applies DHTMLX-style right-side scrollbar compensation for fixed columns', () => {
+  it('applies right-side scrollbar compensation for fixed columns', () => {
     vi.spyOn(domUtils, 'getScrollbarWidth').mockReturnValue(15)
     vi.spyOn(domUtils, 'getScrollbarHeight').mockReturnValue(15)
 
@@ -232,7 +232,7 @@ describe('Grid', () => {
     expect(teamHeader.style.borderLeft).toContain('var(--react-tree-grid-color-border)')
   })
 
-  it('renders frozen body panes outside the scroll container like DHTMLX suite', () => {
+  it('renders frozen body panes outside the scroll container', () => {
     const { container } = render(
       <ThemeProvider>
         <Grid
@@ -453,7 +453,7 @@ describe('Grid', () => {
     fireEvent.pointerUp(headerCell, { pointerId: 1, clientX: 118, clientY: 10 })
   })
 
-  it('emits DHTMLX-style column drag payloads', () => {
+  it('emits column drag payloads', () => {
     const onBeforeColumnDrag = vi.fn()
     const onDragColumnStart = vi.fn()
     const onDragColumnIn = vi.fn()

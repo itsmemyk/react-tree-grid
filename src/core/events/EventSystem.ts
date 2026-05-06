@@ -1,7 +1,7 @@
 import type { EventCallback, EventHandler } from './types'
 
 /**
- * Event system — faithful conversion of DHTMLX EventSystem (suite.js lines 616-656).
+ * Event system for named event subscription and dispatch.
  *
  * Supports:
  * - Named event subscription with optional context

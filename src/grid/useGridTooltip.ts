@@ -1,7 +1,7 @@
 import { useCallback, useRef, useState } from 'react'
 import type { GridColumn, GridRow } from './types'
 
-/** Default delays match DHTMLX tooltip timing. */
+/** Default show/hide delays in ms. */
 const SHOW_DELAY = 300
 const HIDE_DELAY = 100
 
@@ -27,7 +27,6 @@ interface GridTooltipResult {
 /**
  * Manages Grid cell tooltip display.
  *
- * Faithful conversion of DHTMLX tooltip show/hide with delay pattern.
  * - Show after SHOW_DELAY ms on mouseenter; position below cursor.
  * - Hide after HIDE_DELAY ms on mouseleave.
  * - `tooltipTemplate(value, row, column)` on column overrides default content.

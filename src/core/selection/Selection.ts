@@ -7,7 +7,7 @@ import type { SelectionConfig } from './types'
 import { SelectionEvents } from './types'
 
 /**
- * Selection — faithful conversion of DHTMLX Selection (suite.js lines 12340-12491).
+ * Selection — manages selected items with single and multi-select support.
  *
  * Manages selected items with support for:
  * - Single selection (replaces previous)

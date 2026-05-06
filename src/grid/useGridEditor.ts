@@ -19,7 +19,6 @@ interface GridEditorEvents {
 
 /**
  * Manages inline cell editing for the Grid.
- * Faithful conversion of DHTMLX suite.js Grid editing (editCell/editEnd).
  *
  * Behavior:
  * - Double-click cell (or single-click checkbox) → open editor

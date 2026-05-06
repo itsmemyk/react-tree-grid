@@ -1,7 +1,7 @@
 /** Event handler callback */
 export type EventCallback = (...args: unknown[]) => unknown
 
-/** Event handler entry (matches DHTMLX internal structure) */
+/** Event handler entry */
 export interface EventHandler {
   callback: EventCallback
   context: unknown

@@ -16,7 +16,7 @@ interface GridKeyboardConfig {
 }
 
 /**
- * Grid keyboard navigation — faithful conversion of DHTMLX suite.js KeyManager (module 246).
+ * Grid keyboard navigation.
  *
  * Key bindings:
  * - Arrow keys: navigate ±1 cell, update selection

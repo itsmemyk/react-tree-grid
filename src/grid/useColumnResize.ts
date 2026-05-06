@@ -13,7 +13,6 @@ interface ColumnResizeEvents {
 
 /**
  * Manages interactive column resize for the Grid.
- * Faithful conversion of DHTMLX suite.js Resizer module.
  *
  * Detects pointer near column right edge in header, starts resize on drag.
  * Updates column widths in real time via direct DOM manipulation,

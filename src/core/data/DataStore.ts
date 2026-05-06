@@ -15,7 +15,7 @@ import type {
 import { DataEvents } from './types'
 
 /**
- * DataStore — faithful conversion of DHTMLX DataCollection (suite.js lines 8258-9040).
+ * DataStore — core data management class.
  *
  * Core data management class with:
  * - O(1) id lookup via _pull

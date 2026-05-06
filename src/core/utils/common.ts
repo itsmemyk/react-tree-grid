@@ -1,5 +1,5 @@
 /**
- * Core utility functions — faithful conversion of DHTMLX suite.js modules 1, 3.
+ * Core utility functions.
  */
 
 let counter = 0

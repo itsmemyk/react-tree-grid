@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import type { GridColumn, GridHeaderCell, GridFooterCell, GridRow } from './types'
 
 /**
- * Grid `adjust` config option. Mirrors DHTMLX `adjust`:
+ * Grid `adjust` config option:
  *   - `true`        — fit to widest of header/footer/data
  *   - `'header'`    — fit to widest header text only
  *   - `'footer'`    — fit to widest footer text only
@@ -14,19 +14,19 @@ import type { GridColumn, GridHeaderCell, GridFooterCell, GridRow } from './type
  */
 export type GridAdjustOption = boolean | 'data' | 'header' | 'footer'
 
-/** Shared text metrics. DHTMLX uses `normal 14.4px Arial` in `getMaxColsWidth`. */
+/** Shared text metrics font for column width measurement. */
 const FONT = 'normal 14.4px Arial'
-/** DHTMLX horizontal padding + borders buffer for adjusted widths. */
+/** Horizontal padding + borders buffer for adjusted widths. */
 const HORIZONTAL_OFFSET = 24
-/** DHTMLX adds 16px for the sort icon when the column is sortable. */
+/** Extra width for the sort icon when the column is sortable. */
 const SORT_ICON_OFFSET = 16
-/** DHTMLX line height for autoHeight measurement. */
+/** Line height for autoHeight measurement. */
 const LINE_HEIGHT = 20
-/** Minimum seed width used by DHTMLX `getMaxColsWidth`. */
+/** Minimum seed width for column width calculation. */
 const SEED_WIDTH = 20
 /** Default vertical padding added by `getCalculatedRowHeight` when rowHeight ≥ 40. */
 const VERTICAL_OFFSET = 10
-/** Additional borders buffer used by DHTMLX `getMaxRowHeight` (24 + BORDERS=2). */
+/** Additional borders buffer for row height calculation (24 + BORDERS=2). */
 const ROW_HEIGHT_HORIZONTAL_OFFSET = 24 + 2
 
 interface AdjustOptions<T extends GridRow> {
@@ -106,7 +106,7 @@ function footerText<T extends GridRow>(
   return typeof cell.text === 'string' ? cell.text : ''
 }
 
-/** Break a string into wrapped lines by `maxWidth`, DHTMLX `getTextLines` style. */
+/** Break a string into wrapped lines by `maxWidth`. */
 function countWrappedLines(
   ctx: CanvasRenderingContext2D,
   text: string,
@@ -142,7 +142,7 @@ function countWrappedLines(
   return total
 }
 
-/** DHTMLX `getCalculatedRowHeight`. */
+/** Calculate effective row height accounting for vertical padding. */
 function getCalculatedRowHeight(height: number, rowHeight: number): number {
   const withOffset = rowHeight < 40 ? height : height + VERTICAL_OFFSET * 2
   return height < rowHeight ? rowHeight : withOffset
@@ -212,7 +212,7 @@ interface AutoWidthColumn<T extends GridRow> {
   $width: number
 }
 
-/** Mirrors DHTMLX `applyAutoWidth` (render.js `applyAutoWidth`). */
+/** Distribute remaining container width across flexible columns. */
 function applyAutoWidthDistribution<T extends GridRow>(
   cols: AutoWidthColumn<T>[],
   totalWidth: number,

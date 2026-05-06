@@ -78,7 +78,7 @@ function UtilitiesDemo() {
     <div style={{ padding: 'var(--react-tree-grid-spacing-md)', fontFamily: 'var(--react-tree-grid-font-family)' }}>
       <h2 style={{ margin: '0 0 8px' }}>Core Utilities Demo</h2>
       <p style={{ color: 'var(--react-tree-grid-color-text-secondary)', margin: '0 0 16px' }}>
-        Faithful conversions of DHTMLX utility functions.
+        Core utility functions used throughout the library.
       </p>
 
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>

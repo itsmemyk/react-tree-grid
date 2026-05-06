@@ -230,7 +230,7 @@ function renderRow<T extends GridRow>(
 }
 
 /**
- * Render span cells as a separate overlay layer (mirrors dhtmlx `.dhx_span-spans`).
+ * Render span cells as a separate overlay layer.
  *
  * Spans are absolutely positioned on top of normal row cells so they don't
  * disrupt the flex row layout. Covered cells render normally underneath; the

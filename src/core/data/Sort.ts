@@ -1,8 +1,7 @@
 import type { DataItem, SortRule } from './types'
 
 /**
- * Natural comparison — faithful conversion of DHTMLX naturalCompare (suite.js lines 4125-4146).
- * Handles mixed numeric/string sorting (e.g. "item2" < "item10").
+ * Natural comparison that handles mixed numeric/string sorting (e.g. "item2" < "item10").
  */
 export function naturalCompare(a: string, b: string): number {
   if (isNaN(a as unknown as number) || isNaN(b as unknown as number)) {
@@ -26,8 +25,7 @@ export function naturalCompare(a: string, b: string): number {
 }
 
 /**
- * Sort class — faithful conversion of DHTMLX Sort (suite.js lines 27290-27343).
- * Supports multi-column sorting with custom value accessors.
+ * Sort class supporting multi-column sorting with custom value accessors.
  */
 export class Sort {
   /** Sort an array using one or more sort rules */

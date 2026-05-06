@@ -1,7 +1,7 @@
 import { uid } from '../utils/common'
 
 /**
- * Dynamic CSS class manager — faithful conversion of DHTMLX CssManager (suite.js lines 24535-24619).
+ * Dynamic CSS class manager.
  *
  * Manages a <style> tag in document.head where generated CSS classes are injected.
  * Classes are identified by auto-generated or custom IDs, and de-duplicated by CSS content.

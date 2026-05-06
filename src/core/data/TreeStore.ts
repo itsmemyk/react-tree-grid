@@ -33,7 +33,7 @@ function addToOrder<T extends TreeDataItem>(
 }
 
 /**
- * TreeStore — faithful conversion of DHTMLX TreeCollection (suite.js lines 9328-10052).
+ * TreeStore — extends DataStore with hierarchical tree data.
  *
  * Extends DataStore with hierarchical data:
  * - Parent/child relationships via _childs map

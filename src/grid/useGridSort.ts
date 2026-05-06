@@ -11,7 +11,6 @@ interface GridSortEvents {
 
 /**
  * Manages sort state and header click-to-sort for the Grid.
- * Faithful conversion of DHTMLX suite.js Grid._initSort and _sortingStates.
  *
  * Behavior:
  * - Click header → cycle: asc → desc → asc

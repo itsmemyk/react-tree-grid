@@ -1,6 +1,5 @@
 /**
- * Date formatting utilities — faithful conversion of DHTMLX suite.js date_1 module
- * (lines 2933–3400 in suite.js v9.2.0).
+ * Date formatting utilities.
  *
  * Format tokens:
  *   %d  day with leading zero (01..31)
@@ -163,7 +162,7 @@ export const DateHelper = {
   fromYearAndMonth: (year: number, month: number): Date => new Date(year, month, 1),
 
   /** Move d back to the start of the week for the given firstWeekday offset.
-   *  firstWeekday: 0=Sun, 1=Mon, -1=Sat (DHTMLX convention). */
+   *  firstWeekday: 0=Sun, 1=Mon, -1=Sat. */
   weekStart: (d: Date, firstWeekday: number): Date => {
     const result = new Date(d.getTime())
     const day = d.getDay()
@@ -218,7 +217,7 @@ export const DateHelper = {
 
   isWeekEnd: (d: Date): boolean => d.getDay() === 0 || d.getDay() === 6,
 
-  /** Returns 12 years centred on the decade containing d (DHTMLX getTwelweYears). */
+  /** Returns 12 years centred on the decade containing d. */
   getTwelveYears: (d: Date): number[] => {
     const year = d.getFullYear()
     const start = year - (year % 12)

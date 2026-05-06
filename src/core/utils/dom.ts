@@ -1,6 +1,5 @@
 /**
- * DOM utility functions — faithful conversion of DHTMLX suite.js modules 10, 11.
- * Attribute names use "data-rgs-id" instead of "data-dhx-id".
+ * DOM utility functions for element lookup and bounding box measurement.
  */
 
 const RGS_ID_ATTR = 'data-rgs-id'

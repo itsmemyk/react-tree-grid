@@ -1,5 +1,5 @@
 /**
- * KeyManager — faithful conversion of DHTMLX KeyManager (suite.js lines 2813-2891).
+ * KeyManager — manages keyboard hotkeys with modifier support.
  *
  * Manages keyboard hotkeys with modifier support (Ctrl/Cmd, Shift, Alt).
  * Key combos are encoded as: modifierBits + keyName (e.g. "4a" = Ctrl+A).

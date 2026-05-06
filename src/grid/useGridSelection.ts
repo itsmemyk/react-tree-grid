@@ -19,7 +19,6 @@ interface GridSelectionConfig {
 
 /**
  * Manages row and cell selection for the Grid.
- * Faithful conversion of DHTMLX suite.js Grid Selection (module 230).
  *
  * Modes:
  * - 'row': clicking a cell selects the entire row
