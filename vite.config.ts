@@ -6,7 +6,7 @@ import { resolve } from 'path'
 export default defineConfig({
   plugins: [
     react(),
-    dts({ include: ['src'], rollupTypes: true }),
+    !process.env.STORYBOOK && dts({ include: ['src'], rollupTypes: true }),
   ],
   resolve: {
     alias: {

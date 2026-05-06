@@ -122,7 +122,7 @@
    In CSS, position:absolute inside a scroll container stays in the VIEWPORT,
    not the content — so they don't scroll. Internal content is offset by
    -scrollTop/-scrollLeft to show the matching portion.
-   (DHTMLX: dhx_grid-fixed-cols-wrap, dhx_grid-fixed-data-rows-wrap) */
+   Frozen pane elements are positioned absolutely and offset by scroll position. */
 
 .fixedColumns {
   background: var(--react-tree-grid-color-background);
@@ -185,7 +185,7 @@
   white-space: nowrap;
 }
 
-/* Auto-height rows: cells wrap text instead of clipping (DHTMLX .dhx_grid-cell__content_auto-height). */
+/* Auto-height rows: cells wrap text instead of clipping. */
 .gridAutoHeight .cell {
   overflow: visible;
   text-overflow: clip;
@@ -205,7 +205,7 @@
 
 /* Span overlay cell — absolutely positioned over normal cells.
    Must have opaque background so covered cells don't show through.
-   (DHTMLX: .dhx_span-cell) */
+   Must have opaque background so covered cells don't show through. */
 .spanCell {
   background: var(--react-tree-grid-color-background, #fff);
   border-bottom: 1px solid var(--react-tree-grid-color-border);
@@ -328,7 +328,7 @@
   outline-offset: -2px;
 }
 
-/* ─── Tooltip (mirrors dhx_tooltip) ───────────────────────────────── */
+/* ─── Tooltip ──────────────────────────────────────────────────────── */
 
 .tooltip {
   background: var(--react-tree-grid-color-text, #333);

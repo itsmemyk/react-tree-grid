@@ -217,7 +217,7 @@ export const ImperativeApi: Story = {
     const ref = useRef<TreeGridRef>(null)
     const data = useMemo(() => cloneData().map((row) => ({ ...row, $opened: false })), [])
     return (
-      <StoryFrame note="Imperative ref mirrors DHTMLX TreeGrid API: open(id), close(id), openAll(), closeAll().">
+      <StoryFrame note="Imperative ref API: open(id), close(id), openAll(), closeAll().">
         <TreeGrid
           ref={ref}
           columns={baseColumns}
@@ -328,7 +328,7 @@ export const BookLibraryExample: Story = {
   },
 }
 
-// ─── DHTMLX snippet recreation (https://snippet.dhtmlx.com/0gd4dn8p) ───────
+// ─── Showcase ────────────────────────────────────────────────────────────────
 
 type ShowcaseRow = TreeGridRow & {
   owner?: string
@@ -572,7 +572,7 @@ function DHtmlxShowcaseGrid({ dragDrop }: { dragDrop: boolean }) {
   )
 
   return (
-    <StoryFrame note="Faithful recreation of the DHTMLX TreeGrid snippet: users as root rows, their assigned projects as children. Drag to reorder, multiselect, inline edit, header filters, footer sums, avatar access column, status badges, signed balance.">
+    <StoryFrame note="Users as root rows, their assigned projects as children. Drag to reorder, multiselect, inline edit, header filters, footer sums, avatar access column, status badges, signed balance.">
       <TreeGrid
         columns={columns as typeof showcaseColumns}
         data={data}
@@ -607,7 +607,7 @@ export const DHtmlxShowcase: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Recreation of the DHTMLX TreeGrid showcase (snippet.dhtmlx.com/0gd4dn8p). Users as root rows; projects where each user has access are child rows. Features header filters, footer aggregation sums, custom templates for access avatars, colored status badges, signed balance, drag-row reorder, and multi-row selection.',
+        story: 'Users as root rows; projects where each user has access are child rows. Features header filters, footer aggregation sums, custom templates for access avatars, colored status badges, signed balance, drag-row reorder, and multi-row selection.',
       },
     },
   },
