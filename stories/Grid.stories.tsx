@@ -114,7 +114,7 @@ export const VirtualScroll: Story = {
 
 function FrozenSplitsDemo() {
   const wideColumns: GridColumn<Employee>[] = [
-    { id: 'id', header: [{ text: '# (frozen)' }], width: 80 },
+    { id: 'id', header: [{ text: '# (frozen)' }], width: 100 },
     { id: 'name', header: [{ text: 'Name (frozen)' }], width: 200 },
     { id: 'role', header: [{ text: 'Role' }], width: 220 },
     { id: 'team', header: [{ text: 'Team' }], width: 220 },
