@@ -47,6 +47,7 @@ declare interface ColumnResizeEvents {
     onBeforeResizeStart?: (colId: string) => boolean | void;
     onResize?: (colId: string, width: number) => void;
     onAfterResizeEnd?: (colId: string, width: number) => void;
+    shouldCommitLiveResize?: (colId: string) => boolean;
 }
 
 /**
@@ -948,7 +949,7 @@ export declare function useGridSelection<T extends GridRow>(data: T[], config: G
  * Faithful conversion of DHTMLX suite.js Grid._initSort and _sortingStates.
  *
  * Behavior:
- * - Click header → cycle: asc → desc → none
+ * - Click header → cycle: asc → desc → asc
  * - Ctrl+click → add/modify secondary sort column (multi-sort)
  * - Fires events, then calls store.sort() with sort rules
  */
