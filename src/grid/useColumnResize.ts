@@ -8,6 +8,7 @@ interface ColumnResizeEvents {
   onBeforeResizeStart?: (colId: string) => boolean | void
   onResize?: (colId: string, width: number) => void
   onAfterResizeEnd?: (colId: string, width: number) => void
+  shouldCommitLiveResize?: (colId: string) => boolean
 }
 
 /**
@@ -92,8 +93,19 @@ export function useColumnResize<T extends GridRow>(
         headerCells.forEach((el) => {
           ;(el as HTMLElement).style.width = `${newWidth}px`
         })
+        const columnContainers = document.querySelectorAll(
+          `[data-rgs-col-container-id="${colId}"]`,
+        )
+        columnContainers.forEach((el) => {
+          ;(el as HTMLElement).style.width = `${newWidth}px`
+        })
 
         events.onResize?.(colId, newWidth)
+        if (events.shouldCommitLiveResize?.(colId)) {
+          setWidthOverrides((prev) => (
+            prev[colId] === newWidth ? prev : { ...prev, [colId]: newWidth }
+          ))
+        }
       }
 
       const onUp = () => {

@@ -118,6 +118,52 @@ describe('Grid', () => {
     expect(onScroll).toHaveBeenCalledWith({ x: 120, y: 80 })
   })
 
+  it('syncs frozen top center rows horizontally during scroll', () => {
+    const { container } = render(
+      <ThemeProvider>
+        <Grid
+          columns={[
+            { id: 'id', header: [{ text: 'ID' }], width: 80 },
+            { id: 'name', header: [{ text: 'Name' }], width: 140 },
+            { id: 'role', header: [{ text: 'Role' }], width: 140 },
+            { id: 'team', header: [{ text: 'Team' }], width: 140 },
+          ]}
+          data={[
+            { id: '1', name: 'Top', role: 'Lead', team: 'A' },
+            { id: '2', name: 'Middle', role: 'Dev', team: 'B' },
+          ]}
+          leftSplit={1}
+          rightSplit={1}
+          topSplit={1}
+          style={{ width: 260, height: 180 }}
+        />
+      </ThemeProvider>,
+    )
+
+    const body = screen.getByTestId('grid-body')
+    Object.defineProperty(body, 'scrollLeft', {
+      configurable: true,
+      writable: true,
+      value: 120,
+    })
+    Object.defineProperty(body, 'scrollTop', {
+      configurable: true,
+      writable: true,
+      value: 0,
+    })
+
+    fireEvent.scroll(body)
+
+    const fixedTopRows = container.querySelector('[class*="fixedRowsTop"]') as HTMLElement
+    const topCenterStrip = Array.from(fixedTopRows.querySelectorAll('div')).find((node) => (
+      node instanceof HTMLElement && node.style.willChange === 'transform'
+    )) as HTMLElement
+
+    expect(topCenterStrip.style.transform).toBe('translateX(-120px)')
+    expect(topCenterStrip.style.willChange).toBe('transform')
+    expect(container.querySelector('[class*="headerScroller"]')).toBeTruthy()
+  })
+
   it('keeps fixed columns and rows rendered when splits are enabled', () => {
     render(
       <ThemeProvider>
@@ -177,10 +223,13 @@ describe('Grid', () => {
     const headerScroller = container.querySelector('[class*="headerScroller"]') as HTMLDivElement
     const fixedRightHeader = container.querySelector('[class*="fixedHeaderRight"]') as HTMLDivElement
     const fixedRightBody = container.querySelector('[class*="fixedColumnsRight"]') as HTMLDivElement
+    const teamHeader = screen.getAllByText('Team')[0].closest('[data-rgs-col-id="team"]') as HTMLDivElement
 
     expect(headerScroller.style.marginRight).toBe('155px')
     expect(fixedRightHeader.style.left).toBe('105px')
+    expect(fixedRightHeader.style.right).toBe('auto')
     expect(fixedRightBody.style.left).toBe('105px')
+    expect(teamHeader.style.borderLeft).toContain('var(--react-tree-grid-color-border)')
   })
 
   it('renders frozen body panes outside the scroll container like DHTMLX suite', () => {
@@ -247,6 +296,88 @@ describe('Grid', () => {
       .filter(Boolean)
 
     expect(headerTexts).toEqual(['ID', 'Role', 'Name'])
+  })
+
+  it('updates header width live while resizing a column', () => {
+    const { container } = render(
+      <ThemeProvider>
+        <Grid
+          columns={[
+            { id: 'id', header: [{ text: 'ID' }], width: 80 },
+            { id: 'name', header: [{ text: 'Name' }], width: 140, resizable: true },
+            { id: 'role', header: [{ text: 'Role' }], width: 140 },
+          ]}
+          data={[
+            { id: '1', name: 'Alice', role: 'Lead' },
+            { id: '2', name: 'Bob', role: 'Dev' },
+          ]}
+          style={{ width: 360, height: 180 }}
+        />
+      </ThemeProvider>,
+    )
+
+    const headerCell = screen.getByText('Name').closest('[data-rgs-col-id="name"]') as HTMLElement
+    const headerColumn = container.querySelector('[data-rgs-col-container-id="name"]') as HTMLElement
+    const bodyCell = screen.getByText('Alice').closest('[data-rgs-col-id="name"]') as HTMLElement
+
+    Object.defineProperty(headerCell, 'setPointerCapture', {
+      configurable: true,
+      value: vi.fn(),
+    })
+    vi.spyOn(headerCell, 'getBoundingClientRect').mockReturnValue({
+      top: 0, bottom: 40, left: 80, right: 220, width: 140, height: 40, x: 80, y: 0, toJSON: () => '',
+    })
+
+    fireEvent.pointerDown(headerCell, { pointerId: 1, clientX: 218, clientY: 10 })
+    fireEvent.pointerMove(headerCell, { pointerId: 1, clientX: 258, clientY: 10 })
+
+    expect(headerCell.style.width).toBe('180px')
+    expect(headerColumn.style.width).toBe('180px')
+    expect(bodyCell.style.width).toBe('180px')
+
+    fireEvent.pointerUp(headerCell, { pointerId: 1, clientX: 258, clientY: 10 })
+  })
+
+  it('updates frozen pane geometry live while resizing a frozen column', () => {
+    const { container } = render(
+      <ThemeProvider>
+        <Grid
+          columns={[
+            { id: 'id', header: [{ text: 'ID' }], width: 80, resizable: true },
+            { id: 'name', header: [{ text: 'Name' }], width: 140, resizable: true },
+            { id: 'role', header: [{ text: 'Role' }], width: 140 },
+          ]}
+          data={[
+            { id: '1', name: 'Alice', role: 'Lead' },
+            { id: '2', name: 'Bob', role: 'Dev' },
+          ]}
+          leftSplit={1}
+          style={{ width: 280, height: 180 }}
+        />
+      </ThemeProvider>,
+    )
+
+    const headerCell = screen.getAllByText('ID')[0].closest('[data-rgs-col-id="id"]') as HTMLElement
+    const fixedLeftHeader = container.querySelector('[class*="fixedHeaderLeft"]') as HTMLDivElement
+    const fixedLeftBody = container.querySelector('[class*="fixedColumnsLeft"]') as HTMLDivElement
+    const headerScroller = container.querySelector('[class*="headerScroller"]') as HTMLDivElement
+
+    Object.defineProperty(headerCell, 'setPointerCapture', {
+      configurable: true,
+      value: vi.fn(),
+    })
+    vi.spyOn(headerCell, 'getBoundingClientRect').mockReturnValue({
+      top: 0, bottom: 40, left: 0, right: 80, width: 80, height: 40, x: 0, y: 0, toJSON: () => '',
+    })
+
+    fireEvent.pointerDown(headerCell, { pointerId: 1, clientX: 78, clientY: 10 })
+    fireEvent.pointerMove(headerCell, { pointerId: 1, clientX: 118, clientY: 10 })
+
+    expect(fixedLeftHeader.style.width).toBe('120px')
+    expect(fixedLeftBody.style.width).toBe('120px')
+    expect(headerScroller.style.marginLeft).toBe('120px')
+
+    fireEvent.pointerUp(headerCell, { pointerId: 1, clientX: 118, clientY: 10 })
   })
 
   it('emits DHTMLX-style column drag payloads', () => {

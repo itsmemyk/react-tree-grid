@@ -177,6 +177,7 @@
   border-right: 1px solid var(--react-tree-grid-color-border);
   box-sizing: border-box;
   display: flex;
+  flex-shrink: 0;
   min-width: 0;
   overflow: hidden;
   padding: 0 var(--react-tree-grid-spacing-sm);

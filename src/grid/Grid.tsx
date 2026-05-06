@@ -149,6 +149,8 @@ function renderRow<T extends GridRow>(
   columns: NormalizedColumn<T>[],
   stylesMap: typeof styles,
   interaction?: RowInteraction,
+  omitTrailingBorder = false,
+  addLeadingBorder = false,
 ) {
   const rowSelected = interaction?.isRowSelected?.(row.id)
 
@@ -197,6 +199,8 @@ function renderRow<T extends GridRow>(
             style={{
               width: cellWidth,
               height: cellHeight,
+              borderLeft: addLeadingBorder && colIndex === 0 ? '1px solid var(--react-tree-grid-color-border)' : undefined,
+              borderRight: omitTrailingBorder && colIndex === columns.length - 1 ? 'none' : undefined,
             }}
             data-rgs-col-id={column.id}
             onClick={(e) => interaction?.onCellClick?.(row.id, column.id, e)}
@@ -245,6 +249,7 @@ function renderSpansOverlay<T extends GridRow>(
   },
   interaction?: RowInteraction,
   defaultRowHeight = 40,
+  omitTrailingBorder = false,
 ): React.ReactNode[] {
   const cells: React.ReactNode[] = []
   let top = 0
@@ -281,6 +286,7 @@ function renderSpansOverlay<T extends GridRow>(
               left,
               width: spanInfo.width,
               height: spanInfo.height,
+              borderRight: omitTrailingBorder && c === columns.length - 1 ? 'none' : undefined,
             }}
             data-rgs-id={row.id}
             data-rgs-col-id={column.id}
@@ -388,6 +394,45 @@ function GridInner<T extends GridRow>({
   const headerScrollRef = useRef<HTMLDivElement | null>(null)
   const footerScrollRef = useRef<HTMLDivElement | null>(null)
   const bodyRef = useRef<HTMLDivElement | null>(null)
+  const fixedLeftHeaderRef = useRef<HTMLDivElement | null>(null)
+  const fixedLeftColumnsRef = useRef<HTMLDivElement | null>(null)
+  const fixedTopCenterRef = useRef<HTMLDivElement | null>(null)
+  const fixedBottomCenterRef = useRef<HTMLDivElement | null>(null)
+  const scrollSyncRef = useRef({ left: 0, top: 0 })
+
+  // Tracking refs for frozen-column resize DOM updates (avoids stale closures)
+  const resizeTrack = useRef({
+    effectiveLeftSplit: 0,
+    rightSplit,
+    columnIds: [] as string[],
+    onResize: onResize as GridProps<T>['onResize'],
+    onAfterResizeEnd: onAfterResizeEnd as GridProps<T>['onAfterResizeEnd'],
+  })
+  resizeTrack.current.rightSplit = rightSplit
+  resizeTrack.current.onResize = onResize
+  resizeTrack.current.onAfterResizeEnd = onAfterResizeEnd
+
+  // During drag of a frozen column: allow cells to extend beyond the container
+  // so they render unclipped. The frozen overlay has higher z-index than center
+  // rows so it paints over them correctly. React restores the correct layout on
+  // pointer-up when widthOverrides updates and triggers a re-render.
+  const internalOnResize = useCallback((colId: string, newWidth: number) => {
+    const { effectiveLeftSplit: split, columnIds, onResize: cb } = resizeTrack.current
+    if (columnIds.indexOf(colId) < split) {
+      if (fixedLeftHeaderRef.current) fixedLeftHeaderRef.current.style.overflow = 'visible'
+      if (fixedLeftColumnsRef.current) fixedLeftColumnsRef.current.style.overflow = 'visible'
+    }
+    cb?.(colId, newWidth)
+  }, [])
+
+  const internalOnAfterResizeEnd = useCallback((colId: string, finalWidth: number) => {
+    // Restore overflow — body container is reset by React's inline style on re-render;
+    // header container only has overflow in the CSS class so we must reset it explicitly.
+    if (fixedLeftHeaderRef.current) fixedLeftHeaderRef.current.style.overflow = ''
+    if (fixedLeftColumnsRef.current) fixedLeftColumnsRef.current.style.overflow = ''
+    resizeTrack.current.onAfterResizeEnd?.(colId, finalWidth)
+  }, [])
+
   const [runtimeColumns, setRuntimeColumns] = useState(columns)
 
   useEffect(() => {
@@ -414,8 +459,13 @@ function GridInner<T extends GridRow>({
   // ─── Column Resize ────────────────────────────────────────────────
   const columnResize = useColumnResize(columnReorder.orderedColumns, {
     onBeforeResizeStart,
-    onResize,
-    onAfterResizeEnd,
+    onResize: internalOnResize,
+    onAfterResizeEnd: internalOnAfterResizeEnd,
+    shouldCommitLiveResize: (colId) => {
+      const { effectiveLeftSplit: split, rightSplit: currentRightSplit, columnIds } = resizeTrack.current
+      const index = columnIds.indexOf(colId)
+      return index >= 0 && (index < split || index >= columnIds.length - currentRightSplit)
+    },
   })
 
   // ─── DataProxy ────────────────────────────────────────────────────
@@ -704,6 +754,10 @@ function GridInner<T extends GridRow>({
   )
   const fixedLeftWidth = sumWidths(fixedLeftColumns)
   const fixedRightWidth = sumWidths(fixedRightColumns)
+
+  // Keep resizeTrack in sync so internalOnResize can identify frozen columns
+  resizeTrack.current.effectiveLeftSplit = effectiveLeftSplit
+  resizeTrack.current.columnIds = normalizedColumns.map(c => c.id)
   const fixedTopHeight = sumRowHeights(topRows, rowHeight)
   const fixedBottomHeight = sumRowHeights(bottomRows, rowHeight)
   const baseBodyHeight = Math.max(
@@ -746,18 +800,26 @@ function GridInner<T extends GridRow>({
   })
   const visibleColumns = normalizedColumns.slice(virtual.xStart, virtual.xEnd + 1)
   const visibleRows = normalizedData.slice(virtual.yStart, virtual.yEnd + 1)
+  const syncedScrollLeft = bodyRef.current?.scrollLeft ?? scrollSyncRef.current.left ?? virtual.scrollLeft
 
   const handleScroll = (event: UIEvent<HTMLDivElement>) => {
     const next = {
       x: event.currentTarget.scrollLeft,
       y: event.currentTarget.scrollTop,
     }
+    scrollSyncRef.current = { left: next.x, top: next.y }
     // Sync header/footer scrollLeft directly in the same frame — no React re-render lag
     if (headerScrollRef.current) {
       headerScrollRef.current.scrollLeft = next.x
     }
     if (footerScrollRef.current) {
       footerScrollRef.current.scrollLeft = next.x
+    }
+    if (fixedTopCenterRef.current) {
+      fixedTopCenterRef.current.style.transform = `translateX(${-next.x}px)`
+    }
+    if (fixedBottomCenterRef.current) {
+      fixedBottomCenterRef.current.style.transform = `translateX(${-next.x}px)`
     }
     virtual.onScroll(next.x, next.y)
     onScroll?.(next)
@@ -874,9 +936,18 @@ function GridInner<T extends GridRow>({
     return cell.text ?? ''
   }
 
-  const renderFooterColumns = (cols: NormalizedColumn<T>[]) =>
+  const renderFooterColumns = (
+    cols: NormalizedColumn<T>[],
+    omitTrailingBorder = false,
+    addLeadingBorder = false,
+  ) =>
     cols.map((column) => (
-      <div key={column.id} className={styles.headerColumn} style={{ width: column.$width }}>
+      <div
+        key={column.id}
+        className={styles.headerColumn}
+        style={{ width: column.$width }}
+        data-rgs-col-container-id={column.id}
+      >
         {Array.from({ length: footerRowCount }, (_, rowIdx) => {
           const cell = column.footer?.[rowIdx]
           return (
@@ -886,6 +957,8 @@ function GridInner<T extends GridRow>({
               style={{
                 width: column.$width,
                 height: adjustResult.footerRowHeights[rowIdx] ?? footerRowHeight,
+                borderLeft: addLeadingBorder && column.id === cols[0]?.id ? '1px solid var(--react-tree-grid-color-border)' : undefined,
+                borderRight: omitTrailingBorder && column.id === cols[cols.length - 1]?.id ? 'none' : undefined,
               }}
               data-rgs-col-id={column.id}
             >
@@ -896,9 +969,18 @@ function GridInner<T extends GridRow>({
       </div>
     ))
 
-  const renderHeaderColumns = (cols: NormalizedColumn<T>[]) =>
+  const renderHeaderColumns = (
+    cols: NormalizedColumn<T>[],
+    omitTrailingBorder = false,
+    addLeadingBorder = false,
+  ) =>
     cols.map((column) => (
-      <div key={column.id} className={styles.headerColumn} style={{ width: column.$width }}>
+      <div
+        key={column.id}
+        className={styles.headerColumn}
+        style={{ width: column.$width }}
+        data-rgs-col-container-id={column.id}
+      >
         {Array.from({ length: headerRowCount }, (_, rowIdx) => {
           const cell = column.header[rowIdx]
           const sortOrder = rowIdx === 0 ? gridSort.getSortOrder(column.id) : undefined
@@ -914,6 +996,8 @@ function GridInner<T extends GridRow>({
               style={{
                 width: column.$width,
                 height: adjustResult.headerRowHeights[rowIdx] ?? headerRowHeight,
+                borderLeft: addLeadingBorder && column.id === cols[0]?.id ? '1px solid var(--react-tree-grid-color-border)' : undefined,
+                borderRight: omitTrailingBorder && column.id === cols[cols.length - 1]?.id ? 'none' : undefined,
               }}
               data-rgs-col-id={column.id}
               onClick={
@@ -1141,12 +1225,13 @@ function GridInner<T extends GridRow>({
               width: totalWidth - fixedLeftWidth - fixedRightWidth,
             }}
           >
-            {renderHeaderColumns(centerColumns)}
+            {renderHeaderColumns(centerColumns, fixedRightColumns.length > 0)}
           </div>
         </div>
 
         {fixedLeftColumns.length ? (
           <div
+            ref={fixedLeftHeaderRef}
             className={[styles.fixedHeader, styles.fixedHeaderLeft].join(' ')}
             style={{ width: fixedLeftWidth }}
           >
@@ -1168,9 +1253,13 @@ function GridInner<T extends GridRow>({
         {fixedRightColumns.length ? (
           <div
             className={[styles.fixedHeader, styles.fixedHeaderRight].join(' ')}
-            style={{ width: fixedRightWidth, left: rightFixedLeft }}
+            style={{
+              width: fixedRightWidth,
+              left: rightFixedLeft,
+              right: 'auto',
+            }}
           >
-            {renderHeaderColumns(fixedRightColumns)}
+            {renderHeaderColumns(fixedRightColumns, false, true)}
           </div>
         ) : null}
       </div>
@@ -1195,9 +1284,9 @@ function GridInner<T extends GridRow>({
                 transform: `translate(${virtual.offsetX}px, ${virtual.offsetY + fixedTopHeight}px)`,
               }}
             >
-              {visibleRows.map((row) => renderRow(row, visibleColumns, styles, rowInteraction))}
+                {visibleRows.map((row) => renderRow(row, visibleColumns, styles, rowInteraction, fixedRightColumns.length > 0))}
               {/* Span overlay — absolutely-positioned cells over the rows */}
-              {renderSpansOverlay(visibleRows, visibleColumns, styles, gridSpans, rowInteraction, rowHeight)}
+              {renderSpansOverlay(visibleRows, visibleColumns, styles, gridSpans, rowInteraction, rowHeight, fixedRightColumns.length > 0)}
             </div>
           </div>
         </div>
@@ -1222,13 +1311,15 @@ function GridInner<T extends GridRow>({
               }}
             >
               <div
+                ref={fixedTopCenterRef}
                 style={{
                   position: 'absolute',
-                  left: -virtual.scrollLeft,
+                  transform: `translateX(${-syncedScrollLeft}px)`,
                   width: totalWidth - fixedLeftWidth - fixedRightWidth,
+                  willChange: 'transform',
                 }}
               >
-                {topRows.map((row) => renderRow(row, centerColumns, styles, rowInteraction))}
+                {topRows.map((row) => renderRow(row, centerColumns, styles, rowInteraction, fixedRightColumns.length > 0))}
               </div>
             </div>
 
@@ -1260,7 +1351,7 @@ function GridInner<T extends GridRow>({
                   zIndex: 1,
                 }}
               >
-                {topRows.map((row) => renderRow(row, fixedRightColumns, styles, rowInteraction))}
+                {topRows.map((row) => renderRow(row, fixedRightColumns, styles, rowInteraction, false, true))}
               </div>
             ) : null}
           </div>
@@ -1287,13 +1378,15 @@ function GridInner<T extends GridRow>({
               }}
             >
               <div
+                ref={fixedBottomCenterRef}
                 style={{
                   position: 'absolute',
-                  left: -virtual.scrollLeft,
+                  transform: `translateX(${-syncedScrollLeft}px)`,
                   width: totalWidth - fixedLeftWidth - fixedRightWidth,
+                  willChange: 'transform',
                 }}
               >
-                {bottomRows.map((row) => renderRow(row, centerColumns, styles, rowInteraction))}
+                {bottomRows.map((row) => renderRow(row, centerColumns, styles, rowInteraction, fixedRightColumns.length > 0))}
               </div>
             </div>
 
@@ -1325,7 +1418,7 @@ function GridInner<T extends GridRow>({
                   zIndex: 1,
                 }}
               >
-                {bottomRows.map((row) => renderRow(row, fixedRightColumns, styles, rowInteraction))}
+                {bottomRows.map((row) => renderRow(row, fixedRightColumns, styles, rowInteraction, false, true))}
               </div>
             ) : null}
           </div>
@@ -1333,6 +1426,7 @@ function GridInner<T extends GridRow>({
 
         {fixedLeftColumns.length ? (
           <div
+            ref={fixedLeftColumnsRef}
             className={[styles.fixedColumns, styles.fixedColumnsLeft].join(' ')}
             style={{
               top: fixedTopHeight,
@@ -1388,7 +1482,7 @@ function GridInner<T extends GridRow>({
                   width: fixedRightWidth,
                 }}
               >
-                {visibleRows.map((row) => renderRow(row, fixedRightColumns, styles, rowInteraction))}
+                {visibleRows.map((row) => renderRow(row, fixedRightColumns, styles, rowInteraction, false, true))}
               </div>
             </div>
           </div>
@@ -1412,7 +1506,7 @@ function GridInner<T extends GridRow>({
                 width: totalWidth - fixedLeftWidth - fixedRightWidth,
               }}
             >
-              {renderFooterColumns(centerColumns)}
+              {renderFooterColumns(centerColumns, fixedRightColumns.length > 0)}
             </div>
           </div>
 
@@ -1428,9 +1522,13 @@ function GridInner<T extends GridRow>({
           {fixedRightColumns.length ? (
             <div
               className={[styles.fixedHeader, styles.fixedHeaderRight].join(' ')}
-              style={{ width: fixedRightWidth, left: rightFixedLeft }}
+              style={{
+                width: fixedRightWidth,
+                left: rightFixedLeft,
+                right: 'auto',
+              }}
             >
-              {renderFooterColumns(fixedRightColumns)}
+              {renderFooterColumns(fixedRightColumns, false, true)}
             </div>
           ) : null}
         </div>
