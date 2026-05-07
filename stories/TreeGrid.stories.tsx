@@ -345,7 +345,7 @@ type ShowcaseRow = TreeGridRow & {
   project_id?: string
 }
 
-const srcPhoto = 'https://snippet.dhtmlx.com/codebase/data/common/img/02/'
+const srcPhoto = './img/avatars/'
 
 const showcaseUsers: Array<{ id: string; name: string; ava?: string; color?: string }> = [
   { id: '1', name: 'Gary Ortiz', ava: 'avatar_01.jpg' },
