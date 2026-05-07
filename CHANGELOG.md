@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.4.0] - 2026-05-07
+
+### Added
+
+- Added multi-column sorting — hold Shift and click column headers to sort by multiple columns simultaneously.
+
+### Fixed
+
+- Fixed grid columns and scrollbar not responding to container resize (e.g., window resize or parent layout changes).
+- Fixed sorting being triggered when releasing the mouse after a column resize.
+
 ## [0.3.0] - 2026-05-06
 
 ### Fixed
