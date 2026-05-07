@@ -703,24 +703,34 @@ function GridInner<T extends GridRow>({
 
   useLayoutEffect(() => {
     const node = rootRef.current
-    if (!node) {
-      return
+    if (!node) return
+
+    const update = (raw: { width: number; height: number }) => {
+      const w = typeof style?.width === 'number' ? style.width : Math.round(raw.width)
+      const h = typeof style?.height === 'number' ? style.height : Math.round(raw.height)
+      if (w && h) {
+        setViewportSize((prev) =>
+          prev.width === w && prev.height === h ? prev : { width: w, height: h },
+        )
+      }
     }
 
-    const rect = node.getBoundingClientRect()
-    const width =
-      typeof style?.width === 'number' ? style.width : Math.round(rect.width)
-    const height =
-      typeof style?.height === 'number' ? style.height : Math.round(rect.height)
+    const observer = new ResizeObserver((entries) => {
+      const entry = entries[0]
+      if (!entry) return
+      if (entry.borderBoxSize?.length) {
+        const box = entry.borderBoxSize[0]
+        update({ width: box.inlineSize, height: box.blockSize })
+      } else {
+        update(entry.target.getBoundingClientRect())
+      }
+    })
 
-    if (
-      width &&
-      height &&
-      (viewportSize.width !== width || viewportSize.height !== height)
-    ) {
-      setViewportSize({ width, height })
-    }
-  }, [style?.height, style?.width, viewportSize.height, viewportSize.width])
+    observer.observe(node)
+    update(node.getBoundingClientRect())
+
+    return () => observer.disconnect()
+  }, [style?.width, style?.height])
 
   const freezeHook = useFreeze({
     containerRef: bodyRef as React.RefObject<HTMLDivElement | null>,
