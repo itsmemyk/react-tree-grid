@@ -93,7 +93,7 @@ declare interface DataProxyConfig {
 }
 
 /**
- * DataStore — faithful conversion of DHTMLX DataCollection (suite.js lines 8258-9040).
+ * DataStore — core data management class.
  *
  * Core data management class with:
  * - O(1) id lookup via _pull
@@ -174,7 +174,7 @@ declare class DataStore<T extends DataItem = DataItem> {
     /**
      * Sort by a rule. Supports multi-column and smart sorting (click cycling).
      */
-    sort(rule: SortRule | null, config?: SortConfig, ignore?: boolean): void;
+    sort(rule: SortInput, config?: SortConfig, ignore?: boolean): void;
     /** Get current sorting states */
     getSortingStates(): SortRule[];
     /** Parse data array into the store */
@@ -253,14 +253,14 @@ declare interface EditingCell {
 /** Event handler callback */
 declare type EventCallback = (...args: unknown[]) => unknown;
 
-/** Event handler entry (matches DHTMLX internal structure) */
+/** Event handler entry */
 declare interface EventHandler {
     callback: EventCallback;
     context: unknown;
 }
 
 /**
- * Event system — faithful conversion of DHTMLX EventSystem (suite.js lines 616-656).
+ * Event system for named event subscription and dispatch.
  *
  * Supports:
  * - Named event subscription with optional context
@@ -648,7 +648,7 @@ declare interface SelectFilterProps<T extends GridRow> {
 declare type SelectionMode_2 = 'row' | 'cell' | 'complex';
 
 /**
- * Imperative theme setter — faithful conversion of DHTMLX setTheme (suite.js lines 173-183).
+ * Imperative theme setter.
  * Sets data-react-tree-grid-theme attribute on a container (defaults to document.documentElement).
  * If no container is given, clears all existing data-react-tree-grid-theme attributes first.
  */
@@ -662,6 +662,9 @@ declare interface SortConfig {
 
 /** Sort direction */
 declare type SortDir = 'asc' | 'desc';
+
+/** Sort input accepted by stores */
+declare type SortInput = SortRule | SortRule[] | null;
 
 export declare type SortOrder = 'asc' | 'desc';
 
@@ -844,7 +847,6 @@ export declare function useColumnReorder<T extends GridRow>(columns: GridColumn<
 
 /**
  * Manages interactive column resize for the Grid.
- * Faithful conversion of DHTMLX suite.js Resizer module.
  *
  * Detects pointer near column right edge in header, starts resize on drag.
  * Updates column widths in real time via direct DOM manipulation,
@@ -855,6 +857,7 @@ export declare function useColumnResize<T extends GridRow>(_columns: GridColumn<
     getWidth: (col: GridColumn<T>) => number;
     handleHeaderPointerDown: (e: React.PointerEvent, colId: string, currentWidth: number, col: GridColumn<T>) => boolean;
     handleHeaderPointerMove: (e: React.PointerEvent, col: GridColumn<T>) => string | undefined;
+    shouldPreventHeaderClick: () => boolean;
 };
 
 export declare function useFreeze({ containerRef, columnCount, initialFreezeCol, onFreeze, }: UseFreezeOptions): UseFreezeReturn;
@@ -884,7 +887,6 @@ export declare function useGridCss<T extends GridRow>(rows: T[], columns: GridCo
 
 /**
  * Manages inline cell editing for the Grid.
- * Faithful conversion of DHTMLX suite.js Grid editing (editCell/editEnd).
  *
  * Behavior:
  * - Double-click cell (or single-click checkbox) → open editor
@@ -924,7 +926,6 @@ export declare function useGridFooter<T extends GridRow>(store: DataStore<T> | u
 
 /**
  * Manages row and cell selection for the Grid.
- * Faithful conversion of DHTMLX suite.js Grid Selection (module 230).
  *
  * Modes:
  * - 'row': clicking a cell selects the entire row
@@ -946,7 +947,6 @@ export declare function useGridSelection<T extends GridRow>(data: T[], config: G
 
 /**
  * Manages sort state and header click-to-sort for the Grid.
- * Faithful conversion of DHTMLX suite.js Grid._initSort and _sortingStates.
  *
  * Behavior:
  * - Click header → cycle: asc → desc → asc
