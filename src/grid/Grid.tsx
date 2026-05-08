@@ -735,7 +735,7 @@ function GridInner<T extends GridRow>({
 
   const freezeHook = useFreeze({
     containerRef: bodyRef as React.RefObject<HTMLDivElement | null>,
-    columnCount: normalizedColumns.length,
+    columnWidths: normalizedColumns.map((c) => c.$width),
     initialFreezeCol: leftSplit,
     onFreeze: onFreeze ? (col) => onFreeze({ left: col, top: 0 }) : undefined,
   })

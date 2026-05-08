@@ -2,7 +2,7 @@ import { useState, useCallback, useRef, useEffect } from 'react'
 
 export interface UseFreezeOptions {
   containerRef: React.RefObject<HTMLDivElement | null>
-  columnCount: number
+  columnWidths: number[]
   initialFreezeCol?: number
   onFreeze?: (col: number) => void
 }
@@ -14,26 +14,40 @@ export interface UseFreezeReturn {
   handlePointerDown: (e: React.PointerEvent) => void
 }
 
+function bestFreezeCol(clientX: number, containerLeft: number, columnWidths: number[]): number {
+  const x = clientX - containerLeft
+  let offset = 0
+  let best = 0
+  for (let i = 0; i < columnWidths.length; i++) {
+    if (x > offset + columnWidths[i] / 2) best = i + 1
+    offset += columnWidths[i]
+  }
+  return Math.max(0, Math.min(best, columnWidths.length))
+}
+
 export function useFreeze({
   containerRef,
-  columnCount,
+  columnWidths,
   initialFreezeCol = 0,
   onFreeze,
 }: UseFreezeOptions): UseFreezeReturn {
+  const columnCount = columnWidths.length
   const [freezeCol, setFreezeColState] = useState(() =>
     Math.max(0, Math.min(initialFreezeCol, columnCount)),
   )
   const [isDragging, setIsDragging] = useState(false)
   const onFreezeRef = useRef(onFreeze)
   onFreezeRef.current = onFreeze
+  const columnWidthsRef = useRef(columnWidths)
+  columnWidthsRef.current = columnWidths
 
   const setFreezeCol = useCallback(
     (col: number) => {
-      const clamped = Math.max(0, Math.min(col, columnCount))
+      const clamped = Math.max(0, Math.min(col, columnWidthsRef.current.length))
       setFreezeColState(clamped)
       onFreezeRef.current?.(clamped)
     },
-    [columnCount],
+    [],
   )
 
   const handlePointerDown = useCallback(
@@ -46,16 +60,8 @@ export function useFreeze({
       const pointerId = e.pointerId
 
       const onPointerMove = (ev: PointerEvent) => {
-        const cols = Array.from(container.querySelectorAll<HTMLElement>('[data-rgs-col-id]'))
-        if (!cols.length) return
-
-        const x = ev.clientX
-        let best = 0
-        for (let i = 0; i < cols.length; i++) {
-          const rect = cols[i].getBoundingClientRect()
-          if (x > rect.left + rect.width / 2) best = i + 1
-        }
-        setFreezeColState(Math.max(0, Math.min(best, columnCount)))
+        const left = container.getBoundingClientRect().left
+        setFreezeColState(bestFreezeCol(ev.clientX, left, columnWidthsRef.current))
       }
 
       const onPointerUp = (ev: PointerEvent) => {
@@ -64,15 +70,8 @@ export function useFreeze({
         document.removeEventListener('pointerup', onPointerUp)
         setIsDragging(false)
 
-        const cols = Array.from(container.querySelectorAll<HTMLElement>('[data-rgs-col-id]'))
-        if (!cols.length) return
-        const x = ev.clientX
-        let best = 0
-        for (let i = 0; i < cols.length; i++) {
-          const rect = cols[i].getBoundingClientRect()
-          if (x > rect.left + rect.width / 2) best = i + 1
-        }
-        const final = Math.max(0, Math.min(best, columnCount))
+        const left = container.getBoundingClientRect().left
+        const final = bestFreezeCol(ev.clientX, left, columnWidthsRef.current)
         setFreezeColState(final)
         onFreezeRef.current?.(final)
       }
@@ -86,10 +85,9 @@ export function useFreeze({
       document.addEventListener('pointermove', onPointerMove)
       document.addEventListener('pointerup', onPointerUp)
     },
-    [containerRef, columnCount],
+    [containerRef],
   )
 
-  // Keep freezeCol in bounds if columnCount changes
   useEffect(() => {
     setFreezeColState((prev) => {
       const clamped = Math.max(0, Math.min(prev, columnCount))
