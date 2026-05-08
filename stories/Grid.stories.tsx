@@ -79,7 +79,7 @@ const baseColumns: GridColumn<Employee>[] = [
 const GRID_HEIGHT = 500
 
 const meta: Meta<typeof Grid<Employee>> = {
-  title: 'Components/Grid',
+  title: 'Grid',
   component: Grid<Employee>,
   decorators: [
     (Story) => (
@@ -103,6 +103,7 @@ type Story = StoryObj<typeof meta>
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 export const Default: Story = {
+  name: 'Basic Usage',
   args: {
     columns: baseColumns,
     data: data50.slice(0, 15),
@@ -115,7 +116,7 @@ export const Default: Story = {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 export const VirtualScroll: Story = {
-  name: 'Virtual Scroll (5000 rows)',
+  name: 'Virtual Scroll',
   args: {
     columns: baseColumns,
     data: data5000,
@@ -171,7 +172,7 @@ export const FrozenSplits: Story = {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 export const ColumnResize: Story = {
-  name: 'Column Resize (drag header edges)',
+  name: 'Column Resize',
   args: {
     columns: baseColumns.map((c) => ({
       ...c,
@@ -209,7 +210,7 @@ function SortingDemo() {
 }
 
 export const Sorting: Story = {
-  name: 'Sorting (click headers)',
+  name: 'Sorting',
   render: () => <SortingDemo />,
 }
 
@@ -317,7 +318,7 @@ function AnimalMultiSortDemo() {
 }
 
 export const AnimalMultiSort: Story = {
-  name: 'Multi sorting',
+  name: 'Multi-Column Sorting',
   render: () => <AnimalMultiSortDemo />,
 }
 
@@ -326,7 +327,7 @@ export const AnimalMultiSort: Story = {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 export const RowSelection: Story = {
-  name: 'Row Selection (click to select)',
+  name: 'Row Selection',
   args: {
     columns: baseColumns,
     data: data50.slice(0, 20),
@@ -355,7 +356,7 @@ export const CellSelection: Story = {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 export const ComplexSelection: Story = {
-  name: 'Complex Selection (row + cell)',
+  name: 'Complex Selection',
   args: {
     columns: baseColumns,
     data: data50.slice(0, 20),
@@ -405,7 +406,7 @@ function EditingDemo() {
 }
 
 export const InlineEditing: Story = {
-  name: 'Inline Cell Editing (double-click)',
+  name: 'Inline Editing',
   render: () => <EditingDemo />,
 }
 
@@ -443,7 +444,7 @@ function HeaderFiltersDemo() {
 }
 
 export const HeaderFilters: Story = {
-  name: 'Header Filters (select, input, combo)',
+  name: 'Header Filters',
   render: () => <HeaderFiltersDemo />,
 }
 
@@ -484,7 +485,7 @@ function FooterSummariesDemo() {
 }
 
 export const FooterSummaries: Story = {
-  name: 'Footer Summaries (sum, avg, count, min, max)',
+  name: 'Footer Summaries',
   render: () => <FooterSummariesDemo />,
 }
 
@@ -493,7 +494,7 @@ export const FooterSummaries: Story = {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 export const CellSpans: Story = {
-  name: 'Cell Spans (rowspan/colspan)',
+  name: 'Cell Spans',
   args: {
     columns: baseColumns.slice(0, 5),
     data: data50.slice(0, 12),
@@ -511,7 +512,7 @@ export const CellSpans: Story = {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 export const ColumnReorder: Story = {
-  name: 'Column Reorder (drag headers)',
+  name: 'Column Reorder',
   args: {
     columns: baseColumns,
     data: data50.slice(0, 16),
@@ -521,7 +522,7 @@ export const ColumnReorder: Story = {
 }
 
 export const ColumnReorderWithSplits: Story = {
-  name: 'Column Reorder + Frozen Splits',
+  name: 'Column Reorder with Frozen Splits',
   args: {
     columns: baseColumns,
     data: data50,
@@ -574,7 +575,7 @@ function ExportDemo() {
 }
 
 export const Export: Story = {
-  name: 'CSV & Excel Export',
+  name: 'Export',
   render: () => <ExportDemo />,
 }
 
