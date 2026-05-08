@@ -805,8 +805,6 @@ function GridInner<T extends GridRow>({
     rightSplit,
     topSplit,
     bottomSplit,
-    headerHeight: totalHeaderHeight,
-    footerHeight: totalFooterHeight,
   })
   const visibleColumns = normalizedColumns.slice(virtual.xStart, virtual.xEnd + 1)
   const visibleRows = normalizedData.slice(virtual.yStart, virtual.yEnd + 1)
