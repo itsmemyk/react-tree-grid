@@ -5,7 +5,7 @@ import { Tree } from '../src/tree'
 import type { TreeNode, TreeRef } from '../src/tree'
 
 const meta: Meta<typeof Tree> = {
-  title: 'Components/Tree',
+  title: 'Tree',
   component: Tree,
   decorators: [
     (Story) => (
@@ -105,6 +105,7 @@ function cloneData(): TreeNode[] {
 // --- Stories ---
 
 export const Default: Story = {
+  name: 'Basic Usage',
   args: {
     data: mailData,
     style: { width: 280, minHeight: 300 },
@@ -115,6 +116,7 @@ export const Default: Story = {
 }
 
 export const WithCheckboxes: Story = {
+  name: 'With Checkboxes',
   args: {
     data: mailData,
     checkbox: true,
@@ -123,6 +125,7 @@ export const WithCheckboxes: Story = {
 }
 
 export const Editable: Story = {
+  name: 'Editable',
   args: {
     data: mailData,
     editable: true,
@@ -135,6 +138,7 @@ export const Editable: Story = {
 }
 
 export const Draggable: Story = {
+  name: 'Draggable',
   render: () => {
     const [log, setLog] = useState<string[]>([])
     const data = cloneData()
@@ -163,6 +167,7 @@ export const Draggable: Story = {
 }
 
 export const ControlledExpansion: Story = {
+  name: 'Controlled Expansion',
   render: () => {
     const [expanded, setExpanded] = useState<string[]>(['mail'])
     return (
@@ -189,6 +194,7 @@ export const ControlledExpansion: Story = {
 }
 
 export const ImperativeApi: Story = {
+  name: 'Imperative API',
   render: () => {
     const ref = useRef<TreeRef>(null)
     return (
