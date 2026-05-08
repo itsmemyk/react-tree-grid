@@ -1,0 +1,52 @@
+:root {
+  --vp-c-brand-1: #3b82f6;
+  --vp-c-brand-2: #2563eb;
+  --vp-c-brand-3: #1d4ed8;
+  --vp-c-brand-soft: rgba(59, 130, 246, 0.12);
+}
+
+/* Light nav bar */
+.VPNav {
+  background-color: #ffffff !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+.VPNavBar {
+  background-color: #ffffff !important;
+}
+
+.dark .VPNav {
+  background-color: var(--vp-c-bg) !important;
+  border-bottom: 1px solid var(--vp-c-divider) !important;
+}
+
+.dark .VPNavBar {
+  background-color: var(--vp-c-bg) !important;
+}
+
+/* Nav text */
+.VPNavBarTitle .title {
+  color: #0f172a;
+  font-weight: 700;
+}
+
+.dark .VPNavBarTitle .title {
+  color: var(--vp-c-text-1);
+}
+
+/* Code blocks */
+.vp-code-group .tabs,
+div[class*='language-'] {
+  border-radius: 8px;
+}
+
+/* Home hero button */
+.VPButton.brand {
+  background-color: #0f172a;
+  border-color: #0f172a;
+}
+
+.VPButton.brand:hover {
+  background-color: #1e293b;
+  border-color: #1e293b;
+}
