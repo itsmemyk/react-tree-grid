@@ -259,28 +259,28 @@
   opacity: 1;
 }
 
-.sortAsc::after {
-  color: var(--react-tree-grid-color-primary, #0288d1);
-  content: '↑';
-  font-size: 16px;
-  font-weight: 600;
-  line-height: 1;
-}
-
-.sortDesc::after {
-  color: var(--react-tree-grid-color-primary, #0288d1);
-  content: '↓';
-  font-size: 16px;
-  font-weight: 600;
-  line-height: 1;
-}
-
+.sortAsc::after,
+.sortDesc::after,
 .sortIdle::after {
   color: var(--react-tree-grid-color-primary, #0288d1);
   content: '↑';
+  display: inline-block;
   font-size: 16px;
   font-weight: 600;
   line-height: 1;
+  transition: transform 0.2s ease;
+}
+
+.sortAsc::after {
+  transform: rotate(0deg);
+}
+
+.sortDesc::after {
+  transform: rotate(180deg);
+}
+
+.sortIdle::after {
+  transform: rotate(0deg);
 }
 
 .sortIndex {
