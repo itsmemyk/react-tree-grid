@@ -7,20 +7,19 @@ import { evaluateFormula } from './FormulaEvaluator'
 type DataItem = { id: string } & Record<string, unknown>
 
 function buildComputed<T extends DataItem>(
-  store: DataStore<T>,
+  rows: T[],
   columnIds: string[],
 ): Map<string, Map<number, unknown>> {
   const result = new Map<string, Map<number, unknown>>()
-  const order = store._order
 
   const getCellValue = (col: number, row: number): unknown => {
-    const item = order[row - 1]
+    const item = rows[row - 1]
     if (!item) return undefined
     return item[columnIds[col] as keyof T]
   }
 
-  for (let rowIdx = 0; rowIdx < order.length; rowIdx++) {
-    const item = order[rowIdx]
+  for (let rowIdx = 0; rowIdx < rows.length; rowIdx++) {
+    const item = rows[rowIdx]
     const rowId = item.id
     if (!item) continue
 
@@ -47,27 +46,32 @@ function buildComputed<T extends DataItem>(
 
 export function useFormulas<T extends DataItem>(
   store: DataStore<T> | undefined,
+  rows: T[],
   columnIds: string[],
   enabled: boolean,
 ): { getComputedValue: (rowId: string, colIndex: number) => unknown } {
   const [computed, setComputed] = useState<Map<string, Map<number, unknown>>>(
-    () => (store && enabled ? buildComputed(store, columnIds) : new Map()),
+    () => enabled ? buildComputed(rows, columnIds) : new Map(),
   )
   const computedRef = useRef(computed)
   computedRef.current = computed
 
   useEffect(() => {
-    if (!store || !enabled) {
+    if (!enabled) {
       setComputed(new Map())
       return
     }
 
     const recompute = () => {
-      setComputed(buildComputed(store, columnIds))
+      const currentRows = store ? (store._order as T[]) : rows
+      setComputed(buildComputed(currentRows, columnIds))
     }
 
-    const ctx = {}
     recompute()
+
+    if (!store) return
+
+    const ctx = {}
     store.events.on(DataEvents.change, recompute, ctx)
     store.events.on(DataEvents.load, recompute, ctx)
 
@@ -75,7 +79,8 @@ export function useFormulas<T extends DataItem>(
       store.events.detach(DataEvents.change, ctx)
       store.events.detach(DataEvents.load, ctx)
     }
-  }, [store, enabled, columnIds.join(',')])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [store, enabled, columnIds.join(','), rows])
 
   const getComputedValue = useCallback(
     (rowId: string, colIndex: number): unknown => {

@@ -562,6 +562,7 @@ function GridInner<T extends GridRow>({
   )
   const formulaHook = useFormulas(
     store as unknown as import('../core/data').DataStore<{ id: string } & Record<string, unknown>> | undefined,
+    activeData as unknown as ({ id: string } & Record<string, unknown>)[],
     columnIds,
     !!formulas,
   )
