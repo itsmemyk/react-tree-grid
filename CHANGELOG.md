@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.4.1] - 2026-05-08
+
+### Changed
+
+- Updated sort icon to animate with a flip transition instead of swapping content.
+- Updated idle sort indicator on hover to use a muted color instead of the primary color.
+- Updated grid-level `sortable` prop to default to `false` — sorting is now opt-in. Columns with `sortable: true` or grids with a data store still activate sorting without the grid-level prop.
+
+### Fixed
+
+- Fixed gap appearing between the last data row and the footer row when the grid has scrollable rows.
+- Fixed sort indicators and header click-to-sort not activating when only a column-level `sortable: true` was set, or when a data store was provided without the grid-level `sortable` prop.
+
 ## [0.4.0] - 2026-05-07
 
 ### Added
