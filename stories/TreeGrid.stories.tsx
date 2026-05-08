@@ -7,7 +7,7 @@ import type { TreeGridRef, TreeGridRow } from '../src/treegrid'
 const GRID_HEIGHT = 360
 
 const meta: Meta<typeof TreeGrid> = {
-  title: 'Components/TreeGrid',
+  title: 'Tree Grid',
   component: TreeGrid,
   decorators: [
     (Story) => (
@@ -108,6 +108,7 @@ function StoryFrame({ children, note }: { children: ReactNode; note?: string }) 
 }
 
 export const Default: Story = {
+  name: 'Basic Usage',
   args: {
     columns: baseColumns,
     data: cloneData(),
@@ -118,6 +119,7 @@ export const Default: Story = {
 }
 
 export const CollapsedStart: Story = {
+  name: 'Collapsed by Default',
   args: {
     columns: baseColumns,
     data: cloneData().map((row) => ({ ...row, $opened: false })),
@@ -127,6 +129,7 @@ export const CollapsedStart: Story = {
 }
 
 export const DeepHierarchy: Story = {
+  name: 'Deep Hierarchy',
   render: () => {
     const data = useMemo(() => cloneData(), [])
     return (
@@ -144,6 +147,7 @@ export const DeepHierarchy: Story = {
 }
 
 export const WithHeaderFilters: Story = {
+  name: 'Header Filters',
   render: () => {
     const data = useMemo(() => cloneData(), [])
     return (
@@ -161,6 +165,7 @@ export const WithHeaderFilters: Story = {
 }
 
 export const SortingAndSelection: Story = {
+  name: 'Sorting & Selection',
   render: () => {
     const data = useMemo(() => cloneData(), [])
     return (
@@ -179,6 +184,7 @@ export const SortingAndSelection: Story = {
 }
 
 export const EditableRows: Story = {
+  name: 'Editable Rows',
   render: () => {
     const data = useMemo(() => cloneData(), [])
     return (
@@ -196,6 +202,7 @@ export const EditableRows: Story = {
 }
 
 export const RowDrag: Story = {
+  name: 'Row Drag',
   render: () => {
     const data = useMemo(() => cloneData(), [])
     return (
@@ -213,6 +220,7 @@ export const RowDrag: Story = {
 }
 
 export const ImperativeApi: Story = {
+  name: 'Imperative API',
   render: () => {
     const ref = useRef<TreeGridRef>(null)
     const data = useMemo(() => cloneData().map((row) => ({ ...row, $opened: false })), [])
@@ -318,6 +326,7 @@ const bookData: BookRow[] = [
 ]
 
 export const BookLibraryExample: Story = {
+  name: 'Book Library',
   render: () => {
     const data = useMemo(() => JSON.parse(JSON.stringify(bookData)) as BookRow[], [])
     return (
@@ -589,6 +598,7 @@ function DHtmlxShowcaseGrid({ dragDrop }: { dragDrop: boolean }) {
 }
 
 export const DHtmlxShowcase: Story = {
+  name: 'Showcase',
   args: {
     dragDrop: false,
   } as { dragDrop: boolean },
@@ -633,7 +643,7 @@ const groupCols = [
 ]
 
 export const GroupByDepartment: StoryObj = {
-  name: 'GroupBy — Department (avg salary)',
+  name: 'Group By Department',
   render: () => (
     <ThemeProvider>
       <TreeGrid
@@ -648,7 +658,7 @@ export const GroupByDepartment: StoryObj = {
 }
 
 export const MultiLevelGroupBy: StoryObj = {
-  name: 'GroupBy — Department > Status (sum salary)',
+  name: 'Group By Department & Status',
   render: () => (
     <ThemeProvider>
       <TreeGrid
