@@ -4,7 +4,7 @@
 
 ### Added
 
-- Added multi-column sorting — hold Shift and click column headers to sort by multiple columns simultaneously.
+- Added multi-column sorting — hold Ctrl and click column headers to sort by multiple columns simultaneously.
 
 ### Fixed
 
