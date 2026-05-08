@@ -4,3 +4,7 @@ dist
 *.local
 storybook-static
 coverage
+website/.vitepress/dist
+website/.vitepress/cache
+.superpowers/
+docs/superpowers/

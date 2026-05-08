@@ -70,7 +70,10 @@
     "build-storybook": "storybook build",
     "lint": "tsc --noEmit",
     "prepublishOnly": "npm run build",
-    "deploy-storybook": "storybook build && touch storybook-static/.nojekyll && gh-pages -d storybook-static -t"
+    "deploy-storybook": "storybook build && touch storybook-static/.nojekyll && gh-pages -d storybook-static -t",
+    "docs:dev": "vitepress dev website",
+    "docs:build": "vitepress build website",
+    "deploy-docs": "vitepress build website && gh-pages -d website/.vitepress/dist --dest docs -t"
   },
   "peerDependencies": {
     "react": ">=18.0.0",
@@ -96,6 +99,7 @@
     "typescript": "^5.7.0",
     "vite": "^6.0.0",
     "vite-plugin-dts": "^4.5.0",
+    "vitepress": "^1.6.4",
     "vitest": "^2.1.0"
   }
 }
