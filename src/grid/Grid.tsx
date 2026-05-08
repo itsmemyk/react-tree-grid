@@ -993,7 +993,7 @@ function GridInner<T extends GridRow>({
           const cell = column.header[rowIdx]
           const sortOrder = rowIdx === 0 ? gridSort.getSortOrder(column.id) : undefined
           const sortIndex = rowIdx === 0 ? gridSort.getSortIndex(column.id) : -1
-          const isSortableHeader = sortable && column.sortable !== false && rowIdx === 0
+          const isSortableHeader = (sortable || column.sortable === true || (!!store && column.sortable !== false)) && column.sortable !== false && rowIdx === 0
           const sortIndicator = isSortableHeader ? (
             <span
               className={[
