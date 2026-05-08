@@ -326,7 +326,7 @@ function GridInner<T extends GridRow>({
   rowHeight = 40,
   headerRowHeight = 40,
   footerRowHeight = 40,
-  sortable = true,
+  sortable = false,
   keyNavigation = true,
   tooltip = false,
   selection: selectionProp = false,
