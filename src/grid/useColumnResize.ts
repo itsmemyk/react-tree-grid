@@ -1,5 +1,7 @@
 import { useCallback, useRef, useState } from 'react'
+import type { RefObject } from 'react'
 import type { GridColumn, GridRow } from './types'
+import { colVarName } from './colVar'
 
 /** Edge detection threshold in pixels */
 const EDGE_THRESHOLD = 5
@@ -21,6 +23,7 @@ interface ColumnResizeEvents {
 export function useColumnResize<T extends GridRow>(
   _columns: GridColumn<T>[],
   events: ColumnResizeEvents,
+  rootRef: RefObject<HTMLElement | null>,
 ) {
   void _columns
   const [widthOverrides, setWidthOverrides] = useState<Record<string, number>>({})
@@ -88,18 +91,7 @@ export function useColumnResize<T extends GridRow>(
         newWidth = Math.min(resizeState.current.maxWidth, newWidth)
 
         // Direct DOM update for smooth dragging
-        const headerCells = document.querySelectorAll(
-          `[data-rgs-col-id="${colId}"]`,
-        )
-        headerCells.forEach((el) => {
-          ;(el as HTMLElement).style.width = `${newWidth}px`
-        })
-        const columnContainers = document.querySelectorAll(
-          `[data-rgs-col-container-id="${colId}"]`,
-        )
-        columnContainers.forEach((el) => {
-          ;(el as HTMLElement).style.width = `${newWidth}px`
-        })
+        rootRef.current?.style.setProperty(colVarName(colId), `${newWidth}px`)
 
         events.onResize?.(colId, newWidth)
         if (events.shouldCommitLiveResize?.(colId)) {
@@ -117,13 +109,9 @@ export function useColumnResize<T extends GridRow>(
 
         if (resizeState.current) {
           const finalColId = resizeState.current.colId
-          // Read final width from DOM
-          const firstCell = document.querySelector(
-            `[data-rgs-col-id="${finalColId}"]`,
-          ) as HTMLElement
-          const finalWidth = firstCell
-            ? parseInt(firstCell.style.width, 10) || resizeState.current.startWidth
-            : resizeState.current.startWidth
+          // Read final width from CSS variable
+          const cssVal = rootRef.current?.style.getPropertyValue(colVarName(finalColId)) ?? ''
+          const finalWidth = parseInt(cssVal, 10) || resizeState.current.startWidth
 
           setWidthOverrides((prev) => ({ ...prev, [finalColId]: finalWidth }))
           events.onAfterResizeEnd?.(finalColId, finalWidth)
