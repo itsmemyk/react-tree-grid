@@ -42,6 +42,7 @@ import { useDataProxy } from '../core/data/useDataProxy'
 import type { DataProxyConfig, LoadOptions } from '../core/data/DataProxy'
 import { useFormulas } from '../core/formula/useFormulas'
 import { useFreeze } from './useFreeze'
+import { colVarName, colVarRef } from './colVar'
 import { SelectFilter } from './filters/SelectFilter'
 import { InputFilter } from './filters/InputFilter'
 import { ComboFilter } from './filters/ComboFilter'
@@ -176,7 +177,6 @@ function renderRow<T extends GridRow>(
       }
     >
       {columns.map((column, colIndex) => {
-        const cellWidth = column.$width
         const cellHeight = getRowHeight(row, 40)
         const cellSelected = interaction?.isCellSelected?.(row.id, column.id)
         const editing = interaction?.isEditing?.(row.id, column.id)
@@ -197,7 +197,7 @@ function renderRow<T extends GridRow>(
               .filter(Boolean)
               .join(' ')}
             style={{
-              width: cellWidth,
+              width: colVarRef(column.id),
               height: cellHeight,
               borderLeft: addLeadingBorder && colIndex === 0 ? '1px solid var(--react-tree-grid-color-border)' : undefined,
               borderRight: omitTrailingBorder && colIndex === columns.length - 1 ? 'none' : undefined,
@@ -466,7 +466,7 @@ function GridInner<T extends GridRow>({
       const index = columnIds.indexOf(colId)
       return index >= 0 && (index < split || index >= columnIds.length - currentRightSplit)
     },
-  })
+  }, rootRef)
 
   // ─── DataProxy ────────────────────────────────────────────────────
   const [proxyOpts, setProxyOpts] = useState<LoadOptions>({})
@@ -954,7 +954,7 @@ function GridInner<T extends GridRow>({
       <div
         key={column.id}
         className={styles.headerColumn}
-        style={{ width: column.$width }}
+        style={{ width: colVarRef(column.id) }}
         data-rgs-col-container-id={column.id}
       >
         {Array.from({ length: footerRowCount }, (_, rowIdx) => {
@@ -964,7 +964,7 @@ function GridInner<T extends GridRow>({
               key={cell?.id ?? `${column.id}-f${rowIdx}`}
               className={[styles.footerCell, cell?.css ?? ''].filter(Boolean).join(' ')}
               style={{
-                width: column.$width,
+                width: colVarRef(column.id),
                 height: adjustResult.footerRowHeights[rowIdx] ?? footerRowHeight,
                 borderLeft: addLeadingBorder && column.id === cols[0]?.id ? '1px solid var(--react-tree-grid-color-border)' : undefined,
                 borderRight: omitTrailingBorder && column.id === cols[cols.length - 1]?.id ? 'none' : undefined,
@@ -987,7 +987,7 @@ function GridInner<T extends GridRow>({
       <div
         key={column.id}
         className={styles.headerColumn}
-        style={{ width: column.$width }}
+        style={{ width: colVarRef(column.id) }}
         data-rgs-col-container-id={column.id}
       >
         {Array.from({ length: headerRowCount }, (_, rowIdx) => {
@@ -1028,7 +1028,7 @@ function GridInner<T extends GridRow>({
                 isSortableHeader ? styles.headerCellSortable : '',
               ].filter(Boolean).join(' ')}
               style={{
-                width: column.$width,
+                width: colVarRef(column.id),
                 height: adjustResult.headerRowHeights[rowIdx] ?? headerRowHeight,
                 borderLeft: addLeadingBorder && column.id === cols[0]?.id ? '1px solid var(--react-tree-grid-color-border)' : undefined,
                 borderRight: omitTrailingBorder && column.id === cols[cols.length - 1]?.id ? 'none' : undefined,
@@ -1217,6 +1217,10 @@ function GridInner<T extends GridRow>({
     onPageScroll: pageScroll,
   })
 
+  const colVars = Object.fromEntries(
+    normalizedColumns.map((col) => [colVarName(col.id), `${col.$width}px`])
+  ) as React.CSSProperties
+
   return (
     <div
       ref={rootRef}
@@ -1229,7 +1233,7 @@ function GridInner<T extends GridRow>({
       ]
         .filter(Boolean)
         .join(' ')}
-      style={style}
+      style={{ ...style, ...colVars }}
       tabIndex={keyNavigation ? 0 : undefined}
       onKeyDown={keyNavigation ? gridKeyboard.handleKeyDown : undefined}
       data-rgs-sortable={sortable}

@@ -6,20 +6,26 @@ describe('colVarName', () => {
     expect(colVarName('name')).toBe('--rgs-col-name')
   })
 
-  it('replaces spaces with hyphens', () => {
-    expect(colVarName('first name')).toBe('--rgs-col-first-name')
+  it('encodes spaces', () => {
+    expect(colVarName('first name')).toBe('--rgs-col-first_20_name')
   })
 
-  it('replaces dots with hyphens', () => {
-    expect(colVarName('col.price')).toBe('--rgs-col-col-price')
+  it('encodes dots', () => {
+    expect(colVarName('col.price')).toBe('--rgs-col-col_2e_price')
   })
 
-  it('replaces multiple consecutive special chars with hyphens', () => {
-    expect(colVarName('a  b')).toBe('--rgs-col-a--b')
+  it('encodes multiple consecutive special chars', () => {
+    expect(colVarName('a  b')).toBe('--rgs-col-a_20__20_b')
   })
 
-  it('preserves underscores', () => {
-    expect(colVarName('col_id')).toBe('--rgs-col-col_id')
+  it('encodes underscores', () => {
+    expect(colVarName('col_id')).toBe('--rgs-col-col_5f_id')
+  })
+
+  it('does not collapse distinct ids to the same custom property name', () => {
+    expect(colVarName('a-b')).toBe('--rgs-col-a_2d_b')
+    expect(colVarName('a.b')).toBe('--rgs-col-a_2e_b')
+    expect(colVarName('first name')).not.toBe(colVarName('first-name'))
   })
 })
 
@@ -29,6 +35,6 @@ describe('colVarRef', () => {
   })
 
   it('sanitizes the id inside the var() call', () => {
-    expect(colVarRef('first name')).toBe('var(--rgs-col-first-name)')
+    expect(colVarRef('first name')).toBe('var(--rgs-col-first_20_name)')
   })
 })

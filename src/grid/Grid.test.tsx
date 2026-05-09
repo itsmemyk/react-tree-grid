@@ -3,6 +3,7 @@ import { act, createEvent, fireEvent, render, screen } from '@testing-library/re
 import { describe, expect, it, vi } from 'vitest'
 import { ThemeProvider } from '../core/theme'
 import { Grid } from './Grid'
+import { colVarName } from './colVar'
 import type { GridApi } from './types'
 import * as domUtils from '../core/utils/dom'
 import { useDataStore } from '../core/data/useDataStore'
@@ -494,11 +495,40 @@ describe('Grid', () => {
     fireEvent.pointerDown(headerCell, { pointerId: 1, clientX: 218, clientY: 10 })
     fireEvent.pointerMove(headerCell, { pointerId: 1, clientX: 258, clientY: 10 })
 
-    expect(headerCell.style.width).toBe('180px')
-    expect(headerColumn.style.width).toBe('180px')
-    expect(bodyCell.style.width).toBe('180px')
+    const gridRoot = container.querySelector('[data-rgs-sortable]') as HTMLElement
+    expect(gridRoot.style.getPropertyValue('--rgs-col-name')).toBe('180px')
+    expect(headerCell.style.width).toBe('var(--rgs-col-name)')
+    expect(headerColumn.style.width).toBe('var(--rgs-col-name)')
+    expect(bodyCell.style.width).toBe('var(--rgs-col-name)')
 
     fireEvent.pointerUp(headerCell, { pointerId: 1, clientX: 258, clientY: 10 })
+  })
+
+  it('keeps distinct width variables for column ids with the same sanitized form', () => {
+    const { container } = render(
+      <ThemeProvider>
+        <Grid
+          columns={[
+            { id: 'a-b', header: [{ text: 'A-B' }], width: 80 },
+            { id: 'a.b', header: [{ text: 'A.B' }], width: 140 },
+          ]}
+          data={[{ id: '1', 'a-b': 'hyphen', 'a.b': 'dot' }]}
+          style={{ width: 360, height: 180 }}
+        />
+      </ThemeProvider>,
+    )
+
+    const gridRoot = container.querySelector('[data-rgs-sortable]') as HTMLElement
+    const hyphenVarName = colVarName('a-b')
+    const dotVarName = colVarName('a.b')
+    const hyphenCell = screen.getByText('hyphen').closest('[data-rgs-col-id="a-b"]') as HTMLElement
+    const dotCell = screen.getByText('dot').closest('[data-rgs-col-id="a.b"]') as HTMLElement
+
+    expect(hyphenVarName).not.toBe(dotVarName)
+    expect(gridRoot.style.getPropertyValue(hyphenVarName)).toBe('80px')
+    expect(gridRoot.style.getPropertyValue(dotVarName)).toBe('140px')
+    expect(hyphenCell.style.width).toBe(`var(${hyphenVarName})`)
+    expect(dotCell.style.width).toBe(`var(${dotVarName})`)
   })
 
   it('updates frozen pane geometry live while resizing a frozen column', () => {
@@ -1161,7 +1191,7 @@ describe('Grid', () => {
         { id: '1', name: 'XX' },
         { id: '2', name: 'a very long name that should drive column width' },
       ]
-      render(
+      const { container } = render(
         <ThemeProvider>
           <Grid
             columns={adjustColumns}
@@ -1170,10 +1200,9 @@ describe('Grid', () => {
           />
         </ThemeProvider>,
       )
-      const headerCell = document.querySelector(
-        '[data-rgs-col-id="name"]',
-      ) as HTMLElement
-      const width = parseFloat(headerCell.style.width)
+      const gridRoot = container.querySelector('[data-rgs-sortable]') as HTMLElement
+      const cssVal = gridRoot.style.getPropertyValue('--rgs-col-name')
+      const width = parseFloat(cssVal)
       // jsdom's canvas measureText returns 0, so floor is seed(20) + offset(24) = 44.
       // But headers' built-in offset + data offset keeps the adjusted value defined
       // and > the fallback min of 100 only on real browsers. We assert the adjust
@@ -1186,7 +1215,7 @@ describe('Grid', () => {
         { id: 'a', header: [{ text: 'A' }], gravity: 1 },
         { id: 'b', header: [{ text: 'B' }], gravity: 3 },
       ]
-      render(
+      const { container } = render(
         <ThemeProvider>
           <Grid
             autoWidth
@@ -1196,14 +1225,9 @@ describe('Grid', () => {
           />
         </ThemeProvider>,
       )
-      const aCell = document.querySelector(
-        '[data-rgs-col-id="a"]',
-      ) as HTMLElement
-      const bCell = document.querySelector(
-        '[data-rgs-col-id="b"]',
-      ) as HTMLElement
-      const wA = parseFloat(aCell.style.width)
-      const wB = parseFloat(bCell.style.width)
+      const gridRoot = container.querySelector('[data-rgs-sortable]') as HTMLElement
+      const wA = parseFloat(gridRoot.style.getPropertyValue('--rgs-col-a'))
+      const wB = parseFloat(gridRoot.style.getPropertyValue('--rgs-col-b'))
       // b should be ≈ 3× wider than a (gravity 3 vs 1).
       expect(wB).toBeGreaterThan(wA * 2)
       // combined widths cover the container.
