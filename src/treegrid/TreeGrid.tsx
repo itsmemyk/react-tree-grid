@@ -91,7 +91,16 @@ export const TreeGrid = forwardRef<TreeGridRef, TreeGridProps<TreeGridRow>>(func
   const activeTreeColumnId = treeColumnId ?? columns[0]?.id
 
   useEffect(() => {
+    const openedState = new Map<string, boolean>()
+    for (const item of store._order) {
+      if (item.$opened !== undefined) openedState.set(item.id, !!item.$opened)
+    }
     store.parse(normalizedData)
+    for (const [id, opened] of openedState) {
+      if (store.exists(id)) {
+        store.update(id, { $opened: opened } as Partial<InternalTreeGridRow>, true)
+      }
+    }
   }, [normalizedData, store])
 
   const flatRows = useMemo(
