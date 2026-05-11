@@ -330,8 +330,23 @@ export class TreeStore<T extends TreeDataItem = TreeDataItem> extends DataStore<
     if (rule && !treeConfig.$restore) {
       id = treeConfig.id || uid()
       treeConfig.type = treeConfig.type || TreeFilterType.all
+      const isReplacement = id in this._filters
       this._filters[id] = { rule, config: treeConfig }
-      this._applyTreeFilter(rule, treeConfig)
+      if (isReplacement && this._initChilds) {
+        // Replacing an existing filter: restore the unfiltered base and re-apply
+        // all active filters so the new match searches the full dataset, not the
+        // previously-filtered subset.
+        this._childs = this._initChilds
+        this._initChilds = null
+        for (const key in this._filters) {
+          this._applyTreeFilter(
+            this._filters[key].rule,
+            this._filters[key].config as TreeFilterConfig,
+          )
+        }
+      } else {
+        this._applyTreeFilter(rule, treeConfig)
+      }
     } else {
       for (const key in rule as Record<string, FilterRule>) {
         this._applyTreeFilter(
