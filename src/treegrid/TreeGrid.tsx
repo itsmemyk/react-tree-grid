@@ -95,11 +95,15 @@ export const TreeGrid = forwardRef<TreeGridRef, TreeGridProps<TreeGridRow>>(func
     for (const item of store._order) {
       if (item.$opened !== undefined) openedState.set(item.id, !!item.$opened)
     }
+    const sortingStates = [...store._sortingStates]
     store.parse(normalizedData)
     for (const [id, opened] of openedState) {
       if (store.exists(id)) {
         store.update(id, { $opened: opened } as Partial<InternalTreeGridRow>, true)
       }
+    }
+    if (sortingStates.length > 0) {
+      store.sort(sortingStates)
     }
   }, [normalizedData, store])
 
