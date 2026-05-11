@@ -129,6 +129,7 @@ export const TreeGrid = forwardRef<TreeGridRef, TreeGridProps<TreeGridRow>>(func
               className={styles.toggle}
               data-rgs-tree-toggle={row.id}
               aria-label={opened ? 'Collapse row' : 'Expand row'}
+              onDoubleClick={(e) => e.stopPropagation()}
             >
               {hasChildren ? (opened ? '▾' : '▸') : ''}
             </button>
