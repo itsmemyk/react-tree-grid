@@ -852,7 +852,7 @@ export declare function useColumnReorder<T extends GridRow>(columns: GridColumn<
  * Updates column widths in real time via direct DOM manipulation,
  * then commits to React state on drag end.
  */
-export declare function useColumnResize<T extends GridRow>(_columns: GridColumn<T>[], events: ColumnResizeEvents): {
+export declare function useColumnResize<T extends GridRow>(_columns: GridColumn<T>[], events: ColumnResizeEvents, rootRef: RefObject<HTMLElement | null>): {
     widthOverrides: Record<string, number>;
     getWidth: (col: GridColumn<T>) => number;
     handleHeaderPointerDown: (e: React.PointerEvent, colId: string, currentWidth: number, col: GridColumn<T>) => boolean;
@@ -860,11 +860,11 @@ export declare function useColumnResize<T extends GridRow>(_columns: GridColumn<
     shouldPreventHeaderClick: () => boolean;
 };
 
-export declare function useFreeze({ containerRef, columnCount, initialFreezeCol, onFreeze, }: UseFreezeOptions): UseFreezeReturn;
+export declare function useFreeze({ containerRef, columnWidths, initialFreezeCol, onFreeze, }: UseFreezeOptions): UseFreezeReturn;
 
 export declare interface UseFreezeOptions {
     containerRef: React.RefObject<HTMLDivElement | null>;
-    columnCount: number;
+    columnWidths: number[];
     initialFreezeCol?: number;
     onFreeze?: (col: number) => void;
 }
