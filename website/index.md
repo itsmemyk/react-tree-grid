@@ -2,7 +2,7 @@
 layout: home
 
 hero:
-  name: react-tree-grid
+  name: React TreeGrid
   text: Grid, Tree & TreeGrid for React 18+
   tagline: Zero dependencies. Full TypeScript. Drop-in DHTMLX alternative.
   actions:

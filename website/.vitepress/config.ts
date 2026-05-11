@@ -2,13 +2,13 @@ import { defineConfig } from 'vitepress'
 
 export default defineConfig({
   base: '/react-tree-grid/docs/',
-  title: 'react-tree-grid',
+  title: 'React TreeGrid',
   description: 'High-performance Grid, Tree & TreeGrid for React 18+. Zero dependencies.',
   head: [['link', { rel: 'icon', href: '/react-tree-grid/docs/favicon.ico' }]],
 
   themeConfig: {
     logo: null,
-    siteTitle: 'react-tree-grid',
+    siteTitle: 'React TreeGrid',
 
     nav: [
       { text: 'Guide', link: '/guide/', activeMatch: '/guide/' },
