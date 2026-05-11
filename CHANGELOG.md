@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.4.2] - 2026-05-11
+
+### Changed
+
+- Updated generated grid column width CSS variable names to losslessly encode column IDs. External CSS that targets internal `--rgs-col-*` variables for IDs containing special characters must use the new encoded names.
+
+### Fixed
+
+- Fixed column width rendering when distinct column IDs previously collapsed to the same internal `--rgs-col-*` CSS variable name, such as `a-b` and `a.b`.
+- Fixed formula cells not evaluating when the grid was used with the `data` prop instead of a data store.
+- Fixed frozen column boundary computation to use column width data instead of DOM cell queries, preventing incorrect freeze offsets during initial render.
+
 ## [0.4.1] - 2026-05-08
 
 ### Changed
