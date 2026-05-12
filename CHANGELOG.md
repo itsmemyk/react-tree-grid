@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.4.3] - 2026-05-12
+
+### Fixed
+
+- Fixed collapsed node state not being preserved when tree data is updated in TreeGrid.
+- Fixed sort state not being preserved when tree data is updated in TreeGrid.
+- Fixed cell editor opening on a double-click that was intended to toggle a tree node.
+- Fixed filter state not being fully re-applied when an existing filter key is replaced in TreeStore.
+
 ## [0.4.2] - 2026-05-11
 
 ### Changed
