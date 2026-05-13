@@ -1501,4 +1501,117 @@ describe('Grid', () => {
       expect(plainCell.className).not.toMatch(/customMark/)
     })
   })
+
+  describe('grouping', () => {
+    const groupData = [
+      { id: '1', dept: 'Eng', status: 'Active' },
+      { id: '2', dept: 'Eng', status: 'Inactive' },
+      { id: '3', dept: 'HR', status: 'Active' },
+    ]
+    const groupColumns = [
+      { id: 'dept', header: [{ text: 'Dept' }], width: 150 },
+      { id: 'status', header: [{ text: 'Status' }], width: 150 },
+    ]
+
+    function dropColumnOnPanel(colId: string, label: string) {
+      const dt = {
+        effectAllowed: 'move' as const,
+        dropEffect: 'move' as const,
+        setData: vi.fn(),
+        getData: vi.fn((key: string) => (key === 'text/plain' ? colId : '')),
+      } as unknown as DataTransfer
+      const headerCell = screen.getByText(label).closest('div') as HTMLElement
+      const panel = screen.getByTestId('group-panel')
+      dispatchDragEvent(headerCell, 'dragStart', dt)
+      dispatchDragEvent(panel, 'dragOver', dt)
+      dispatchDragEvent(panel, 'drop', dt)
+    }
+
+    it('renders the group panel when groupable=true', () => {
+      render(
+        <ThemeProvider>
+          <Grid columns={groupColumns} data={groupData} groupable style={{ width: 360, height: 200 }} />
+        </ThemeProvider>,
+      )
+      expect(screen.getByTestId('group-panel')).toBeTruthy()
+    })
+
+    it('does not render the group panel when groupable is not set', () => {
+      render(
+        <ThemeProvider>
+          <Grid columns={groupColumns} data={groupData} style={{ width: 360, height: 200 }} />
+        </ThemeProvider>,
+      )
+      expect(screen.queryByTestId('group-panel')).toBeNull()
+    })
+
+    it('shows a chip and group rows after dropping a column on the panel', () => {
+      render(
+        <ThemeProvider>
+          <Grid columns={groupColumns} data={groupData} groupable style={{ width: 360, height: 200 }} />
+        </ThemeProvider>,
+      )
+      dropColumnOnPanel('dept', 'Dept')
+      expect(screen.getByTestId('group-chip-dept')).toBeTruthy()
+      expect(screen.getAllByText(/Eng|HR/).length).toBeGreaterThan(0)
+    })
+
+    it('expands group row when toggle button is clicked', () => {
+      render(
+        <ThemeProvider>
+          <Grid columns={groupColumns} data={groupData} groupable style={{ width: 360, height: 200 }} />
+        </ThemeProvider>,
+      )
+      dropColumnOnPanel('dept', 'Dept')
+      const toggle = screen.getAllByRole('button', { name: 'Expand group' })[0]
+      fireEvent.click(toggle)
+      expect(screen.getAllByText(/Active|Inactive/).length).toBeGreaterThan(0)
+    })
+
+    it('fires onGroupChange when a column is dropped on the panel', () => {
+      const onGroupChange = vi.fn()
+      render(
+        <ThemeProvider>
+          <Grid columns={groupColumns} data={groupData} groupable onGroupChange={onGroupChange} style={{ width: 360, height: 200 }} />
+        </ThemeProvider>,
+      )
+      dropColumnOnPanel('dept', 'Dept')
+      expect(onGroupChange).toHaveBeenCalledWith(['dept'])
+    })
+
+    it('onBeforeGroupChange returning false prevents grouping', () => {
+      const onBeforeGroupChange = vi.fn(() => false as const)
+      render(
+        <ThemeProvider>
+          <Grid columns={groupColumns} data={groupData} groupable onBeforeGroupChange={onBeforeGroupChange} style={{ width: 360, height: 200 }} />
+        </ThemeProvider>,
+      )
+      dropColumnOnPanel('dept', 'Dept')
+      expect(screen.queryByTestId('group-chip-dept')).toBeNull()
+    })
+
+    it('groupBy API method sets active grouping', () => {
+      const ref = createRef<GridApi>()
+      render(
+        <ThemeProvider>
+          <Grid ref={ref} columns={groupColumns} data={groupData} groupable style={{ width: 360, height: 200 }} />
+        </ThemeProvider>,
+      )
+      act(() => { ref.current!.groupBy(['dept']) })
+      expect(screen.getByTestId('group-chip-dept')).toBeTruthy()
+    })
+
+    it('clearGroups API method removes all grouping', () => {
+      const ref = createRef<GridApi>()
+      render(
+        <ThemeProvider>
+          <Grid ref={ref} columns={groupColumns} data={groupData} groupable style={{ width: 360, height: 200 }} />
+        </ThemeProvider>,
+      )
+      act(() => { ref.current!.groupBy(['dept']) })
+      act(() => { ref.current!.clearGroups() })
+      expect(screen.queryByTestId('group-chip-dept')).toBeNull()
+      expect(screen.getByTestId('group-panel')).toBeTruthy()
+    })
+  })
 })

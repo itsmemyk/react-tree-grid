@@ -47,6 +47,8 @@ import { SelectFilter } from './filters/SelectFilter'
 import { InputFilter } from './filters/InputFilter'
 import { ComboFilter } from './filters/ComboFilter'
 import { getScrollbarHeight, getScrollbarWidth } from '../core/utils'
+import { useGridGroup, getGroupCount } from './useGridGroup'
+import { GroupPanel } from './GroupPanel'
 
 interface NormalizedHeaderCell {
   id: string
@@ -143,6 +145,10 @@ interface RowInteraction {
   onEditorKeyDown?: (e: React.KeyboardEvent) => void
   onEditorBlur?: () => void
   getComputedValue?: (rowId: string, colIndex: number) => unknown
+  groupFirstColId?: string
+  getGroupCount?: (rowId: string) => number
+  expandedGroups?: Set<string>
+  toggleGroupExpanded?: (rowId: string) => void
 }
 
 function renderRow<T extends GridRow>(
@@ -153,7 +159,53 @@ function renderRow<T extends GridRow>(
   omitTrailingBorder = false,
   addLeadingBorder = false,
 ) {
+  if (row.$group && interaction?.groupFirstColId) {
+    const isExpanded = interaction.expandedGroups?.has(row.id) ?? false
+    const count = interaction.getGroupCount?.(row.id) ?? 0
+    const firstColId = interaction.groupFirstColId
+    return (
+      <div
+        key={row.id}
+        className={[stylesMap.row, stylesMap.groupRow].join(' ')}
+        style={{ height: getRowHeight(row, 40) }}
+        data-rgs-id={row.id}
+      >
+        {columns.map((column, colIndex) => (
+          <div
+            key={`${row.id}-${column.id}`}
+            className={[
+              stylesMap.cell,
+              stylesMap.alignLeft,
+              omitTrailingBorder && colIndex === columns.length - 1 ? '' : '',
+            ].filter(Boolean).join(' ')}
+            style={{
+              width: colVarRef(column.id),
+              height: getRowHeight(row, 40),
+              borderRight: omitTrailingBorder && colIndex === columns.length - 1 ? 'none' : undefined,
+            }}
+            data-rgs-col-id={column.id}
+          >
+            {column.id === firstColId ? (
+              <div className={stylesMap.groupRowCell}>
+                <button
+                  type="button"
+                  className={stylesMap.groupRowToggle}
+                  aria-label={isExpanded ? 'Collapse group' : 'Expand group'}
+                  onClick={() => interaction.toggleGroupExpanded?.(row.id)}
+                >
+                  {isExpanded ? '▼' : '▶'}
+                </button>
+                <span>{String(row[column.id] ?? '')} ({count})</span>
+              </div>
+            ) : null}
+          </div>
+        ))}
+      </div>
+    )
+  }
+
   const rowSelected = interaction?.isRowSelected?.(row.id)
+  const groupIndent = (row.$groupLevel ?? 0) > 0 ? (row.$groupLevel ?? 0) * 18 : 0
 
   return (
     <div
@@ -199,6 +251,7 @@ function renderRow<T extends GridRow>(
             style={{
               width: colVarRef(column.id),
               height: cellHeight,
+              paddingLeft: groupIndent > 0 && colIndex === 0 ? `${groupIndent + 8}px` : undefined,
               borderLeft: addLeadingBorder && colIndex === 0 ? '1px solid var(--react-tree-grid-color-border)' : undefined,
               borderRight: omitTrailingBorder && colIndex === columns.length - 1 ? 'none' : undefined,
             }}
@@ -389,6 +442,10 @@ function GridInner<T extends GridRow>({
   freezable,
   onFreeze,
   formulas,
+  groupable,
+  group,
+  onBeforeGroupChange,
+  onGroupChange,
 }: GridProps<T>, ref: ForwardedRef<GridApi<T>>) {
   const rootRef = useRef<HTMLDivElement | null>(null)
   const headerScrollRef = useRef<HTMLDivElement | null>(null)
@@ -485,6 +542,31 @@ function GridInner<T extends GridRow>({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dataProxy?.url])
 
+  // ─── Grouping ─────────────────────────────────────────────────────
+  const gridGroup = useGridGroup(activeData, group?.order ?? [])
+
+  const handleAddGroup = useCallback((colId: string) => {
+    const nextOrder = gridGroup.groupOrder.includes(colId)
+      ? gridGroup.groupOrder
+      : [...gridGroup.groupOrder, colId]
+    if (onBeforeGroupChange?.(nextOrder) === false) return
+    gridGroup.addGroup(colId)
+    onGroupChange?.(nextOrder)
+  }, [gridGroup, onBeforeGroupChange, onGroupChange])
+
+  const handleRemoveGroup = useCallback((colId: string) => {
+    const nextOrder = gridGroup.groupOrder.filter((id) => id !== colId)
+    if (onBeforeGroupChange?.(nextOrder) === false) return
+    gridGroup.removeGroup(colId)
+    onGroupChange?.(nextOrder)
+  }, [gridGroup, onBeforeGroupChange, onGroupChange])
+
+  const handleSetGroupOrder = useCallback((order: string[]) => {
+    if (onBeforeGroupChange?.(order) === false) return
+    gridGroup.setGroupOrder(order)
+    onGroupChange?.(order)
+  }, [gridGroup, onBeforeGroupChange, onGroupChange])
+
   // ─── Sorting ──────────────────────────────────────────────────────
   const gridSort = useGridSort(
     store as unknown as import('../core/data').DataStore<T & DataItem> | undefined,
@@ -567,10 +649,12 @@ function GridInner<T extends GridRow>({
     !!formulas,
   )
 
-  const visibleDataRows = useMemo(
+  const baseDataRows = useMemo(
     () => rowDrag.orderedRows.filter((row) => !row.hidden),
     [rowDrag.orderedRows],
   )
+
+  const visibleDataRows = gridGroup.active ? gridGroup.visibleRows : baseDataRows
 
   const gridCss = useGridCss(activeData, runtimeColumns)
 
@@ -592,7 +676,7 @@ function GridInner<T extends GridRow>({
     rowHeight,
     headerRowHeight,
     footerRowHeight,
-    visibleRows: visibleDataRows,
+    visibleRows: baseDataRows,
     footerValues,
   })
 
@@ -641,14 +725,12 @@ function GridInner<T extends GridRow>({
   // Pre-compute row/col dimension maps for spans (before normalizedData to avoid dependency cycle)
   const normalizedData = useMemo(
     () =>
-      rowDrag.orderedRows
-        .filter((row) => !row.hidden)
-        .map((row) => ({
-          ...row,
-          $height:
-            adjustResult.rowHeightOverrides[row.id] ?? row.$height ?? rowHeight,
-        })) as RowWithHeight<T>[],
-    [rowDrag.orderedRows, rowHeight, adjustResult.rowHeightOverrides],
+      visibleDataRows.map((row) => ({
+        ...row,
+        $height:
+          adjustResult.rowHeightOverrides[row.id] ?? row.$height ?? rowHeight,
+      })) as RowWithHeight<T>[],
+    [visibleDataRows, rowHeight, adjustResult.rowHeightOverrides],
   )
 
   // Span support
@@ -691,6 +773,8 @@ function GridInner<T extends GridRow>({
         setRuntimeColumns(nextColumns)
         columnReorder.setColumnOrder(nextColumns.map((column) => column.id))
       },
+      groupBy: (columnIds: string[]) => handleSetGroupOrder(columnIds),
+      clearGroups: () => handleSetGroupOrder([]),
     }),
     [
       columnReorder,
@@ -699,6 +783,7 @@ function GridInner<T extends GridRow>({
       gridCss.removeCellCss,
       gridCss.removeRowCss,
       runtimeColumns,
+      handleSetGroupOrder,
     ],
   )
 
@@ -1060,10 +1145,17 @@ function GridInner<T extends GridRow>({
                     }
                   : undefined
               }
-              draggable={columnReorder.enabled && rowIdx === 0}
+              draggable={(columnReorder.enabled || !!groupable) && rowIdx === 0}
               onDragStart={
-                columnReorder.enabled && rowIdx === 0
-                  ? (e) => columnReorder.handleHeaderDragStart(e, column.id)
+                rowIdx === 0
+                  ? (e) => {
+                      if (groupable) {
+                        e.dataTransfer.setData('text/plain', column.id)
+                      }
+                      if (columnReorder.enabled) {
+                        columnReorder.handleHeaderDragStart(e, column.id)
+                      }
+                    }
                   : undefined
               }
               onDragOver={
@@ -1130,6 +1222,15 @@ function GridInner<T extends GridRow>({
     },
     onCellMouseLeave: gridTooltip.handleCellMouseLeave,
     getComputedValue: formulas ? formulaHook.getComputedValue : undefined,
+    groupFirstColId: gridGroup.active ? normalizedColumns[0]?.id : undefined,
+    getGroupCount: gridGroup.active
+      ? (rowId) => {
+          const row = normalizedData.find((r) => r.id === rowId)
+          return row ? getGroupCount(row as GridRow) : 0
+        }
+      : undefined,
+    expandedGroups: gridGroup.active ? gridGroup.expandedGroups : undefined,
+    toggleGroupExpanded: gridGroup.active ? gridGroup.toggleExpanded : undefined,
   }
 
   // ─── Keyboard Navigation ─────────────────────────────────────────
@@ -1240,6 +1341,20 @@ function GridInner<T extends GridRow>({
       data-rgs-key-navigation={keyNavigation}
       data-rgs-tooltip={tooltip}
     >
+      {groupable ? (
+        <GroupPanel
+          groupOrder={gridGroup.groupOrder}
+          groupSorts={gridGroup.groupSorts}
+          getColumnLabel={(id) => {
+            const col = normalizedColumns.find((c) => c.id === id)
+            return col?.header[0]?.text ?? id
+          }}
+          onRemove={handleRemoveGroup}
+          onSortToggle={gridGroup.toggleGroupSort}
+          onReorder={handleSetGroupOrder}
+          onColumnDrop={handleAddGroup}
+        />
+      ) : null}
       <div className={styles.header} style={{ height: totalHeaderHeight }}>
         {headerDropLineLeft !== null ? (
           <div
