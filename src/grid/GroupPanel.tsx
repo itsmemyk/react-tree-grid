@@ -83,7 +83,7 @@ export function GroupPanel({
               onClick={() => onSortToggle(colId)}
               aria-label={groupSorts[colId] === 'desc' ? 'Sort descending' : 'Sort ascending'}
             >
-              {groupSorts[colId] === 'desc' ? '↓' : '↑'}
+              <span className={groupSorts[colId] === 'desc' ? styles.sortDesc : styles.sortAsc} />
             </button>
             <span>{getColumnLabel(colId)}</span>
             <button

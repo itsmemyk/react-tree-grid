@@ -336,6 +336,7 @@ export const Grouping: Story = {
           columns={animalColumns}
           data={animalDataset}
           groupable
+          sortable
           group={{ order: ['animal_type'] }}
           style={{ height: 420, width: '100%' }}
         />
