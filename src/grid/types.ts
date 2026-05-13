@@ -89,6 +89,8 @@ export interface GridColumn<T = Record<string, unknown>> {
   tooltip?: boolean
   /** Auto-applied cell CSS derived from min/max or a custom function. */
   mark?: GridMarkConfig<T>
+  /** Opt this column out of grouping when grid groupable=true. */
+  groupable?: boolean
 }
 
 export interface GridRow {
@@ -96,6 +98,8 @@ export interface GridRow {
   hidden?: boolean
   $height?: number
   $css?: string
+  $group?: boolean
+  $groupLevel?: number
   [key: string]: unknown
 }
 
@@ -149,6 +153,8 @@ export interface GridApi<T extends GridRow = GridRow> {
   hideColumn: (colId: string) => void
   getColumn: (colId: string) => GridColumn<T> | undefined
   setColumns: (columns: GridColumn<T>[]) => void
+  groupBy: (columnIds: string[]) => void
+  clearGroups: () => void
 }
 
 export interface GridProps<T extends GridRow = GridRow> {
@@ -246,4 +252,10 @@ export interface GridProps<T extends GridRow = GridRow> {
 
   // Formula engine
   formulas?: boolean
+
+  // Grouping
+  groupable?: boolean
+  group?: { order: string[] }
+  onBeforeGroupChange?: (order: string[]) => boolean | void
+  onGroupChange?: (order: string[]) => void
 }
