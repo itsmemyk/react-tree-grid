@@ -322,6 +322,34 @@ export const AnimalMultiSort: Story = {
   render: () => <AnimalMultiSortDemo />,
 }
 
+export const Grouping: Story = {
+  name: 'Grouping',
+  render() {
+    return (
+      <ThemeProvider>
+        <p style={{ margin: '0 0 8px', fontSize: 13 }}>
+          Drag a column header onto the <strong>Group by:</strong> panel to group rows.
+          Click the sort arrow to change group sort direction. Drag chips to reorder.
+          Click ⊗ to remove a grouping. Click ▶ / ▼ to expand or collapse groups.
+        </p>
+        <Grid
+          columns={[
+            { id: 'name', header: [{ text: 'Name' }], width: 160 },
+            { id: 'team', header: [{ text: 'Team' }], width: 100 },
+            { id: 'role', header: [{ text: 'Role' }], width: 130 },
+            { id: 'region', header: [{ text: 'Region' }], width: 100 },
+            { id: 'salary', header: [{ text: 'Salary' }], width: 100, align: 'right' },
+          ]}
+          data={data50}
+          groupable
+          group={{ order: ['team'] }}
+          style={{ height: 420, width: '100%' }}
+        />
+      </ThemeProvider>
+    )
+  },
+}
+
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // STORY: Row Selection
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -1044,34 +1072,6 @@ export const FormulaEngine: Story = {
           ]}
           formulas={true}
           style={{ height: 200, width: '100%' }}
-        />
-      </ThemeProvider>
-    )
-  },
-}
-
-export const Grouping: Story = {
-  name: 'Grouping',
-  render() {
-    return (
-      <ThemeProvider>
-        <p style={{ margin: '0 0 8px', fontSize: 13 }}>
-          Drag a column header onto the <strong>Group by:</strong> panel to group rows.
-          Click the sort arrow to change group sort direction. Drag chips to reorder.
-          Click ⊗ to remove a grouping. Click ▶ / ▼ to expand or collapse groups.
-        </p>
-        <Grid
-          columns={[
-            { id: 'name', header: [{ text: 'Name' }], width: 160 },
-            { id: 'team', header: [{ text: 'Team' }], width: 100 },
-            { id: 'role', header: [{ text: 'Role' }], width: 130 },
-            { id: 'region', header: [{ text: 'Region' }], width: 100 },
-            { id: 'salary', header: [{ text: 'Salary' }], width: 100, align: 'right' },
-          ]}
-          data={data50}
-          groupable
-          group={{ order: ['team'] }}
-          style={{ height: 420, width: '100%' }}
         />
       </ThemeProvider>
     )
