@@ -417,3 +417,86 @@
 .freezeHandleDragging::after {
   opacity: 1;
 }
+
+/* ─── Grouping ───────────────────────────────────────────────────────── */
+
+.groupPanel {
+  align-items: center;
+  background: var(--react-tree-grid-color-surface);
+  border-bottom: 1px solid var(--react-tree-grid-color-border);
+  display: flex;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 4px 8px;
+}
+
+.groupPanelLabel {
+  color: var(--react-tree-grid-color-text);
+  font-size: 0.875em;
+  margin-right: 2px;
+  white-space: nowrap;
+}
+
+.groupPanelEmpty {
+  color: var(--react-tree-grid-color-text);
+  font-size: 0.875em;
+  opacity: 0.45;
+}
+
+.groupChip {
+  align-items: center;
+  background: var(--react-tree-grid-color-surface);
+  border: 1px solid var(--react-tree-grid-color-border);
+  border-radius: 4px;
+  cursor: grab;
+  display: flex;
+  font-size: 0.8125em;
+  gap: 2px;
+  padding: 1px 4px;
+  user-select: none;
+}
+
+.groupChip:active {
+  cursor: grabbing;
+}
+
+.groupChipSort,
+.groupChipRemove {
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  font-size: inherit;
+  line-height: 1;
+  padding: 0 2px;
+}
+
+.groupChipSort:hover,
+.groupChipRemove:hover {
+  opacity: 0.65;
+}
+
+.groupRow {
+  background: var(--react-tree-grid-color-surface) !important;
+  font-weight: 600;
+}
+
+.groupRowCell {
+  align-items: center;
+  display: flex;
+  gap: 4px;
+  overflow: hidden;
+  width: 100%;
+}
+
+.groupRowToggle {
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  flex-shrink: 0;
+  font-size: inherit;
+  line-height: 1;
+  padding: 0;
+}
