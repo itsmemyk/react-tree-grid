@@ -47,7 +47,7 @@ import { SelectFilter } from './filters/SelectFilter'
 import { InputFilter } from './filters/InputFilter'
 import { ComboFilter } from './filters/ComboFilter'
 import { getScrollbarHeight, getScrollbarWidth } from '../core/utils'
-import { useGridGroup, getGroupCount } from './useGridGroup'
+import { useGridGroup, getGroupCount, getGroupLevel } from './useGridGroup'
 import { GroupPanel } from './GroupPanel'
 
 interface NormalizedHeaderCell {
@@ -145,8 +145,7 @@ interface RowInteraction {
   onEditorKeyDown?: (e: React.KeyboardEvent) => void
   onEditorBlur?: () => void
   getComputedValue?: (rowId: string, colIndex: number) => unknown
-  groupFirstColId?: string
-  getGroupCount?: (rowId: string) => number
+  groupOrder?: string[]
   expandedGroups?: Set<string>
   toggleGroupExpanded?: (rowId: string) => void
 }
@@ -159,10 +158,13 @@ function renderRow<T extends GridRow>(
   omitTrailingBorder = false,
   addLeadingBorder = false,
 ) {
-  if (row.$group && interaction?.groupFirstColId) {
-    const isExpanded = interaction.expandedGroups?.has(row.id) ?? false
-    const count = interaction.getGroupCount?.(row.id) ?? 0
-    const firstColId = interaction.groupFirstColId
+  if (row.$group && columns.some((c) => c.id === '__group')) {
+    const level = getGroupLevel(row.id)
+    const isExpanded = interaction?.expandedGroups?.has(row.id) ?? false
+    const groupColId = interaction?.groupOrder?.[level] ?? ''
+    const groupValue = String(row[groupColId] ?? '')
+    const count = getGroupCount(row)
+
     return (
       <div
         key={row.id}
@@ -173,29 +175,26 @@ function renderRow<T extends GridRow>(
         {columns.map((column, colIndex) => (
           <div
             key={`${row.id}-${column.id}`}
-            className={[
-              stylesMap.cell,
-              stylesMap.alignLeft,
-              omitTrailingBorder && colIndex === columns.length - 1 ? '' : '',
-            ].filter(Boolean).join(' ')}
+            className={[stylesMap.cell, stylesMap.alignLeft].join(' ')}
             style={{
               width: colVarRef(column.id),
               height: getRowHeight(row, 40),
+              borderLeft: addLeadingBorder && colIndex === 0 ? '1px solid var(--react-tree-grid-color-border)' : undefined,
               borderRight: omitTrailingBorder && colIndex === columns.length - 1 ? 'none' : undefined,
             }}
             data-rgs-col-id={column.id}
           >
-            {column.id === firstColId ? (
-              <div className={stylesMap.groupRowCell}>
+            {column.id === '__group' ? (
+              <div className={stylesMap.groupRowCell} style={{ paddingLeft: level * 18 }}>
                 <button
                   type="button"
                   className={stylesMap.groupRowToggle}
                   aria-label={isExpanded ? 'Collapse group' : 'Expand group'}
-                  onClick={() => interaction.toggleGroupExpanded?.(row.id)}
+                  onClick={() => interaction?.toggleGroupExpanded?.(row.id)}
                 >
                   {isExpanded ? '▼' : '▶'}
                 </button>
-                <span>{String(row[column.id] ?? '')} ({count})</span>
+                <span>{groupValue} ({count})</span>
               </div>
             ) : null}
           </div>
@@ -205,7 +204,6 @@ function renderRow<T extends GridRow>(
   }
 
   const rowSelected = interaction?.isRowSelected?.(row.id)
-  const groupIndent = (row.$groupLevel ?? 0) > 0 ? (row.$groupLevel ?? 0) * 18 : 0
 
   return (
     <div
@@ -230,6 +228,26 @@ function renderRow<T extends GridRow>(
     >
       {columns.map((column, colIndex) => {
         const cellHeight = getRowHeight(row, 40)
+
+        if (column.id === '__group' && !row.$group) {
+          const indent = ((row.$groupLevel ?? 0) * 18) + 18
+          return (
+            <div
+              key={`${row.id}-${column.id}`}
+              className={[stylesMap.cell, stylesMap.alignLeft].join(' ')}
+              style={{
+                width: colVarRef(column.id),
+                height: cellHeight,
+                borderLeft: addLeadingBorder && colIndex === 0 ? '1px solid var(--react-tree-grid-color-border)' : undefined,
+                borderRight: omitTrailingBorder && colIndex === columns.length - 1 ? 'none' : undefined,
+              }}
+              data-rgs-col-id={column.id}
+            >
+              <div style={{ paddingLeft: indent }} />
+            </div>
+          )
+        }
+
         const cellSelected = interaction?.isCellSelected?.(row.id, column.id)
         const editing = interaction?.isEditing?.(row.id, column.id)
 
@@ -251,7 +269,6 @@ function renderRow<T extends GridRow>(
             style={{
               width: colVarRef(column.id),
               height: cellHeight,
-              paddingLeft: groupIndent > 0 && colIndex === 0 ? `${groupIndent + 8}px` : undefined,
               borderLeft: addLeadingBorder && colIndex === 0 ? '1px solid var(--react-tree-grid-color-border)' : undefined,
               borderRight: omitTrailingBorder && colIndex === columns.length - 1 ? 'none' : undefined,
             }}
@@ -696,14 +713,28 @@ function GridInner<T extends GridRow>({
     })
   }, [columnReorder.orderedColumns, columnResize.widthOverrides, adjustResult.widthOverrides])
 
+  const displayColumns = useMemo<NormalizedColumn<T>[]>(() => {
+    if (!gridGroup.active) return normalizedColumns
+    const groupedSet = new Set(gridGroup.groupOrder)
+    const filtered = normalizedColumns.filter((col) => !groupedSet.has(col.id))
+    const groupSyntheticCol = {
+      id: '__group',
+      $width: 160,
+      header: [{ id: '__group-0', text: 'Group' }],
+      sortable: false as const,
+      resizable: false as const,
+    } as NormalizedColumn<T>
+    return [groupSyntheticCol, ...filtered]
+  }, [normalizedColumns, gridGroup.active, gridGroup.groupOrder])
+
   // Compute number of header rows (max across all columns)
   const headerRowCount = useMemo(
     () =>
-      normalizedColumns.reduce(
+      displayColumns.reduce(
         (max, col) => Math.max(max, col.header.length),
         1,
       ),
-    [normalizedColumns],
+    [displayColumns],
   )
   const totalHeaderHeight = adjustResult.headerRowHeights.length
     ? adjustResult.headerRowHeights.reduce((sum, h) => sum + h, 0)
@@ -712,11 +743,11 @@ function GridInner<T extends GridRow>({
   // Compute number of footer rows
   const footerRowCount = useMemo(
     () =>
-      normalizedColumns.reduce(
+      displayColumns.reduce(
         (max, col) => Math.max(max, col.footer?.length ?? 0),
         0,
       ),
-    [normalizedColumns],
+    [displayColumns],
   )
   const totalFooterHeight = adjustResult.footerRowHeights.length
     ? adjustResult.footerRowHeights.reduce((sum, h) => sum + h, 0)
@@ -740,9 +771,9 @@ function GridInner<T extends GridRow>({
   )
   const colWidthMap = useMemo(() => {
     const m: Record<string, number> = {}
-    for (const c of normalizedColumns) m[c.id] = c.$width
+    for (const c of displayColumns) m[c.id] = c.$width
     return m
-  }, [normalizedColumns])
+  }, [displayColumns])
   const rowHeightMap = useMemo(() => {
     const m: Record<string, number> = {}
     for (const r of normalizedData) m[r.id] = r.$height
@@ -826,21 +857,21 @@ function GridInner<T extends GridRow>({
   })
   const effectiveLeftSplit = freezable ? freezeHook.freezeCol : leftSplit
 
-  const fixedLeftColumns = normalizedColumns.slice(0, effectiveLeftSplit)
+  const fixedLeftColumns = displayColumns.slice(0, effectiveLeftSplit)
   const fixedRightColumns =
     rightSplit > 0
-      ? normalizedColumns.slice(normalizedColumns.length - rightSplit)
+      ? displayColumns.slice(displayColumns.length - rightSplit)
       : []
-  const centerColumns = normalizedColumns.slice(
+  const centerColumns = displayColumns.slice(
     effectiveLeftSplit,
-    normalizedColumns.length - rightSplit || normalizedColumns.length,
+    displayColumns.length - rightSplit || displayColumns.length,
   )
 
   const topRows = normalizedData.slice(0, topSplit)
   const bottomRows =
     bottomSplit > 0 ? normalizedData.slice(normalizedData.length - bottomSplit) : []
 
-  const totalWidth = normalizedColumns.reduce(
+  const totalWidth = displayColumns.reduce(
     (sum, column) => sum + column.$width,
     0,
   )
@@ -853,7 +884,7 @@ function GridInner<T extends GridRow>({
 
   // Keep resizeTrack in sync so internalOnResize can identify frozen columns
   resizeTrack.current.effectiveLeftSplit = effectiveLeftSplit
-  resizeTrack.current.columnIds = normalizedColumns.map(c => c.id)
+  resizeTrack.current.columnIds = displayColumns.map(c => c.id)
   const fixedTopHeight = sumRowHeights(topRows, rowHeight)
   const fixedBottomHeight = sumRowHeights(bottomRows, rowHeight)
   const baseBodyHeight = Math.max(
@@ -882,9 +913,9 @@ function GridInner<T extends GridRow>({
     : 0
   const virtual = useVirtualScroll({
     totalRows: normalizedData.length,
-    totalCols: normalizedColumns.length,
+    totalCols: displayColumns.length,
     rowHeight,
-    colWidths: normalizedColumns.map((column) => column.$width),
+    colWidths: displayColumns.map((column) => column.$width),
     containerWidth: bodyClientWidth,
     containerHeight: bodyClientHeight,
     leftSplit: effectiveLeftSplit,
@@ -892,7 +923,7 @@ function GridInner<T extends GridRow>({
     topSplit,
     bottomSplit,
   })
-  const visibleColumns = normalizedColumns.slice(virtual.xStart, virtual.xEnd + 1)
+  const visibleColumns = displayColumns.slice(virtual.xStart, virtual.xEnd + 1)
   const visibleRows = normalizedData.slice(virtual.yStart, virtual.yEnd + 1)
   const syncedScrollLeft = bodyRef.current?.scrollLeft ?? scrollSyncRef.current.left ?? virtual.scrollLeft
 
@@ -933,21 +964,21 @@ function GridInner<T extends GridRow>({
       return null
     }
 
-    const targetIndex = normalizedColumns.findIndex((column) => column.id === indicator.columnId)
+    const targetIndex = displayColumns.findIndex((column) => column.id === indicator.columnId)
     if (targetIndex < 0) {
       return null
     }
 
-    const targetColumn = normalizedColumns[targetIndex]
+    const targetColumn = displayColumns[targetIndex]
     const placeAfter = indicator.position === 'after'
 
     if (targetIndex < effectiveLeftSplit) {
-      const beforeWidth = sumWidths(normalizedColumns.slice(0, targetIndex))
+      const beforeWidth = sumWidths(displayColumns.slice(0, targetIndex))
       return beforeWidth + (placeAfter ? targetColumn.$width : 0)
     }
 
-    if (rightSplit > 0 && targetIndex >= normalizedColumns.length - rightSplit) {
-      const rightIndex = targetIndex - (normalizedColumns.length - rightSplit)
+    if (rightSplit > 0 && targetIndex >= displayColumns.length - rightSplit) {
+      const rightIndex = targetIndex - (displayColumns.length - rightSplit)
       const beforeWidth = sumWidths(fixedRightColumns.slice(0, rightIndex))
       return rightFixedLeft + beforeWidth + (placeAfter ? targetColumn.$width : 0)
     }
@@ -962,7 +993,7 @@ function GridInner<T extends GridRow>({
     fixedLeftWidth,
     fixedRightColumns,
     effectiveLeftSplit,
-    normalizedColumns,
+    displayColumns,
     rightFixedLeft,
     rightSplit,
     virtual.scrollLeft,
@@ -1079,7 +1110,7 @@ function GridInner<T extends GridRow>({
           const cell = column.header[rowIdx]
           const sortOrder = rowIdx === 0 ? gridSort.getSortOrder(column.id) : undefined
           const sortIndex = rowIdx === 0 ? gridSort.getSortIndex(column.id) : -1
-          const isSortableHeader = (sortable || column.sortable === true || (!!store && column.sortable !== false)) && column.sortable !== false && rowIdx === 0
+          const isSortableHeader = column.id !== '__group' && (sortable || column.sortable === true || (!!store && column.sortable !== false)) && column.sortable !== false && rowIdx === 0
           const sortIndicator = isSortableHeader ? (
             <span
               className={[
@@ -1145,9 +1176,9 @@ function GridInner<T extends GridRow>({
                     }
                   : undefined
               }
-              draggable={(columnReorder.enabled || !!groupable) && rowIdx === 0}
+              draggable={(columnReorder.enabled || !!groupable) && rowIdx === 0 && column.id !== '__group'}
               onDragStart={
-                rowIdx === 0
+                rowIdx === 0 && column.id !== '__group'
                   ? (e) => {
                       if (groupable) {
                         e.dataTransfer.setData('text/plain', column.id)
@@ -1215,20 +1246,14 @@ function GridInner<T extends GridRow>({
     onCellMouseEnter: (e, rowId, colId) => {
       if (!tooltip) return
       const row = normalizedData.find((r) => r.id === rowId)
-      const column = normalizedColumns.find((c) => c.id === colId)
+      const column = displayColumns.find((c) => c.id === colId)
       if (row && column) {
         gridTooltip.handleCellMouseEnter(e, rowId, colId, row as GridRow, column as GridColumn)
       }
     },
     onCellMouseLeave: gridTooltip.handleCellMouseLeave,
     getComputedValue: formulas ? formulaHook.getComputedValue : undefined,
-    groupFirstColId: gridGroup.active ? normalizedColumns[0]?.id : undefined,
-    getGroupCount: gridGroup.active
-      ? (rowId) => {
-          const row = normalizedData.find((r) => r.id === rowId)
-          return row ? getGroupCount(row as GridRow) : 0
-        }
-      : undefined,
+    groupOrder: gridGroup.active ? gridGroup.groupOrder : undefined,
     expandedGroups: gridGroup.active ? gridGroup.expandedGroups : undefined,
     toggleGroupExpanded: gridGroup.active ? gridGroup.toggleExpanded : undefined,
   }
@@ -1319,7 +1344,7 @@ function GridInner<T extends GridRow>({
   })
 
   const colVars = Object.fromEntries(
-    normalizedColumns.map((col) => [colVarName(col.id), `${col.$width}px`])
+    displayColumns.map((col) => [colVarName(col.id), `${col.$width}px`])
   ) as React.CSSProperties
 
   return (
@@ -1346,7 +1371,7 @@ function GridInner<T extends GridRow>({
           groupOrder={gridGroup.groupOrder}
           groupSorts={gridGroup.groupSorts}
           getColumnLabel={(id) => {
-            const col = normalizedColumns.find((c) => c.id === id)
+            const col = normalizedColumns.find((c) => c.id === id) ?? displayColumns.find((c) => c.id === id)
             return col?.header[0]?.text ?? id
           }}
           onRemove={handleRemoveGroup}
