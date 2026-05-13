@@ -479,7 +479,6 @@
 
 .groupRow {
   background: var(--react-tree-grid-color-surface) !important;
-  font-weight: 600;
 }
 
 .groupRowCell {
