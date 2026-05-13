@@ -332,17 +332,11 @@ export const Grouping: Story = {
           Click the sort arrow to change group sort direction. Drag chips to reorder.
           Click ⊗ to remove a grouping. Click ▶ / ▼ to expand or collapse groups.
         </p>
-        <Grid
-          columns={[
-            { id: 'name', header: [{ text: 'Name' }], width: 160 },
-            { id: 'team', header: [{ text: 'Team' }], width: 100 },
-            { id: 'role', header: [{ text: 'Role' }], width: 130 },
-            { id: 'region', header: [{ text: 'Region' }], width: 100 },
-            { id: 'salary', header: [{ text: 'Salary' }], width: 100, align: 'right' },
-          ]}
-          data={data50}
+        <Grid<AnimalTask>
+          columns={animalColumns}
+          data={animalDataset}
           groupable
-          group={{ order: ['team'] }}
+          group={{ order: ['animal_type'] }}
           style={{ height: 420, width: '100%' }}
         />
       </ThemeProvider>
