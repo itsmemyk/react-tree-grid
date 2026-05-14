@@ -1556,15 +1556,21 @@ describe('Grid', () => {
       expect(screen.getAllByText(/Eng|HR/).length).toBeGreaterThan(0)
     })
 
-    it('expands group row when toggle button is clicked', () => {
+    it('groups are expanded by default and collapse when toggle is clicked', () => {
       render(
         <ThemeProvider>
           <Grid columns={groupColumns} data={groupData} groupable style={{ width: 360, height: 200 }} />
         </ThemeProvider>,
       )
       dropColumnOnPanel('dept', 'Dept')
-      const toggle = screen.getAllByRole('button', { name: 'Expand group' })[0]
-      fireEvent.click(toggle)
+      // groups start expanded — leaf rows are visible immediately
+      expect(screen.getAllByText(/Active|Inactive/).length).toBeGreaterThan(0)
+      // collapse the first group
+      const collapse = screen.getAllByRole('button', { name: 'Collapse group' })[0]
+      fireEvent.click(collapse)
+      // re-expand it
+      const expand = screen.getAllByRole('button', { name: 'Expand group' })[0]
+      fireEvent.click(expand)
       expect(screen.getAllByText(/Active|Inactive/).length).toBeGreaterThan(0)
     })
 

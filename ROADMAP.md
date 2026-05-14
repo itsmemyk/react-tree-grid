@@ -1,6 +1,6 @@
 # Roadmap
 
-Current version: **v0.4.3**
+Current version: **v0.5.0**
 
 Features are grouped into milestones. Each milestone is independently releasable.
 
@@ -11,25 +11,26 @@ Features are grouped into milestones. Each milestone is independently releasable
 Group rows by one or more columns with a drag-panel UI, nested groups, and expand/collapse.
 
 ### Props
-- [ ] `groupable?: boolean` — grid-level, enables drag panel and grouping UI; default `false`
-- [ ] `group?: { order: string[] }` — initial grouping state; `order` is an array of column IDs
-- [ ] `groupable?: boolean` on `GridColumn` — opt a column out of the drag panel (default `true` when grid `groupable` is on)
+- [x] `groupable?: boolean` — grid-level, enables drag panel and grouping UI; default `false`
+- [x] `group?: { order: string[] }` — initial grouping state; `order` is an array of column IDs
+- [x] `groupable?: boolean` on `GridColumn` — opt a column out of the drag panel (default `true` when grid `groupable` is on)
 
 ### Drag panel
-- [ ] Rendered above the grid when `groupable: true`
-- [ ] Each chip shows: column label + sort direction toggle (asc/desc) + × remove button
-- [ ] Chips are draggable to reorder grouping priority
-- [ ] Columns can be dragged from the header into the panel to add a group level
+- [x] Rendered above the grid when `groupable: true`
+- [x] Each chip shows: column label + sort direction toggle (idle/asc/desc) + × remove button
+- [x] Chips are draggable to reorder grouping priority
+- [x] Columns can be dragged from the header into the panel to add a group level
 
 ### Group rows
-- [ ] Multi-level nesting — each entry in `order` adds one nesting level with increased indentation
-- [ ] Group header row shows: chevron + group value + row count e.g. `Dog (43)`
-- [ ] Expand/collapse per row; `expandGroup(key)` / `collapseGroup(key)` / `expandAllGroups()` / `collapseAllGroups()` API methods
+- [x] Multi-level nesting — each entry in `order` adds one nesting level with increased indentation
+- [x] Group header row shows: chevron + group value + row count e.g. `Dog (43)`
+- [x] Expand/collapse per row (chevron toggle); groups default to expanded
+- [x] `groupBy(columnIds)` / `clearGroups()` GridApi methods
 
 ### Sorting & events
-- [ ] Per-chip sort direction toggle sorts leaf rows within that group level
-- [ ] Regular column header sort still works on leaf rows within groups
-- [ ] `onBeforeGroupChange` / `onAfterGroupChange` events
+- [x] Per-chip sort direction toggle sorts leaf rows within that group level
+- [x] Regular column header sort still works on leaf rows within groups
+- [x] `onBeforeGroupChange` / `onGroupChange` events
 
 ---
 
