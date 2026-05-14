@@ -326,11 +326,11 @@ export const Grouping: Story = {
   name: 'Grouping',
   render() {
     return (
-      <ThemeProvider>
-        <p style={{ margin: '0 0 8px', fontSize: 13 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 48px)' }}>
+        <p style={{ flexShrink: 0, margin: '0 0 8px', fontSize: 13 }}>
           Drag a column header onto the <strong>Group by:</strong> panel to group rows.
           Click the sort arrow to change group sort direction. Drag chips to reorder.
-          Click ⊗ to remove a grouping. Click ▶ / ▼ to expand or collapse groups.
+          Click ✕ to remove a grouping. Click the chevron to expand or collapse groups.
         </p>
         <Grid<AnimalTask>
           columns={animalColumns}
@@ -338,9 +338,9 @@ export const Grouping: Story = {
           groupable
           sortable
           group={{ order: ['animal_type'] }}
-          style={{ height: 420, width: '100%' }}
+          style={{ flex: 1, minHeight: 0, width: '100%' }}
         />
-      </ThemeProvider>
+      </div>
     )
   },
 }

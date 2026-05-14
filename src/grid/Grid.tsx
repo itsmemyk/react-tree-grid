@@ -146,7 +146,7 @@ interface RowInteraction {
   onEditorBlur?: () => void
   getComputedValue?: (rowId: string, colIndex: number) => unknown
   groupOrder?: string[]
-  expandedGroups?: Set<string>
+  collapsedGroups?: Set<string>
   toggleGroupExpanded?: (rowId: string) => void
 }
 
@@ -160,7 +160,7 @@ function renderRow<T extends GridRow>(
 ) {
   if (row.$group && columns.some((c) => c.id === '__group')) {
     const level = getGroupLevel(row.id)
-    const isExpanded = interaction?.expandedGroups?.has(row.id) ?? false
+    const isExpanded = interaction?.collapsedGroups ? !interaction.collapsedGroups.has(row.id) : true
     const groupColId = interaction?.groupOrder?.[level] ?? ''
     const groupValue = String(row[groupColId] ?? '')
     const count = getGroupCount(row)
@@ -192,7 +192,7 @@ function renderRow<T extends GridRow>(
                   aria-label={isExpanded ? 'Collapse group' : 'Expand group'}
                   onClick={() => interaction?.toggleGroupExpanded?.(row.id)}
                 >
-                  {isExpanded ? '▼' : '▶'}
+                  <span className={isExpanded ? stylesMap.chevronExpanded : stylesMap.chevronCollapsed} />
                 </button>
                 <span>{groupValue} ({count})</span>
               </div>
@@ -559,8 +559,29 @@ function GridInner<T extends GridRow>({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dataProxy?.url])
 
+  // ─── Sorting ──────────────────────────────────────────────────────
+  const gridSort = useGridSort(
+    store as unknown as import('../core/data').DataStore<T & DataItem> | undefined,
+    columnReorder.orderedColumns,
+    {
+      onBeforeSort,
+      onAfterSort,
+      onRemoteSort: (remoteSort && dataProxy)
+        ? (sortBy, sortDir) => {
+            const newOpts: LoadOptions = {
+              ...proxyOpts,
+              sortBy: sortBy ?? undefined,
+              sortDir: sortDir ?? undefined,
+            }
+            setProxyOpts(newOpts)
+            dataProxyHook.load(1, newOpts)
+          }
+        : undefined,
+    },
+  )
+
   // ─── Grouping ─────────────────────────────────────────────────────
-  const gridGroup = useGridGroup(activeData, group?.order ?? [])
+  const gridGroup = useGridGroup(activeData, group?.order ?? [], store ? [] : gridSort.sortingStates)
 
   const handleAddGroup = useCallback((colId: string) => {
     const nextOrder = gridGroup.groupOrder.includes(colId)
@@ -583,27 +604,6 @@ function GridInner<T extends GridRow>({
     gridGroup.setGroupOrder(order)
     onGroupChange?.(order)
   }, [gridGroup, onBeforeGroupChange, onGroupChange])
-
-  // ─── Sorting ──────────────────────────────────────────────────────
-  const gridSort = useGridSort(
-    store as unknown as import('../core/data').DataStore<T & DataItem> | undefined,
-    columnReorder.orderedColumns,
-    {
-      onBeforeSort,
-      onAfterSort,
-      onRemoteSort: (remoteSort && dataProxy)
-        ? (sortBy, sortDir) => {
-            const newOpts: LoadOptions = {
-              ...proxyOpts,
-              sortBy: sortBy ?? undefined,
-              sortDir: sortDir ?? undefined,
-            }
-            setProxyOpts(newOpts)
-            dataProxyHook.load(1, newOpts)
-          }
-        : undefined,
-    },
-  )
 
   const rowDrag = useRowDrag<T>(activeData, {
     store: store as DataStore<T & DataItem> | undefined,
@@ -1182,10 +1182,25 @@ function GridInner<T extends GridRow>({
                   ? (e) => {
                       if (groupable) {
                         e.dataTransfer.setData('text/plain', column.id)
+                        e.dataTransfer.setData(`rgs-group-col:${column.id}`, '')
                       }
                       if (columnReorder.enabled) {
                         columnReorder.handleHeaderDragStart(e, column.id)
                       }
+                      const label = column.header[0]?.text ?? column.id
+                      const ghost = document.createElement('div')
+                      ghost.textContent = label
+                      Object.assign(ghost.style, {
+                        position: 'fixed', top: '-9999px', left: '-9999px',
+                        padding: '4px 12px',
+                        background: 'var(--react-tree-grid-color-background, #fff)',
+                        border: '1px solid var(--react-tree-grid-color-border, #ddd)',
+                        borderRadius: '4px', fontSize: '13px', fontWeight: '500',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.15)', whiteSpace: 'nowrap',
+                      })
+                      document.body.appendChild(ghost)
+                      e.dataTransfer.setDragImage?.(ghost, ghost.offsetWidth / 2, ghost.offsetHeight / 2)
+                      document.body.removeChild(ghost)
                     }
                   : undefined
               }
@@ -1254,7 +1269,7 @@ function GridInner<T extends GridRow>({
     onCellMouseLeave: gridTooltip.handleCellMouseLeave,
     getComputedValue: formulas ? formulaHook.getComputedValue : undefined,
     groupOrder: gridGroup.active ? gridGroup.groupOrder : undefined,
-    expandedGroups: gridGroup.active ? gridGroup.expandedGroups : undefined,
+    collapsedGroups: gridGroup.active ? gridGroup.collapsedGroups : undefined,
     toggleGroupExpanded: gridGroup.active ? gridGroup.toggleExpanded : undefined,
   }
 

@@ -1,4 +1,4 @@
-import type { DragEvent } from 'react'
+import { useState, type DragEvent } from 'react'
 import styles from './grid.module.css'
 
 export interface GroupPanelProps {
@@ -11,6 +11,14 @@ export interface GroupPanelProps {
   onColumnDrop: (colId: string) => void
 }
 
+const GROUP_COL_PREFIX = 'rgs-group-col:'
+
+function getColIdFromTypes(types: DOMStringList | readonly string[] | null | undefined): string | null {
+  if (!types) return null
+  const t = Array.from(types as Iterable<string>).find((s) => s.startsWith(GROUP_COL_PREFIX))
+  return t ? t.slice(GROUP_COL_PREFIX.length) : null
+}
+
 export function GroupPanel({
   groupOrder,
   groupSorts,
@@ -20,13 +28,24 @@ export function GroupPanel({
   onReorder,
   onColumnDrop,
 }: GroupPanelProps) {
+  const [dragOverColId, setDragOverColId] = useState<string | null>(null)
+
   const handlePanelDragOver = (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault()
     e.dataTransfer.dropEffect = 'move'
+    const colId = getColIdFromTypes(e.dataTransfer.types)
+    if (colId && colId !== dragOverColId) setDragOverColId(colId)
+  }
+
+  const handlePanelDragLeave = (e: DragEvent<HTMLDivElement>) => {
+    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+      setDragOverColId(null)
+    }
   }
 
   const handlePanelDrop = (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault()
+    setDragOverColId(null)
     const colId = e.dataTransfer.getData('text/plain')
     if (colId) onColumnDrop(colId)
   }
@@ -56,46 +75,65 @@ export function GroupPanel({
     onReorder(next)
   }
 
+  const showGhost = dragOverColId !== null && !groupOrder.includes(dragOverColId)
+
   return (
     <div
       className={styles.groupPanel}
       onDragOver={handlePanelDragOver}
+      onDragLeave={handlePanelDragLeave}
       onDrop={handlePanelDrop}
       data-testid="group-panel"
     >
       <span className={styles.groupPanelLabel}>Group by:</span>
-      {groupOrder.length === 0 ? (
+      {groupOrder.length === 0 && !showGhost ? (
         <span className={styles.groupPanelEmpty}>Drag the column header here</span>
       ) : (
-        groupOrder.map((colId) => (
-          <div
-            key={colId}
-            className={styles.groupChip}
-            draggable
-            onDragStart={(e) => handleChipDragStart(e, colId)}
-            onDragOver={handleChipDragOver}
-            onDrop={(e) => handleChipDrop(e, colId)}
-            data-testid={`group-chip-${colId}`}
-          >
-            <button
-              type="button"
-              className={styles.groupChipSort}
-              onClick={() => onSortToggle(colId)}
-              aria-label={groupSorts[colId] === 'desc' ? 'Sort descending' : 'Sort ascending'}
+        <>
+          {groupOrder.map((colId) => (
+            <div
+              key={colId}
+              className={styles.groupChip}
+              draggable
+              onDragStart={(e) => handleChipDragStart(e, colId)}
+              onDragOver={handleChipDragOver}
+              onDrop={(e) => handleChipDrop(e, colId)}
+              data-testid={`group-chip-${colId}`}
             >
-              <span className={groupSorts[colId] === 'desc' ? styles.sortDesc : styles.sortAsc} />
-            </button>
-            <span>{getColumnLabel(colId)}</span>
-            <button
-              type="button"
-              className={styles.groupChipRemove}
-              onClick={() => onRemove(colId)}
-              aria-label={`Remove ${getColumnLabel(colId)} grouping`}
-            >
-              ⊗
-            </button>
-          </div>
-        ))
+              <button
+                type="button"
+                className={styles.groupChipSort}
+                onClick={() => onSortToggle(colId)}
+                aria-label={
+                  groupSorts[colId] === 'desc' ? 'Sort descending' :
+                  groupSorts[colId] === 'asc' ? 'Sort ascending' :
+                  'Set sort direction'
+                }
+              >
+                <span className={
+                  groupSorts[colId] === 'desc' ? styles.sortDesc :
+                  groupSorts[colId] === 'asc' ? styles.sortAsc :
+                  styles.sortBidirectional
+                } />
+                <span>{getColumnLabel(colId)}</span>
+              </button>
+              <button
+                type="button"
+                className={styles.groupChipRemove}
+                onClick={() => onRemove(colId)}
+                aria-label={`Remove ${getColumnLabel(colId)} grouping`}
+              >
+                ×
+              </button>
+            </div>
+          ))}
+          {showGhost && (
+            <div className={`${styles.groupChip} ${styles.groupChipGhost}`}>
+              <span className={styles.sortAsc} />
+              <span>{getColumnLabel(dragOverColId!)}</span>
+            </div>
+          )}
+        </>
       )}
     </div>
   )

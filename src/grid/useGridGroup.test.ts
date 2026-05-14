@@ -18,38 +18,36 @@ describe('useGridGroup', () => {
     expect(result.current.visibleRows[0].id).toBe('1')
   })
 
-  it('shows only group rows when grouping active and all collapsed', () => {
+  it('shows group rows and their children expanded by default', () => {
     const { result } = renderHook(() => useGridGroup(data, ['dept']))
     expect(result.current.active).toBe(true)
-    expect(result.current.visibleRows).toHaveLength(2)
+    // Eng group + 2 children + HR group + 2 children = 6 rows
+    expect(result.current.visibleRows).toHaveLength(6)
+    expect(result.current.visibleRows[0].$group).toBe(true)
+    expect(result.current.visibleRows[3].$group).toBe(true)
+  })
+
+  it('collapses a group row to hide its children', () => {
+    const { result } = renderHook(() => useGridGroup(data, ['dept']))
+    const engGroupId = result.current.visibleRows[0].id
+    act(() => { result.current.toggleExpanded(engGroupId) })
+    // Eng (collapsed) + HR group + 2 HR children = 4 rows
+    expect(result.current.visibleRows).toHaveLength(4)
     expect(result.current.visibleRows[0].$group).toBe(true)
     expect(result.current.visibleRows[1].$group).toBe(true)
   })
 
-  it('expands a group row to show its children', () => {
-    const { result } = renderHook(() => useGridGroup(data, ['dept']))
-    const engGroupId = result.current.visibleRows[0].id
-    act(() => { result.current.toggleExpanded(engGroupId) })
-    // Eng group + 2 children + HR group = 4 rows
-    expect(result.current.visibleRows).toHaveLength(4)
-    expect(result.current.visibleRows[0].$group).toBe(true)
-    expect(result.current.visibleRows[1].$group).toBeFalsy()
-    expect(result.current.visibleRows[2].$group).toBeFalsy()
-    expect(result.current.visibleRows[3].$group).toBe(true)
-  })
-
-  it('collapses an expanded group', () => {
+  it('re-expands a collapsed group', () => {
     const { result } = renderHook(() => useGridGroup(data, ['dept']))
     const engGroupId = result.current.visibleRows[0].id
     act(() => { result.current.toggleExpanded(engGroupId) })
     act(() => { result.current.toggleExpanded(engGroupId) })
-    expect(result.current.visibleRows).toHaveLength(2)
+    expect(result.current.visibleRows).toHaveLength(6)
   })
 
   it('child data rows get $groupLevel set to their nesting depth', () => {
     const { result } = renderHook(() => useGridGroup(data, ['dept']))
-    const engGroupId = result.current.visibleRows[0].id
-    act(() => { result.current.toggleExpanded(engGroupId) })
+    // Groups are expanded by default — no toggle needed
     const groupRow = result.current.visibleRows[0]
     const childRow = result.current.visibleRows[1]
     expect(groupRow.$groupLevel).toBe(0)
@@ -70,19 +68,21 @@ describe('useGridGroup', () => {
     expect(result.current.groupOrder).toEqual(['status'])
   })
 
-  it('setGroupOrder replaces groupOrder and resets expanded', () => {
+  it('setGroupOrder replaces groupOrder and resets collapsed groups', () => {
     const { result } = renderHook(() => useGridGroup(data, ['dept']))
     const groupId = result.current.visibleRows[0].id
     act(() => { result.current.toggleExpanded(groupId) })
-    expect(result.current.expandedGroups.size).toBe(1)
+    expect(result.current.collapsedGroups.size).toBe(1)
     act(() => { result.current.setGroupOrder(['status', 'dept']) })
     expect(result.current.groupOrder).toEqual(['status', 'dept'])
-    expect(result.current.expandedGroups.size).toBe(0)
+    expect(result.current.collapsedGroups.size).toBe(0)
   })
 
-  it('toggleGroupSort defaults to desc on first toggle, then back to asc', () => {
+  it('toggleGroupSort defaults to asc on first toggle, then desc, then asc', () => {
     const { result } = renderHook(() => useGridGroup(data, ['dept']))
     expect(result.current.groupSorts['dept']).toBeUndefined()
+    act(() => { result.current.toggleGroupSort('dept') })
+    expect(result.current.groupSorts['dept']).toBe('asc')
     act(() => { result.current.toggleGroupSort('dept') })
     expect(result.current.groupSorts['dept']).toBe('desc')
     act(() => { result.current.toggleGroupSort('dept') })
@@ -91,18 +91,22 @@ describe('useGridGroup', () => {
 
   it('desc sort reverses group order', () => {
     const { result } = renderHook(() => useGridGroup(data, ['dept']))
-    act(() => { result.current.toggleGroupSort('dept') })
+    act(() => { result.current.toggleGroupSort('dept') }) // undefined → asc
+    act(() => { result.current.toggleGroupSort('dept') }) // asc → desc
+    // HR group first (desc), then its 2 children, then Eng group
+    expect(result.current.visibleRows[0].$group).toBe(true)
     expect(result.current.visibleRows[0].dept).toBe('HR')
-    expect(result.current.visibleRows[1].dept).toBe('Eng')
+    expect(result.current.visibleRows[3].$group).toBe(true)
+    expect(result.current.visibleRows[3].dept).toBe('Eng')
   })
 
-  it('toggleGroupSort resets expanded groups', () => {
+  it('toggleGroupSort preserves collapsed groups', () => {
     const { result } = renderHook(() => useGridGroup(data, ['dept']))
     const groupId = result.current.visibleRows[0].id
     act(() => { result.current.toggleExpanded(groupId) })
-    expect(result.current.expandedGroups.size).toBe(1)
+    expect(result.current.collapsedGroups.size).toBe(1)
     act(() => { result.current.toggleGroupSort('dept') })
-    expect(result.current.expandedGroups.size).toBe(0)
+    expect(result.current.collapsedGroups.size).toBe(1)
   })
 })
 
