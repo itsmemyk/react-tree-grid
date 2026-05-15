@@ -112,6 +112,19 @@ describe('useGridGroup', () => {
     expect(result.current.visibleRows[3].dept).toBe('Eng')
   })
 
+  it('sorts leaf rows within a group in natural numeric order not lexicographic order', () => {
+    const numericData: GridRow[] = [
+      { id: '1', dept: 'Eng', rank: '10' },
+      { id: '2', dept: 'Eng', rank: '2' },
+      { id: '3', dept: 'Eng', rank: '1' },
+    ]
+    const { result } = renderHook(() =>
+      useGridGroup(numericData, ['dept'], [{ columnId: 'rank', order: 'asc' }]),
+    )
+    const leafValues = result.current.visibleRows.filter((r) => !r.$group).map((r) => r.rank)
+    expect(leafValues).toEqual(['1', '2', '10']) // natural, not ['1','10','2']
+  })
+
   it('toggleGroupSort preserves collapsed groups', () => {
     const { result } = renderHook(() => useGridGroup(data, ['dept']))
     const groupId = result.current.visibleRows[0].id

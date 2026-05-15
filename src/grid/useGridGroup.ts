@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from 'react'
 import { applyGroupBy } from '../core/data/GroupBy'
+import { naturalCompare } from '../core/data/Sort'
 import type { GridRow, SortState } from './types'
 
 export function sortItems<T extends GridRow>(rows: T[], rules: SortState[]): T[] {
@@ -8,7 +9,7 @@ export function sortItems<T extends GridRow>(rows: T[], rules: SortState[]): T[]
     for (const { columnId, order } of rules) {
       const aVal = String(a[columnId as keyof T] ?? '')
       const bVal = String(b[columnId as keyof T] ?? '')
-      const cmp = aVal < bVal ? -1 : aVal > bVal ? 1 : 0
+      const cmp = naturalCompare(aVal, bVal)
       if (cmp !== 0) return order === 'asc' ? cmp : -cmp
     }
     return 0
@@ -27,9 +28,7 @@ function sortGroupTree<T extends GridRow>(
   const dir = groupSorts[colId] ?? 'asc'
 
   const sorted = [...rows].sort((a, b) => {
-    const aVal = String(a[colId] ?? '')
-    const bVal = String(b[colId] ?? '')
-    const cmp = aVal < bVal ? -1 : aVal > bVal ? 1 : 0
+    const cmp = naturalCompare(String(a[colId] ?? ''), String(b[colId] ?? ''))
     return dir === 'asc' ? cmp : -cmp
   })
 

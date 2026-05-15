@@ -362,6 +362,35 @@ describe('Grid', () => {
     expect(rowValues()).toEqual(['Charlie', 'Bob', 'Alice'])
   })
 
+  it('sorts numeric string columns in natural order not lexicographic order', () => {
+    render(
+      <ThemeProvider>
+        <Grid
+          columns={[
+            { id: 'rank', header: [{ text: 'Rank' }], width: 80, sortable: true },
+          ]}
+          data={[
+            { id: '1', rank: '10' },
+            { id: '2', rank: '2' },
+            { id: '3', rank: '1' },
+          ]}
+          style={{ width: 160, height: 200 }}
+        />
+      </ThemeProvider>,
+    )
+
+    const rankHeader = screen.getByText('Rank').closest('[data-rgs-col-id="rank"]') as HTMLElement
+    const rowValues = () =>
+      Array.from(document.querySelectorAll('[data-rgs-id] [data-rgs-col-id="rank"]'))
+        .map((el) => el.textContent?.trim())
+
+    fireEvent.click(rankHeader)
+    expect(rowValues()).toEqual(['1', '2', '10']) // natural, not ['1','10','2']
+
+    fireEvent.click(rankHeader)
+    expect(rowValues()).toEqual(['10', '2', '1'])
+  })
+
   it('renders an inactive sort indicator for unsorted sortable headers', () => {
     const { container } = render(
       <ThemeProvider>
