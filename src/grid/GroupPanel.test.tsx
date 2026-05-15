@@ -8,6 +8,7 @@ function makeDataTransfer(payload: Record<string, string> = {}) {
     dropEffect: 'move' as DataTransfer['dropEffect'],
     setData: vi.fn(),
     getData: vi.fn((key: string) => payload[key] ?? ''),
+    types: Object.keys(payload),
   } as unknown as DataTransfer
 }
 
@@ -110,6 +111,20 @@ describe('GroupPanel', () => {
     dispatchDrag(panel, 'dragOver', dt)
     dispatchDrag(panel, 'drop', dt)
     expect(onColumnDrop).not.toHaveBeenCalled()
+  })
+
+  it('shows ghost chip when a column header is dragged over an existing chip', () => {
+    render(
+      <GroupPanel
+        {...base}
+        groupOrder={['dept']}
+        groupSorts={{ dept: 'asc' }}
+      />,
+    )
+    const chip = screen.getByTestId('group-chip-dept')
+    const dt = makeDataTransfer({ 'rgs-group-col:status': '', 'text/plain': 'status' })
+    dispatchDrag(chip, 'dragOver', dt)
+    expect(screen.getByText('Status')).toBeTruthy()
   })
 
   it('calls onColumnDrop when a column header is dropped directly onto an existing chip', () => {

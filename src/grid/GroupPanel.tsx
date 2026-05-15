@@ -59,6 +59,8 @@ export function GroupPanel({
   const handleChipDragOver = (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault()
     e.stopPropagation()
+    const colId = getColIdFromTypes(e.dataTransfer.types)
+    if (colId && colId !== dragOverColId) setDragOverColId(colId)
   }
 
   const handleChipDrop = (e: DragEvent<HTMLDivElement>, targetColId: string) => {

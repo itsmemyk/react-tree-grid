@@ -1637,6 +1637,24 @@ describe('Grid', () => {
       expect(screen.getByTestId('group-chip-dept')).toBeTruthy()
     })
 
+    it('chip sort direction matches column sort when header is dragged into the panel', () => {
+      render(
+        <ThemeProvider>
+          <Grid columns={groupColumns} data={groupData} groupable sortable style={{ width: 360, height: 200 }} />
+        </ThemeProvider>,
+      )
+      // Sort the dept column descending first
+      const deptHeader = screen.getByText('Dept').closest('[data-rgs-col-id="dept"]') as HTMLElement
+      fireEvent.click(deptHeader) // asc
+      fireEvent.click(deptHeader) // desc
+
+      // Now drag the dept header into the group panel
+      dropColumnOnPanel('dept', 'Dept')
+
+      // Chip should reflect the existing desc sort, not reset to bidirectional
+      expect(screen.getByLabelText('Sort descending')).toBeTruthy()
+    })
+
     it('clearGroups API method removes all grouping', () => {
       const ref = createRef<GridApi>()
       render(
