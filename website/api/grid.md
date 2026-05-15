@@ -50,6 +50,19 @@ import { Grid } from '@itsmemyk/react-tree-grid/grid'
 | `dragMode` | `'source' \| 'target' \| 'both'` | — | Drag role of this grid |
 | `formulas` | `boolean` | `false` | Enable formula engine in cells |
 
+### Grouping
+
+| Prop | Type | Default | Description |
+|---|---|---|---|
+| `groupable` | `boolean` | `false` | Show the Group by panel and allow column headers to be dragged into it |
+| `group` | `{ order: string[] }` | — | Initial grouping state — array of column IDs in nesting order |
+| `onBeforeGroupChange` | `(order: string[]) => boolean \| void` | — | Return `false` to cancel a grouping change |
+| `onGroupChange` | `(order: string[]) => void` | — | Fires after grouping order changes |
+
+Set `groupable: false` on a `GridColumn` to opt that column out of the drag panel.
+
+See the [Grouping guide](/guide/grouping) for usage examples.
+
 ### Events
 
 #### Sort
@@ -130,3 +143,5 @@ const ref = useRef<GridApi>(null)
 | `removeRowCss` | `(rowId, css) => void` | Remove a CSS class from a row |
 | `addCellCss` | `(rowId, colId, css) => void` | Add a CSS class to a cell |
 | `removeCellCss` | `(rowId, colId, css) => void` | Remove a CSS class from a cell |
+| `groupBy` | `(columnIds: string[]) => void` | Set the active grouping order programmatically |
+| `clearGroups` | `() => void` | Remove all active groupings |

@@ -180,6 +180,8 @@ All theme values are exposed as CSS custom properties prefixed with `--react-tre
 | `tooltip` | `boolean` | Enable cell tooltips (default `false`) |
 | `keyNavigation` | `boolean` | Keyboard navigation |
 | `style` | `CSSProperties` | Width/height for virtual scroll |
+| `groupable` | `boolean` | Enable drag-panel grouping UI |
+| `group` | `{ order: string[] }` | Initial grouping column order |
 
 ## Tree Props
 
@@ -203,6 +205,7 @@ Extends `GridProps` with:
 | `treeColumnId` | `string` | Column that shows the tree toggle |
 | `collapsed` | `boolean` | Start all nodes collapsed |
 | `groupBy` | `string \| string[]` | Group rows by field(s) |
+| `groupAggregate` | `GroupAggregateConfig` | Aggregate values on group header rows (`sum`, `avg`, `count`, `min`, `max`) |
 
 ## License
 

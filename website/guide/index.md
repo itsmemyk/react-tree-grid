@@ -17,6 +17,7 @@ It is a drop-in alternative to [DHTMLX TreeGrid](https://dhtmlx.com/docs/product
 - **Virtual scrolling** — renders only visible rows, handles 100,000+ rows smoothly
 - **Inline editing** — `input`, `select`, `checkbox`, `combo`, `datePicker` editor types
 - **Sorting & filtering** — per-column header filters with `inputFilter`, `selectFilter`, `comboFilter`
+- **Data grouping** — drag-panel UI to group Grid rows by any column with multi-level nesting, per-group sort, and programmatic control; static `groupBy` for TreeGrid
 - **Drag and drop** — reorder rows and columns; tree drag between nodes
 - **Column operations** — resize, reorder, freeze, hide/show, auto-width
 - **Theming** — light/dark presets + full CSS custom property overrides
