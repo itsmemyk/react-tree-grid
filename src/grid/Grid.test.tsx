@@ -332,6 +332,36 @@ describe('Grid', () => {
     expect(headerCell.querySelector('[class*="sortAsc"]')).toBeTruthy()
   })
 
+  it('reorders plain data rows by ascending and descending sort on header click', () => {
+    render(
+      <ThemeProvider>
+        <Grid
+          columns={[
+            { id: 'id', header: [{ text: 'ID' }], width: 80 },
+            { id: 'name', header: [{ text: 'Name' }], width: 140, sortable: true },
+          ]}
+          data={[
+            { id: '1', name: 'Charlie' },
+            { id: '2', name: 'Alice' },
+            { id: '3', name: 'Bob' },
+          ]}
+          style={{ width: 260, height: 200 }}
+        />
+      </ThemeProvider>,
+    )
+
+    const nameHeader = screen.getByText('Name').closest('[data-rgs-col-id="name"]') as HTMLElement
+    const rowValues = () =>
+      Array.from(document.querySelectorAll('[data-rgs-id] [data-rgs-col-id="name"]'))
+        .map((el) => el.textContent?.trim())
+
+    fireEvent.click(nameHeader)
+    expect(rowValues()).toEqual(['Alice', 'Bob', 'Charlie'])
+
+    fireEvent.click(nameHeader)
+    expect(rowValues()).toEqual(['Charlie', 'Bob', 'Alice'])
+  })
+
   it('renders an inactive sort indicator for unsorted sortable headers', () => {
     const { container } = render(
       <ThemeProvider>

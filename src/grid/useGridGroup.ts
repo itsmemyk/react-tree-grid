@@ -2,7 +2,7 @@ import { useCallback, useMemo, useState } from 'react'
 import { applyGroupBy } from '../core/data/GroupBy'
 import type { GridRow, SortState } from './types'
 
-function sortItems<T extends GridRow>(rows: T[], rules: SortState[]): T[] {
+export function sortItems<T extends GridRow>(rows: T[], rules: SortState[]): T[] {
   if (rules.length === 0) return rows
   return [...rows].sort((a, b) => {
     for (const { columnId, order } of rules) {
@@ -81,7 +81,7 @@ export interface UseGridGroupResult<T extends GridRow> {
   visibleRows: T[]
   groupOrder: string[]
   setGroupOrder: (order: string[]) => void
-  addGroup: (colId: string) => void
+  addGroup: (colId: string, initialSort?: 'asc' | 'desc') => void
   removeGroup: (colId: string) => void
   groupSorts: Record<string, 'asc' | 'desc'>
   toggleGroupSort: (colId: string) => void
@@ -114,9 +114,11 @@ export function useGridGroup<T extends GridRow>(
     setCollapsedGroups(new Set())
   }, [])
 
-  const addGroup = useCallback((colId: string) => {
+  const addGroup = useCallback((colId: string, initialSort?: 'asc' | 'desc') => {
     setGroupOrderState((prev) => (prev.includes(colId) ? prev : [...prev, colId]))
-    setGroupSorts((prev) => (colId in prev ? prev : { ...prev, [colId]: 'asc' }))
+    if (initialSort !== undefined) {
+      setGroupSorts((prev) => ({ ...prev, [colId]: initialSort }))
+    }
     setCollapsedGroups(new Set())
   }, [])
 

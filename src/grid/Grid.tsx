@@ -47,7 +47,7 @@ import { SelectFilter } from './filters/SelectFilter'
 import { InputFilter } from './filters/InputFilter'
 import { ComboFilter } from './filters/ComboFilter'
 import { getScrollbarHeight, getScrollbarWidth } from '../core/utils'
-import { useGridGroup, getGroupCount, getGroupLevel } from './useGridGroup'
+import { useGridGroup, getGroupCount, getGroupLevel, sortItems } from './useGridGroup'
 import { GroupPanel } from './GroupPanel'
 
 interface NormalizedHeaderCell {
@@ -588,22 +588,23 @@ function GridInner<T extends GridRow>({
       ? gridGroup.groupOrder
       : [...gridGroup.groupOrder, colId]
     if (onBeforeGroupChange?.(nextOrder) === false) return
-    gridGroup.addGroup(colId)
+    const existingSort = gridSort.sortingStates.find((s) => s.columnId === colId)?.order
+    gridGroup.addGroup(colId, existingSort)
     onGroupChange?.(nextOrder)
-  }, [gridGroup, onBeforeGroupChange, onGroupChange])
+  }, [gridGroup.groupOrder, gridGroup.addGroup, gridSort.sortingStates, onBeforeGroupChange, onGroupChange])
 
   const handleRemoveGroup = useCallback((colId: string) => {
     const nextOrder = gridGroup.groupOrder.filter((id) => id !== colId)
     if (onBeforeGroupChange?.(nextOrder) === false) return
     gridGroup.removeGroup(colId)
     onGroupChange?.(nextOrder)
-  }, [gridGroup, onBeforeGroupChange, onGroupChange])
+  }, [gridGroup.groupOrder, gridGroup.removeGroup, onBeforeGroupChange, onGroupChange])
 
   const handleSetGroupOrder = useCallback((order: string[]) => {
     if (onBeforeGroupChange?.(order) === false) return
     gridGroup.setGroupOrder(order)
     onGroupChange?.(order)
-  }, [gridGroup, onBeforeGroupChange, onGroupChange])
+  }, [gridGroup.setGroupOrder, onBeforeGroupChange, onGroupChange])
 
   const rowDrag = useRowDrag<T>(activeData, {
     store: store as DataStore<T & DataItem> | undefined,
@@ -666,10 +667,11 @@ function GridInner<T extends GridRow>({
     !!formulas,
   )
 
-  const baseDataRows = useMemo(
-    () => rowDrag.orderedRows.filter((row) => !row.hidden),
-    [rowDrag.orderedRows],
-  )
+  const baseDataRows = useMemo(() => {
+    const filtered = rowDrag.orderedRows.filter((row) => !row.hidden)
+    if (store || gridSort.sortingStates.length === 0) return filtered
+    return sortItems(filtered, gridSort.sortingStates)
+  }, [rowDrag.orderedRows, store, gridSort.sortingStates])
 
   const visibleDataRows = gridGroup.active ? gridGroup.visibleRows : baseDataRows
 

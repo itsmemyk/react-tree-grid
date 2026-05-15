@@ -112,6 +112,23 @@ describe('GroupPanel', () => {
     expect(onColumnDrop).not.toHaveBeenCalled()
   })
 
+  it('calls onColumnDrop when a column header is dropped directly onto an existing chip', () => {
+    const onColumnDrop = vi.fn()
+    render(
+      <GroupPanel
+        {...base}
+        groupOrder={['dept']}
+        groupSorts={{ dept: 'asc' }}
+        onColumnDrop={onColumnDrop}
+      />,
+    )
+    const chip = screen.getByTestId('group-chip-dept')
+    const dt = makeDataTransfer({ 'text/plain': 'status' })
+    dispatchDrag(chip, 'dragOver', dt)
+    dispatchDrag(chip, 'drop', dt)
+    expect(onColumnDrop).toHaveBeenCalledWith('status')
+  })
+
   it('calls onReorder when a chip is dragged onto another chip', () => {
     const onReorder = vi.fn()
     render(

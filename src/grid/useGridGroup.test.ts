@@ -62,6 +62,18 @@ describe('useGridGroup', () => {
     expect(result.current.groupOrder).toEqual(['dept'])
   })
 
+  it('addGroup seeds groupSorts with initialSort when provided', () => {
+    const { result } = renderHook(() => useGridGroup(data))
+    act(() => { result.current.addGroup('dept', 'desc') })
+    expect(result.current.groupSorts['dept']).toBe('desc')
+  })
+
+  it('addGroup leaves sort undefined when no initialSort provided', () => {
+    const { result } = renderHook(() => useGridGroup(data))
+    act(() => { result.current.addGroup('dept') })
+    expect(result.current.groupSorts['dept']).toBeUndefined()
+  })
+
   it('removeGroup removes from groupOrder', () => {
     const { result } = renderHook(() => useGridGroup(data, ['dept', 'status']))
     act(() => { result.current.removeGroup('dept') })

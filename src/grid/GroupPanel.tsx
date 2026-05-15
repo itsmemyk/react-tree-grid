@@ -65,14 +65,19 @@ export function GroupPanel({
     e.preventDefault()
     e.stopPropagation()
     const sourceColId = e.dataTransfer.getData('rgs-group-chip')
-    if (!sourceColId || sourceColId === targetColId) return
-    const next = [...groupOrder]
-    const from = next.indexOf(sourceColId)
-    const to = next.indexOf(targetColId)
-    if (from < 0 || to < 0) return
-    next.splice(from, 1)
-    next.splice(to, 0, sourceColId)
-    onReorder(next)
+    if (sourceColId) {
+      if (sourceColId === targetColId) return
+      const next = [...groupOrder]
+      const from = next.indexOf(sourceColId)
+      const to = next.indexOf(targetColId)
+      if (from < 0 || to < 0) return
+      next.splice(from, 1)
+      next.splice(to, 0, sourceColId)
+      onReorder(next)
+    } else {
+      const colId = e.dataTransfer.getData('text/plain')
+      if (colId) onColumnDrop(colId)
+    }
   }
 
   const showGhost = dragOverColId !== null && !groupOrder.includes(dragOverColId)
@@ -129,7 +134,7 @@ export function GroupPanel({
           ))}
           {showGhost && (
             <div className={`${styles.groupChip} ${styles.groupChipGhost}`}>
-              <span className={styles.sortAsc} />
+              <span className={styles.sortBidirectional} />
               <span>{getColumnLabel(dragOverColId!)}</span>
             </div>
           )}
