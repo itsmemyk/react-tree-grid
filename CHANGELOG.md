@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.5.0] - 2026-05-15
+
+### Added
+
+- **Data Grouping** — group rows by one or more columns with a drag-panel UI above the grid.
+  - Set `groupable` on the grid to enable the drag panel; drag any column header into it to add a grouping level.
+  - Chips in the panel show a sort-direction toggle (idle `⇅` / asc `↑` / desc `↓`) and a remove button; chips are draggable to reorder grouping priority.
+  - Multi-level nesting — each entry in the grouping order adds one indented nesting level.
+  - Group header rows show a chevron toggle, the group value, and the leaf-row count, e.g. `Dog (43)`.
+  - Groups default to expanded; each can be collapsed/re-expanded independently via the chevron.
+  - Per-chip sort direction sorts leaf rows within that group level; regular column-header sorting still works on leaf rows inside groups and is preserved when a column is dragged into the panel.
+  - `group?: { order: string[] }` prop sets the initial grouping state.
+  - `groupable?: boolean` on `GridColumn` opts a column out of the drag panel.
+  - `groupBy(columnIds)` / `clearGroups()` `GridApi` methods for programmatic control.
+  - `onBeforeGroupChange` / `onGroupChange` events.
+- Column-header sorting now works for grids using the plain `data` prop (no `DataStore`), using the same `naturalCompare` logic as `DataStore` sorting so numeric columns sort `1, 2, 10` rather than `1, 10, 2`.
+
 ## [0.4.3] - 2026-05-12
 
 ### Fixed
