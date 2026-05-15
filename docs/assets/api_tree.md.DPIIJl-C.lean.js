@@ -1,1 +1,0 @@
-import{_ as e,o as d,c as s,ag as a}from"./chunks/framework.ClUfsdUo.js";const k=JSON.parse('{"title":"Tree","description":"","frontmatter":{},"headers":[],"relativePath":"api/tree.md","filePath":"api/tree.md"}'),i={name:"api/tree.md"};function o(r,t,n,c,l,h){return d(),s("div",null,[...t[0]||(t[0]=[a("",11)])])}const g=e(i,[["render",o]]);export{k as __pageData,g as default};

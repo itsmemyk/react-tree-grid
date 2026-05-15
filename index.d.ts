@@ -357,6 +357,8 @@ export declare interface GridApi<T extends GridRow = GridRow> {
     hideColumn: (colId: string) => void;
     getColumn: (colId: string) => GridColumn<T> | undefined;
     setColumns: (columns: GridColumn<T>[]) => void;
+    groupBy: (columnIds: string[]) => void;
+    clearGroups: () => void;
 }
 
 export declare interface GridCellCoord {
@@ -390,6 +392,8 @@ export declare interface GridColumn<T = Record<string, unknown>> {
     tooltip?: boolean;
     /** Auto-applied cell CSS derived from min/max or a custom function. */
     mark?: GridMarkConfig<T>;
+    /** Opt this column out of grouping when grid groupable=true. */
+    groupable?: boolean;
 }
 
 export declare interface GridColumnDragData {
@@ -536,6 +540,12 @@ export declare interface GridProps<T extends GridRow = GridRow> {
         top: number;
     }) => void;
     formulas?: boolean;
+    groupable?: boolean;
+    group?: {
+        order: string[];
+    };
+    onBeforeGroupChange?: (order: string[]) => boolean | void;
+    onGroupChange?: (order: string[]) => void;
 }
 
 export declare interface GridRow {
@@ -543,6 +553,8 @@ export declare interface GridRow {
     hidden?: boolean;
     $height?: number;
     $css?: string;
+    $group?: boolean;
+    $groupLevel?: number;
     [key: string]: unknown;
 }
 
