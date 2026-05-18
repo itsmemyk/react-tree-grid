@@ -28,6 +28,7 @@ import type { GridColumn } from '@itsmemyk/react-tree-grid/grid'
 | `tooltip` | `boolean` | Override grid-level tooltip for this column |
 | `tooltipTemplate` | `(value, row, col) => string \| null` | Custom tooltip content |
 | `mark` | `GridMarkConfig` | Auto-apply CSS class based on value range or function |
+| `groupable` | `boolean` | Allow this column to be dragged into the grouping panel (`false` to opt out) |
 
 ## GridRow
 
@@ -86,6 +87,20 @@ interface GridSpan {
   css?: string      // extra CSS class
   tooltip?: string  // tooltip text
 }
+```
+
+## GroupAggregateConfig
+
+```ts
+import type { GroupAggregateConfig } from '@itsmemyk/react-tree-grid/treegrid'
+
+type GroupAggregateConfig = Record<string, 'sum' | 'avg' | 'count' | 'min' | 'max'>
+```
+
+Maps a column ID to an aggregate function. Used with the `groupAggregate` prop on `TreeGrid`.
+
+```tsx
+groupAggregate={{ salary: 'avg', headcount: 'count' }}
 ```
 
 ## SortState
