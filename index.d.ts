@@ -466,6 +466,7 @@ export declare interface GridProps<T extends GridRow = GridRow> {
     headerRowHeight?: number;
     footerRowHeight?: number;
     sortable?: boolean;
+    defaultSortStates?: SortState[];
     keyNavigation?: boolean;
     tooltip?: boolean;
     selection?: boolean | 'row' | 'cell' | 'complex';
@@ -743,9 +744,15 @@ export declare interface ThemeTokens {
     colorWarning: string;
     colorBackground: string;
     colorSurface: string;
+    colorHeaderBackground: string;
+    colorHeaderText: string;
+    colorRowHover: string;
+    colorRowSelected: string;
     colorText: string;
     colorTextSecondary: string;
     colorBorder: string;
+    colorSortActive: string;
+    colorSortIdle: string;
     fontFamily: string;
     fontSizeSm: string;
     fontSizeMd: string;
@@ -965,7 +972,7 @@ export declare function useGridSelection<T extends GridRow>(data: T[], config: G
  * - Ctrl+click → add/modify secondary sort column (multi-sort)
  * - Fires events, then calls store.sort() with sort rules
  */
-export declare function useGridSort<T extends GridRow>(store: DataStore<T & DataItem> | undefined, columns: GridColumn<T>[], events: GridSortEvents): {
+export declare function useGridSort<T extends GridRow>(store: DataStore<T & DataItem> | undefined, columns: GridColumn<T>[], events: GridSortEvents, defaultSortStates?: SortState[]): {
     sortingStates: SortState[];
     handleHeaderClick: (colId: string, ctrlKey: boolean) => void;
     getSortOrder: (colId: string) => SortOrder | undefined;
