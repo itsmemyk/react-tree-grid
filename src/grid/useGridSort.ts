@@ -21,8 +21,9 @@ export function useGridSort<T extends GridRow>(
   store: DataStore<T & DataItem> | undefined,
   columns: GridColumn<T>[],
   events: GridSortEvents,
+  defaultSortStates?: SortState[],
 ) {
-  const [sortingStates, setSortingStates] = useState<SortState[]>([])
+  const [sortingStates, setSortingStates] = useState<SortState[]>(defaultSortStates ?? [])
 
   const cycleOrder = (current: SortOrder | undefined): SortOrder => {
     if (!current) return 'asc'

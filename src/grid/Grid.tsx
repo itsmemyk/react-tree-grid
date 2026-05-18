@@ -397,6 +397,7 @@ function GridInner<T extends GridRow>({
   headerRowHeight = 40,
   footerRowHeight = 40,
   sortable = false,
+  defaultSortStates,
   keyNavigation = true,
   tooltip = false,
   selection: selectionProp = false,
@@ -578,6 +579,7 @@ function GridInner<T extends GridRow>({
           }
         : undefined,
     },
+    defaultSortStates,
   )
 
   // ─── Grouping ─────────────────────────────────────────────────────

@@ -166,6 +166,7 @@ export interface GridProps<T extends GridRow = GridRow> {
   headerRowHeight?: number
   footerRowHeight?: number
   sortable?: boolean
+  defaultSortStates?: SortState[]
   keyNavigation?: boolean
   tooltip?: boolean
   selection?: boolean | 'row' | 'cell' | 'complex'

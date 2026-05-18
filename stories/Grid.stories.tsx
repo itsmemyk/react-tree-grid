@@ -1246,6 +1246,7 @@ function StylingDemo() {
           columns={stylingColumns}
           data={stylingData}
           sortable
+          defaultSortStates={[{ columnId: 'name', order: 'asc' }]}
           selection="row"
           multiselection
           style={{ width: '100%', height: 320 }}
