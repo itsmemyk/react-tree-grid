@@ -159,6 +159,30 @@ Column-level data formatting and richer filter configuration.
 
 ---
 
+## v1.4.0 — Column Groups & Collapse
+
+Group related columns under a shared header label, with toggle to collapse the group into a narrow strip.
+
+### Column definition
+- [ ] Nested `columns` tree — group objects carry a `header` label and a `children: GridColumn[]` array; leaf nodes are the existing data columns
+- [ ] `collapsed?: boolean` on group columns — initial collapsed state
+- [ ] Groups can be nested (e.g. "Main client info" > "User" > "First Name" / "Last Name")
+
+### Header rendering
+- [ ] Group header cells span their children's widths (`colspan` equivalent)
+- [ ] Each group cell shows a `›` / `‹` toggle button to expand/collapse
+- [ ] When collapsed, child columns are hidden and replaced by a single narrow strip showing the group label rotated vertically
+- [ ] Multi-level groups collapse independently — collapsing a child group does not collapse the parent
+
+### Interactions
+- [ ] Collapsed state can be controlled via prop or toggled interactively
+- [ ] Resize and reorder are disabled on group header cells; they still work on leaf columns
+- [ ] Frozen left/right columns that belong to a group collapse correctly within their fixed panel
+- [ ] `onBeforeCollapse` / `onAfterCollapse` / `onBeforeExpand` / `onAfterExpand` events
+- [ ] `collapseColumn(groupId)` / `expandColumn(groupId)` GridApi methods
+
+---
+
 ## v2.0.0 — Extended Export & Polish
 
 - [ ] PDF export (`pdf(filename?)` API method)
