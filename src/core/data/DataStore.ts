@@ -241,6 +241,16 @@ export class DataStore<T extends DataItem = DataItem> {
           }
         }
       }
+    } else if (config?.id && this._filters[config.id]) {
+      // Replacing a named filter — restore base order and re-apply sibling filters
+      // so the new rule doesn't filter an already-filtered _order.
+      this._order = this._initFilterOrder || this._order
+      this._initFilterOrder = null
+      for (const key in this._filters) {
+        if (key !== config.id) {
+          this._applyFilters(this._filters[key].rule)
+        }
+      }
     }
 
     let id: string | undefined

@@ -29,8 +29,15 @@ export function ComboFilter<T extends GridRow>({
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState('')
   const [dropdownStyle, setDropdownStyle] = useState<CSSProperties>({})
+  const [filterVersion, setFilterVersion] = useState(0)
   const triggerRef = useRef<HTMLButtonElement>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const ctx = {}
+    store.events.on('filter', () => setFilterVersion((v) => v + 1), ctx)
+    return () => store.events.detach('filter', ctx)
+  }, [store])
 
   const allOptions = useMemo(() => {
     const seen = new Set<string>()
@@ -42,7 +49,7 @@ export function ComboFilter<T extends GridRow>({
       }
     }
     return Array.from(seen).sort()
-  }, [store._initFilterOrder, store._order, column.id])
+  }, [filterVersion, store, column.id])
 
   const filtered = useMemo(() => {
     if (!search) return allOptions

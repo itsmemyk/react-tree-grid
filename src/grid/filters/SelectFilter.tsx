@@ -1,4 +1,4 @@
-import { useMemo, type ChangeEvent } from 'react'
+import { useEffect, useMemo, useState, type ChangeEvent } from 'react'
 import type { DataStore } from '../../core/data'
 import type { GridColumn, GridRow } from '../types'
 import styles from './filters.module.css'
@@ -22,6 +22,14 @@ export function SelectFilter<T extends GridRow>({
   value,
   onChange,
 }: SelectFilterProps<T>) {
+  const [filterVersion, setFilterVersion] = useState(0)
+
+  useEffect(() => {
+    const ctx = {}
+    store.events.on('filter', () => setFilterVersion((v) => v + 1), ctx)
+    return () => store.events.detach('filter', ctx)
+  }, [store])
+
   const options = useMemo(() => {
     const seen = new Set<string>()
     const source = store._initFilterOrder ?? store._order
@@ -32,7 +40,7 @@ export function SelectFilter<T extends GridRow>({
       }
     }
     return Array.from(seen).sort()
-  }, [store._initFilterOrder, store._order, column.id])
+  }, [filterVersion, store, column.id])
 
   const handleChange = (event: ChangeEvent<HTMLSelectElement>) => {
     const v = event.target.value
