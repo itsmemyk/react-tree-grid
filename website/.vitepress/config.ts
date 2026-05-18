@@ -15,7 +15,7 @@ export default defineConfig({
       { text: 'API', link: '/api/grid', activeMatch: '/api/' },
       { text: 'Examples', link: '/examples/grid-basic', activeMatch: '/examples/' },
       {
-        text: 'v0.5.0',
+        text: 'v0.5.1',
         items: [
           { text: 'Changelog', link: 'https://github.com/itsmemyk/react-tree-grid/blob/master/CHANGELOG.md' },
           { text: 'npm', link: 'https://www.npmjs.com/package/@itsmemyk/react-tree-grid' },

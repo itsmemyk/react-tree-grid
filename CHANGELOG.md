@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.5.1] - 2026-05-18
+
+### Added
+
+- **New theme tokens** — `colorRowHover`, `colorRowSelected`, `colorSortIdle`, and `colorSortActive` CSS variables for fine-grained theming control over row states and sort indicators.
+- **`defaultSortStates` prop** — pre-configure sort state without triggering a sort, useful for matching an externally sorted dataset.
+- **Styling story** — new Storybook story with Bootstrap and Material UI theme presets as reference examples.
+
+### Fixed
+
+- **Sort indicator** — replaced Unicode arrow with a CSS-drawn indicator; fixes incorrect sizing when the grid is nested inside another `ThemeProvider`. Idle indicator is also CSS-drawn for consistency.
+- **Header filters — options always from original data** — `SelectFilter` and `ComboFilter` now subscribe to the store's filter event so option lists always reflect the full unfiltered dataset regardless of other active filters.
+- **Header filters — switching filter value** — selecting a new value in an already-active filter (e.g., Role: Designer → DevOps) now correctly re-evaluates from the base dataset instead of filtering already-filtered rows.
+- **ComboFilter dropdown** — dropdown now portals to the nearest ThemeProvider root, preventing clipping by the grid's scroll container and preserving CSS theme variables.
+- **Footer cells** — aggregate cells now inherit the column's `align` property. When no footer-specific `template` is defined, the column's `template` is used to format the aggregate value.
+- **Row selection** — shift-clicking to extend a row selection no longer triggers browser text selection.
+
+### Documentation
+
+- Full CSS variables reference and UI library theming examples added to the theming guide.
+- Expanded README with complete API reference.
+- Updated sorting behavior guide.
+
 ## [0.5.0] - 2026-05-15
 
 ### Added
