@@ -323,14 +323,35 @@
   border-bottom-color: var(--react-tree-grid-color-sort-idle);
 }
 
-.sortBidirectional::after {
-  color: var(--react-tree-grid-color-sort-active);
-  content: '⇅';
-  display: inline-block;
-  font-size: 1.25em;
-  font-weight: 400;
-  line-height: 1;
+.sortBidirectional {
+  background:
+    linear-gradient(
+      var(--react-tree-grid-color-sort-active),
+      var(--react-tree-grid-color-sort-active)
+    ) center / 2px 0.54em no-repeat;
   opacity: 0.45;
+}
+
+.sortBidirectional::before,
+.sortBidirectional::after {
+  content: '';
+  left: 50%;
+  position: absolute;
+  transform: translateX(-50%);
+}
+
+.sortBidirectional::after {
+  border-bottom: 0.32em solid var(--react-tree-grid-color-sort-active);
+  border-left: 0.28em solid transparent;
+  border-right: 0.28em solid transparent;
+  top: 0.12em;
+}
+
+.sortBidirectional::before {
+  border-left: 0.28em solid transparent;
+  border-right: 0.28em solid transparent;
+  border-top: 0.32em solid var(--react-tree-grid-color-sort-active);
+  bottom: 0.12em;
 }
 
 .sortIndex {
