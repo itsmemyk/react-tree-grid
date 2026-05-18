@@ -80,12 +80,8 @@
   border: 1px solid var(--react-tree-grid-color-border);
   border-radius: 2px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  left: 0;
   max-height: 224px;
-  min-width: 100%;
-  position: absolute;
-  top: 100%;
-  z-index: 10;
+  overflow: hidden;
 }
 
 .comboSearch {
