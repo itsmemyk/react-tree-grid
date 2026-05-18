@@ -44,7 +44,27 @@ Allow fully custom React components as cell editors, not just the built-in input
 
 ---
 
-## v0.7.0 — Enhanced Drag & Drop
+## v0.7.0 — Pinned Rows
+
+Pin arbitrary rows by ID to the top or bottom of the grid, keeping them visible while the rest of the data scrolls.
+
+### Props
+- [ ] `pinnedTopRows?: string[]` — row IDs to pin at the top; rows are removed from the scrollable area
+- [ ] `pinnedBottomRows?: string[]` — row IDs to pin at the bottom; rows are removed from the scrollable area
+
+### Behaviour
+- [ ] Pinned rows scroll horizontally in sync with the grid body
+- [ ] Pinned rows support inline editing when `editable: true`
+- [ ] Per-row height via `$height` already works; pinned rows respect it
+- [ ] Pinned rows interact correctly with frozen left/right columns (corner cells rendered separately)
+- [ ] Selection, CSS overrides, and tooltips work the same as regular rows
+
+### Events
+- [ ] `onBeforePin` / `onAfterPin` — called when `pinnedTopRows` or `pinnedBottomRows` changes
+
+---
+
+## v0.8.0 — Enhanced Drag & Drop
 
 Multi-row drag via a dedicated handle column, with ghost preview and group-row drag support.
 
@@ -71,7 +91,7 @@ Multi-row drag via a dedicated handle column, with ghost preview and group-row d
 
 ---
 
-## v0.8.0 — History & Undo/Redo
+## v0.9.0 — History & Undo/Redo
 
 Track cell edit history and expose undo/redo for data-entry workflows.
 
@@ -81,7 +101,7 @@ Track cell edit history and expose undo/redo for data-entry workflows.
 
 ---
 
-## v0.9.0 — Row Expander
+## v1.0.0 — Row Expander
 
 Expand rows inline to show nested content: sub-grids, forms, custom React components.
 
@@ -92,7 +112,7 @@ Expand rows inline to show nested content: sub-grids, forms, custom React compon
 
 ---
 
-## v1.0.0 — Advanced Selection & Clipboard
+## v1.1.0 — Advanced Selection & Clipboard
 
 Spreadsheet-style range and block selection with copy/paste.
 
@@ -102,7 +122,7 @@ Spreadsheet-style range and block selection with copy/paste.
 
 ---
 
-## v1.1.0 — API Completeness
+## v1.2.0 — API Completeness
 
 Filling in missing imperative API methods and events for programmatic control.
 
@@ -122,7 +142,7 @@ Filling in missing imperative API methods and events for programmatic control.
 
 ---
 
-## v1.2.0 — Formatting & Filter Enhancements
+## v1.3.0 — Formatting & Filter Enhancements
 
 Column-level data formatting and richer filter configuration.
 
