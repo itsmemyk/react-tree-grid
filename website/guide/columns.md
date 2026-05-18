@@ -59,6 +59,8 @@ Use `template` for full control over cell content:
 
 Or enable sorting for all columns at once via `sortable` on the grid.
 
+Header clicks toggle a sortable column between ascending and descending order. Ctrl-click (or Cmd-click on macOS) keeps existing sort columns and adds or updates the clicked column for multi-column sorting.
+
 ## Header filters
 
 Add a filter row to a column by including a second header cell with `content`:

@@ -15,7 +15,7 @@ const columns = [
 ]
 ```
 
-Click a column header to sort ascending; click again for descending; click a third time to clear.
+Click a column header to sort ascending; click again for descending. Repeated clicks toggle between ascending and descending. Ctrl-click (or Cmd-click on macOS) adds or updates a secondary sort column.
 
 ### Sort events
 
