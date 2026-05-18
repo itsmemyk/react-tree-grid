@@ -346,6 +346,15 @@ export const Grouping: Story = {
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// STORY: Styling
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+export const Styling: Story = {
+  name: 'Styling',
+  render: () => <StylingDemo />,
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // STORY: Row Selection
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -1073,6 +1082,215 @@ export const FormulaEngine: Story = {
   },
 }
 
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// STORY: Styling
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+type StylingTheme = 'default' | 'bootstrap' | 'material'
+
+type Person = {
+  id: string
+  name: string
+  role: string
+  department: string
+  status: 'Active' | 'Away' | 'Inactive'
+}
+
+const stylingData: Person[] = [
+  { id: '1', name: 'Alice Martin',  role: 'Engineer', department: 'Product',  status: 'Active'   },
+  { id: '2', name: 'Bob Chen',      role: 'Designer', department: 'Design',   status: 'Active'   },
+  { id: '3', name: 'Carol Davis',   role: 'Manager',  department: 'Ops',      status: 'Away'     },
+  { id: '4', name: 'David Kim',     role: 'Engineer', department: 'Platform', status: 'Active'   },
+  { id: '5', name: 'Eva Rossi',     role: 'Analyst',  department: 'Finance',  status: 'Active'   },
+  { id: '6', name: 'Frank Müller',  role: 'Engineer', department: 'Product',  status: 'Inactive' },
+  { id: '7', name: 'Grace Lee',     role: 'Designer', department: 'Design',   status: 'Active'   },
+  { id: '8', name: 'Hiro Tanaka',   role: 'Manager',  department: 'Ops',      status: 'Away'     },
+]
+
+const statusCssVar: Record<Person['status'], string> = {
+  Active:   'var(--react-tree-grid-color-success)',
+  Away:     'var(--react-tree-grid-color-warning)',
+  Inactive: 'var(--react-tree-grid-color-danger)',
+}
+
+// Away badges use dark text because warning colours (especially Bootstrap yellow) are light
+const statusTextColor: Record<Person['status'], string> = {
+  Active:   '#fff',
+  Away:     'rgba(0,0,0,0.75)',
+  Inactive: '#fff',
+}
+
+const stylingColumns: GridColumn<Person>[] = [
+  { id: 'name',       header: [{ text: 'Name' }],       width: 180, sortable: true },
+  { id: 'role',       header: [{ text: 'Role' }],       width: 140, sortable: true },
+  { id: 'department', header: [{ text: 'Department' }], width: 150, sortable: true },
+  {
+    id: 'status',
+    header: [{ text: 'Status' }],
+    width: 120,
+    template: (v) => {
+      const status = v as Person['status']
+      return (
+        <span style={{
+          display: 'inline-block',
+          padding: '2px 10px',
+          borderRadius: 'var(--react-tree-grid-radius-lg)',
+          background: statusCssVar[status],
+          color: statusTextColor[status],
+          fontSize: 11,
+          fontWeight: 500,
+          letterSpacing: '0.02em',
+        }}>
+          {status}
+        </span>
+      )
+    },
+  },
+]
+
+const colorPalette = [
+  { label: 'Primary',   cssVar: '--react-tree-grid-color-primary' },
+  { label: 'Secondary', cssVar: '--react-tree-grid-color-secondary' },
+  { label: 'Success',   cssVar: '--react-tree-grid-color-success' },
+  { label: 'Warning',   cssVar: '--react-tree-grid-color-warning' },
+  { label: 'Danger',    cssVar: '--react-tree-grid-color-danger' },
+]
+
+const bootstrapOverrides = {
+  colorPrimary:       '#0d6efd',
+  colorPrimaryHover:  '#0b5ed7',
+  colorSecondary:     '#6c757d',
+  colorSuccess:       '#198754',
+  colorWarning:       '#ffc107',
+  colorDanger:        '#dc3545',
+  colorBackground:    '#ffffff',
+  colorSurface:       '#f8f9fa',
+  colorText:          '#212529',
+  colorTextSecondary: '#6c757d',
+  colorBorder:        '#dee2e6',
+  fontFamily:         'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+  fontSizeMd:         '16px',
+  radiusSm:           '4px',
+  radiusMd:           '6px',
+  radiusLg:           '12px',
+  shadowSm:           '0 1px 2px rgba(0,0,0,0.075)',
+  shadowMd:           '0 .5rem 1rem rgba(0,0,0,0.15)',
+  colorHeaderBackground: '#0d6efd',
+  colorHeaderText:       '#ffffff',
+}
+
+const materialOverrides = {
+  colorPrimary:       '#1976d2',
+  colorPrimaryHover:  '#1565c0',
+  colorBackground:    '#ffffff',
+  colorSurface:       '#fafafa',
+  colorText:          '#212121',
+  colorTextSecondary: '#757575',
+  colorBorder:        'rgba(0,0,0,0.12)',
+  fontFamily:         '"Roboto", "Helvetica", "Arial", sans-serif',
+  fontWeightMedium:   '500',
+  radiusSm:           '0px',
+  radiusMd:           '4px',
+  shadowSm:           '0px 2px 1px -1px rgba(0,0,0,0.2),0px 1px 1px 0px rgba(0,0,0,0.14),0px 1px 3px 0px rgba(0,0,0,0.12)',
+  shadowMd:           '0px 3px 1px -2px rgba(0,0,0,0.2),0px 2px 2px 0px rgba(0,0,0,0.14),0px 1px 5px 0px rgba(0,0,0,0.12)',
+  colorHeaderBackground: '#673ab7',
+  colorHeaderText:       '#ffffff',
+}
+
+const themeOverrides: Record<StylingTheme, Record<string, string>> = {
+  default:   {},
+  bootstrap: bootstrapOverrides,
+  material:  materialOverrides,
+}
+
+const themeLabels: Record<StylingTheme, string> = {
+  default:   'Default',
+  bootstrap: 'Bootstrap 5',
+  material:  'Material UI',
+}
+
+function StylingDemo() {
+  const [theme, setTheme] = useState<StylingTheme>('default')
+  const overrides = themeOverrides[theme]
+  const overridesJson = Object.keys(overrides).length === 0
+    ? '{}'
+    : `{\n${Object.entries(overrides).map(([k, v]) => `  ${k}: '${v}'`).join(',\n')}\n}`
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      {/* Toolbar */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <span style={{ fontSize: 13, color: '#666' }}>Theme:</span>
+        <select
+          value={theme}
+          onChange={(e) => setTheme(e.target.value as StylingTheme)}
+          style={{ fontSize: 13, padding: '4px 8px', borderRadius: 4, border: '1px solid #ccc', cursor: 'pointer' }}
+        >
+          {(Object.keys(themeLabels) as StylingTheme[]).map((t) => (
+            <option key={t} value={t}>{themeLabels[t]}</option>
+          ))}
+        </select>
+      </div>
+
+      {/* Grid + colour palette swatch — both inside ThemeProvider so CSS vars resolve */}
+      <ThemeProvider theme="light" overrides={overrides}>
+        <Grid<Person>
+          columns={stylingColumns}
+          data={stylingData}
+          sortable
+          selection="row"
+          multiselection
+          style={{ width: '100%', height: 320 }}
+        />
+
+        {/* Colour palette strip */}
+        <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
+          {colorPalette.map(({ label, cssVar }) => (
+            <div
+              key={label}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '4px 10px',
+                borderRadius: 'var(--react-tree-grid-radius-md)',
+                background: `var(${cssVar})`,
+                color: '#fff',
+                fontSize: 11,
+                fontWeight: 500,
+                letterSpacing: '0.02em',
+              }}
+            >
+              {label}
+            </div>
+          ))}
+        </div>
+      </ThemeProvider>
+
+      {/* Overrides code block */}
+      <div>
+        <p style={{ margin: '0 0 4px', fontSize: 12, color: '#888', fontFamily: 'monospace' }}>
+          {'<ThemeProvider theme="light" overrides={overrides}>'}
+        </p>
+        <pre style={{
+          margin: 0,
+          padding: '12px 16px',
+          background: '#1e1e1e',
+          color: '#d4d4d4',
+          fontFamily: '"Fira Code", "Cascadia Code", Consolas, monospace',
+          fontSize: 12,
+          borderRadius: 6,
+          overflowX: 'auto',
+          lineHeight: 1.6,
+        }}>
+          {`const overrides = ${overridesJson}`}
+        </pre>
+      </div>
+    </div>
+  )
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 export const FreezePanes: Story = {
   name: 'Freeze Panes (draggable)',
   render() {

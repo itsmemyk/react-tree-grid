@@ -9,8 +9,9 @@
 }
 
 .header {
-  background: var(--react-tree-grid-color-surface);
+  background: var(--react-tree-grid-color-header-background);
   border-bottom: 1px solid var(--react-tree-grid-color-border);
+  color: var(--react-tree-grid-color-header-text);
   flex: 0 0 auto;
   overflow: hidden;
   position: relative;
@@ -33,7 +34,7 @@
 }
 
 .fixedHeader {
-  background: var(--react-tree-grid-color-surface);
+  background: var(--react-tree-grid-color-header-background);
   bottom: 0;
   display: flex;
   overflow: hidden;

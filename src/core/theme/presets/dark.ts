@@ -9,6 +9,8 @@ export const darkTheme: ThemeTokens = {
   colorWarning: '#ffa726',
   colorBackground: '#121212',
   colorSurface: '#1e1e1e',
+  colorHeaderBackground: '#272727',
+  colorHeaderText: '#e0e0e0',
   colorText: '#e0e0e0',
   colorTextSecondary: '#aaaaaa',
   colorBorder: '#333333',

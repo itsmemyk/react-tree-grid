@@ -9,6 +9,8 @@ export const lightTheme: ThemeTokens = {
   colorWarning: '#ed6c02',
   colorBackground: '#ffffff',
   colorSurface: '#f5f5f5',
+  colorHeaderBackground: '#f5f5f5',
+  colorHeaderText: '#212121',
   colorText: '#212121',
   colorTextSecondary: '#757575',
   colorBorder: '#e0e0e0',

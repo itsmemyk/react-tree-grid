@@ -8,6 +8,8 @@ export interface ThemeTokens {
   colorWarning: string
   colorBackground: string
   colorSurface: string
+  colorHeaderBackground: string
+  colorHeaderText: string
   colorText: string
   colorTextSecondary: string
   colorBorder: string
