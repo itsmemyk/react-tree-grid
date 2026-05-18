@@ -50,12 +50,6 @@ declare interface ColumnResizeEvents {
     shouldCommitLiveResize?: (colId: string) => boolean;
 }
 
-/**
- * ComboFilter — searchable dropdown (filterable select).
- *
- * Like SelectFilter but with a text search input inside the dropdown.
- * Full Combobox component (Phase 3h) can replace this later.
- */
 export declare function ComboFilter<T extends GridRow>({ column, store, value, onChange, }: ComboFilterProps<T>): JSX.Element;
 
 declare interface ComboFilterProps<T extends GridRow> {
