@@ -111,6 +111,9 @@ All tokens follow the naming convention `--react-tree-grid-{token-in-kebab-case}
 |---|---|---|
 | `--react-tree-grid-color-header-background` | `#f5f5f5` | Header row background colour |
 | `--react-tree-grid-color-header-text` | `#212121` | Header cell text colour |
+| `--react-tree-grid-color-row-hover` | `rgba(0,0,0,0.04)` | Row and header-cell hover tint |
+| `--react-tree-grid-color-row-selected` | `rgba(25,118,210,0.08)` | Selected row background tint |
+| `--react-tree-grid-color-sort-idle` | `rgba(0,0,0,0.35)` | Idle (unsorted column) sort-arrow colour |
 
 ::: tip Styling the header
 `--react-tree-grid-color-header-background` and `--react-tree-grid-color-header-text` are the dedicated tokens for the column header row. Set them independently of the rest of the surface colours:

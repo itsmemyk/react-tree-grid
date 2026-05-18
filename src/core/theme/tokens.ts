@@ -10,9 +10,12 @@ export interface ThemeTokens {
   colorSurface: string
   colorHeaderBackground: string
   colorHeaderText: string
+  colorRowHover: string
+  colorRowSelected: string
   colorText: string
   colorTextSecondary: string
   colorBorder: string
+  colorSortIdle: string
 
   fontFamily: string
   fontSizeSm: string

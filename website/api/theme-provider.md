@@ -34,9 +34,12 @@ All tokens become CSS custom properties as `--react-tree-grid-{token-in-kebab-ca
 | `colorSurface` | `--react-tree-grid-color-surface` | Alternating row, footer, and group panel background |
 | `colorHeaderBackground` | `--react-tree-grid-color-header-background` | Header row background colour |
 | `colorHeaderText` | `--react-tree-grid-color-header-text` | Header cell text colour |
+| `colorRowHover` | `--react-tree-grid-color-row-hover` | Row / header-cell hover background |
+| `colorRowSelected` | `--react-tree-grid-color-row-selected` | Selected row background tint |
 | `colorText` | `--react-tree-grid-color-text` | Primary text |
 | `colorTextSecondary` | `--react-tree-grid-color-text-secondary` | Muted text |
 | `colorBorder` | `--react-tree-grid-color-border` | Border colour |
+| `colorSortIdle` | `--react-tree-grid-color-sort-idle` | Idle (unsorted) sort-arrow colour |
 
 ### Typography
 

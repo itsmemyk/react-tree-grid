@@ -236,7 +236,7 @@
 }
 
 .headerCellSortable:hover {
-  background: var(--react-tree-grid-color-hover, rgba(0, 0, 0, 0.04));
+  background: var(--react-tree-grid-color-row-hover);
 }
 
 .sortIndicator {
@@ -281,7 +281,7 @@
 }
 
 .sortIdle::after {
-  color: rgba(0, 0, 0, 0.35);
+  color: var(--react-tree-grid-color-sort-idle);
   transform: rotate(0deg);
 }
 
@@ -335,7 +335,7 @@
 /* ─── Selection ────────────────────────────────────────────────────── */
 
 .rowSelected {
-  background-color: var(--react-tree-grid-color-selected, rgba(2, 136, 209, 0.08));
+  background-color: var(--react-tree-grid-color-row-selected);
 }
 
 .cellSelected {
