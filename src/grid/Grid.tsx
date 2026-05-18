@@ -1058,6 +1058,9 @@ function GridInner<T extends GridRow>({
     if (cell.content) {
       const computed = values[column.id]?.[rowIndex]
       if (computed !== undefined) {
+        if (typeof computed === 'number' && column.template) {
+          return column.template(computed, null as unknown as T, column)
+        }
         return String(computed)
       }
       return ''
@@ -1082,7 +1085,13 @@ function GridInner<T extends GridRow>({
           return (
             <div
               key={cell?.id ?? `${column.id}-f${rowIdx}`}
-              className={[styles.footerCell, cell?.css ?? ''].filter(Boolean).join(' ')}
+              className={[
+              styles.footerCell,
+              column.align === 'right' ? styles.alignRight
+                : column.align === 'center' ? styles.alignCenter
+                : styles.alignLeft,
+              cell?.css ?? '',
+            ].filter(Boolean).join(' ')}
               style={{
                 width: colVarRef(column.id),
                 height: adjustResult.footerRowHeights[rowIdx] ?? footerRowHeight,
