@@ -1,0 +1,1 @@
+import{_ as d,o as e,c as o,ag as a}from"./chunks/framework.ClUfsdUo.js";const g=JSON.parse('{"title":"Grid","description":"","frontmatter":{},"headers":[],"relativePath":"api/grid.md","filePath":"api/grid.md"}'),r={name:"api/grid.md"};function i(c,t,s,l,n,h){return e(),o("div",null,[...t[0]||(t[0]=[a("",34)])])}const u=d(r,[["render",i]]);export{g as __pageData,u as default};
