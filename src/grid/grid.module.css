@@ -242,6 +242,9 @@
 .sortIndicator {
   align-items: center;
   display: inline-flex;
+  flex: 0 0 auto;
+  font-size: inherit;
+  line-height: 1;
   margin-left: 6px;
   white-space: nowrap;
 }
@@ -260,29 +263,64 @@
   opacity: 1;
 }
 
-.sortAsc::after,
-.sortDesc::after,
-.sortIdle::after {
-  color: var(--react-tree-grid-color-sort-active);
-  content: '↑';
-  display: inline-block;
-  font-size: 1.25em;
-  font-weight: 600;
-  line-height: 1;
+.sortAsc,
+.sortDesc,
+.sortIdle,
+.sortBidirectional {
+  align-items: center;
+  display: inline-flex;
+  height: 1.25em;
+  justify-content: center;
+  position: relative;
   transition: transform 0.2s ease;
+  width: 1.1em;
 }
 
-.sortAsc::after {
-  transform: rotate(0deg);
-}
-
-.sortDesc::after {
+.sortDesc {
   transform: rotate(180deg);
 }
 
-.sortIdle::after {
-  color: var(--react-tree-grid-color-sort-idle);
+.sortAsc,
+.sortIdle {
   transform: rotate(0deg);
+}
+
+.sortAsc::before,
+.sortDesc::before,
+.sortIdle::before {
+  background: var(--react-tree-grid-color-sort-active);
+  content: '';
+  height: 0.66em;
+  left: 50%;
+  position: absolute;
+  top: 0.44em;
+  transform: translateX(-50%);
+  transition: background-color 0.2s ease;
+  width: 2px;
+}
+
+.sortAsc::after,
+.sortDesc::after,
+.sortIdle::after {
+  border-left: 0.32em solid transparent;
+  border-right: 0.32em solid transparent;
+  border-bottom: 0.36em solid var(--react-tree-grid-color-sort-active);
+  content: '';
+  left: 50%;
+  position: absolute;
+  top: 0.12em;
+  transform: translateX(-50%);
+  transition: border-color 0.2s ease, transform 0.2s ease;
+}
+
+.sortIdle::before,
+.sortIdle::after {
+  background: var(--react-tree-grid-color-sort-idle);
+}
+
+.sortIdle::after {
+  background: transparent;
+  border-bottom-color: var(--react-tree-grid-color-sort-idle);
 }
 
 .sortBidirectional::after {
