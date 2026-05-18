@@ -1177,6 +1177,8 @@ const bootstrapOverrides = {
   shadowMd:           '0 .5rem 1rem rgba(0,0,0,0.15)',
   colorHeaderBackground: '#0d6efd',
   colorHeaderText:       '#ffffff',
+  colorRowHover:         'rgba(13,110,253,0.06)',
+  colorRowSelected:      'rgba(13,110,253,0.12)',
 }
 
 const materialOverrides = {
@@ -1195,6 +1197,8 @@ const materialOverrides = {
   shadowMd:           '0px 3px 1px -2px rgba(0,0,0,0.2),0px 2px 2px 0px rgba(0,0,0,0.14),0px 1px 5px 0px rgba(0,0,0,0.12)',
   colorHeaderBackground: '#673ab7',
   colorHeaderText:       '#ffffff',
+  colorRowHover:         'rgba(103,58,183,0.06)',
+  colorRowSelected:      'rgba(103,58,183,0.12)',
 }
 
 const themeOverrides: Record<StylingTheme, Record<string, string>> = {
