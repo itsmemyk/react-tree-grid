@@ -16,6 +16,7 @@ export const darkTheme: ThemeTokens = {
   colorText: '#e0e0e0',
   colorTextSecondary: '#aaaaaa',
   colorBorder: '#333333',
+  colorSortActive: '#90caf9',
   colorSortIdle: 'rgba(255,255,255,0.4)',
 
   fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',

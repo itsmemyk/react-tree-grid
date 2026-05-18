@@ -1179,6 +1179,8 @@ const bootstrapOverrides = {
   colorHeaderText:       '#ffffff',
   colorRowHover:         'rgba(13,110,253,0.06)',
   colorRowSelected:      'rgba(13,110,253,0.12)',
+  colorSortActive:       '#ffffff',
+  colorSortIdle:         'rgba(255,255,255,0.5)',
 }
 
 const materialOverrides = {
@@ -1199,6 +1201,8 @@ const materialOverrides = {
   colorHeaderText:       '#ffffff',
   colorRowHover:         'rgba(103,58,183,0.06)',
   colorRowSelected:      'rgba(103,58,183,0.12)',
+  colorSortActive:       '#ffffff',
+  colorSortIdle:         'rgba(255,255,255,0.5)',
 }
 
 const themeOverrides: Record<StylingTheme, Record<string, string>> = {

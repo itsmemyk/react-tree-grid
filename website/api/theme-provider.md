@@ -39,6 +39,7 @@ All tokens become CSS custom properties as `--react-tree-grid-{token-in-kebab-ca
 | `colorText` | `--react-tree-grid-color-text` | Primary text |
 | `colorTextSecondary` | `--react-tree-grid-color-text-secondary` | Muted text |
 | `colorBorder` | `--react-tree-grid-color-border` | Border colour |
+| `colorSortActive` | `--react-tree-grid-color-sort-active` | Active (asc / desc) sort-arrow colour |
 | `colorSortIdle` | `--react-tree-grid-color-sort-idle` | Idle (unsorted) sort-arrow colour |
 
 ### Typography

@@ -263,7 +263,7 @@
 .sortAsc::after,
 .sortDesc::after,
 .sortIdle::after {
-  color: var(--react-tree-grid-color-primary, #0288d1);
+  color: var(--react-tree-grid-color-sort-active);
   content: '↑';
   display: inline-block;
   font-size: 1.25em;
@@ -286,7 +286,7 @@
 }
 
 .sortBidirectional::after {
-  color: var(--react-tree-grid-color-primary, #0288d1);
+  color: var(--react-tree-grid-color-sort-active);
   content: '⇅';
   display: inline-block;
   font-size: 1.25em;

@@ -16,6 +16,7 @@ export const lightTheme: ThemeTokens = {
   colorText: '#212121',
   colorTextSecondary: '#757575',
   colorBorder: '#e0e0e0',
+  colorSortActive: '#1976d2',
   colorSortIdle: 'rgba(0,0,0,0.35)',
 
   fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',

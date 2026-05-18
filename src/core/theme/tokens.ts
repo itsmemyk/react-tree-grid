@@ -15,6 +15,7 @@ export interface ThemeTokens {
   colorText: string
   colorTextSecondary: string
   colorBorder: string
+  colorSortActive: string
   colorSortIdle: string
 
   fontFamily: string
