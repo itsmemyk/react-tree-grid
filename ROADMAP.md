@@ -183,6 +183,27 @@ Group related columns under a shared header label, with toggle to collapse the g
 
 ---
 
+## v1.5.0 — Localization
+
+Allow grids to display built-in UI text in any language via a `locale` prop, with an optional `LocaleProvider` for app-wide configuration.
+
+### Locale object
+- [ ] `locale` prop on `Grid` — accepts a partial locale object; missing keys fall back to the built-in English defaults
+- [ ] Built-in strings to localize: group column header (`"Group"`), group row count wrapper (e.g. `"(43)"`), expand/collapse aria-labels, filter input placeholder
+
+### LocaleProvider
+- [ ] `<LocaleProvider locale={...}>` context — all `Grid` instances inside inherit the locale without needing a per-grid prop
+- [ ] Per-grid `locale` prop overrides the context for that instance
+- [ ] Export `type GridLocale` so users can type their locale objects
+
+### Shipped locales
+- [ ] `enLocale` — English (default, built-in)
+- [ ] `frLocale` — French
+- [ ] `deLocale` — German
+- [ ] `esLocale` — Spanish
+
+---
+
 ## v2.0.0 — Extended Export & Polish
 
 - [ ] PDF export (`pdf(filename?)` API method)
