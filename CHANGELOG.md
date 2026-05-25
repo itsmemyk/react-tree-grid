@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.5.2] - 2026-05-25
+
+### Fixed
+
+- **Footer null crash** — removed `column.template` fallback in footer aggregate cells; prevents a null-row crash when no footer row is present.
+
 ## [0.5.1] - 2026-05-18
 
 ### Added

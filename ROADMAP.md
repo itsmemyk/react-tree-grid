@@ -1,6 +1,6 @@
 # Roadmap
 
-Current version: **v0.5.1**
+Current version: **v0.5.2**
 
 Features are grouped into milestones. Each milestone is independently releasable.
 

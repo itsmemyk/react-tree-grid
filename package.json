@@ -1,6 +1,6 @@
 {
   "name": "@itsmemyk/react-tree-grid",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "type": "module",
   "description": "High-performance Grid, Tree, and TreeGrid components for React",
   "keywords": [
