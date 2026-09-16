@@ -1334,3 +1334,59 @@ export const FreezePanes: Story = {
     )
   },
 }
+
+export const CustomCellEditors: Story = {
+  render: () => {
+    const columns: GridColumn<Employee>[] = [
+      { id: 'name', header: [{ text: 'Name' }], width: 160 },
+      {
+        id: 'role',
+        header: [{ text: 'Role (select)' }],
+        width: 180,
+        editTemplate: (value, _row, _column, api) => (
+          <select
+            ref={api.ref as never}
+            style={{ width: '100%', height: '100%', border: 'none', background: 'transparent' }}
+            value={String(value)}
+            onChange={(e) => api.onCommit(e.target.value)}
+          >
+            {ROLES.map((role) => (
+              <option key={role} value={role}>
+                {role}
+              </option>
+            ))}
+          </select>
+        ),
+      },
+      {
+        id: 'team',
+        header: [{ text: 'Notes (textarea)' }],
+        width: 220,
+        editTemplate: (value, _row, _column, api) => (
+          <textarea
+            ref={api.ref as never}
+            style={{ width: '100%', height: '100%', resize: 'none' }}
+            value={String(value)}
+            onChange={(e) => api.onChange(e.target.value)}
+            onKeyDown={(e) => {
+              // Enter inserts a newline instead of committing
+              if (e.key === 'Enter') e.stopPropagation()
+            }}
+            onBlur={() => api.onCommit()}
+          />
+        ),
+      },
+    ]
+
+    return (
+      <ThemeProvider>
+        <Grid
+          columns={columns}
+          data={generateData(8)}
+          editable
+          style={{ width: 600, height: 340 }}
+        />
+      </ThemeProvider>
+    )
+  },
+}
