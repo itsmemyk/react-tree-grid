@@ -68,10 +68,11 @@ export function useGridEditor<T extends GridRow>(
   )
 
   const endEdit = useCallback(
-    (save: boolean) => {
+    (save: boolean, explicitValue?: unknown) => {
       if (!editingCell) return
 
-      const { rowId, colId, value, originalValue } = editingCell
+      const { rowId, colId, originalValue } = editingCell
+      const value = explicitValue !== undefined ? explicitValue : editingCell.value
 
       if (save) {
         if (events.onBeforeEditEnd) {
