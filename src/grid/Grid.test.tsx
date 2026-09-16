@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { ThemeProvider } from '../core/theme'
 import { Grid } from './Grid'
 import { colVarName } from './colVar'
-import type { GridApi } from './types'
+import type { GridApi, GridColumn } from './types'
 import * as domUtils from '../core/utils/dom'
 import { useDataStore } from '../core/data/useDataStore'
 
@@ -1102,6 +1102,272 @@ describe('Grid', () => {
     // Escape on the grid root cancels edit
     fireEvent.keyDown(grid, { key: 'Escape' })
     expect(container.querySelector('input')).toBeNull()
+  })
+
+  it('makes a column editable when it has editTemplate but no editorType', () => {
+    const onAfterEditStart = vi.fn()
+
+    render(
+      <ThemeProvider>
+        <Grid
+          columns={[
+            { id: 'id', header: [{ text: 'ID' }], width: 80 },
+            {
+              id: 'name',
+              header: [{ text: 'Name' }],
+              width: 140,
+              editTemplate: (value) => <span>{String(value)}</span>,
+            },
+          ]}
+          data={[{ id: '1', name: 'Alice' }]}
+          editable
+          onAfterEditStart={onAfterEditStart}
+          style={{ width: 220, height: 180 }}
+        />
+      </ThemeProvider>,
+    )
+
+    fireEvent.doubleClick(screen.getByText('Alice'))
+    expect(onAfterEditStart).toHaveBeenCalledWith('1', 'name')
+  })
+
+  it('renders the default editor for an editorType column in a span cell', () => {
+    const { container } = render(
+      <ThemeProvider>
+        <Grid
+          columns={[
+            { id: 'id', header: [{ text: 'ID' }], width: 80 },
+            { id: 'name', header: [{ text: 'Name' }], width: 140, editorType: 'input' },
+          ]}
+          data={[{ id: '1', name: 'Alice' }]}
+          spans={[{ row: '1', column: 'name', colspan: 1, text: 'Alice' }]}
+          editable
+          style={{ width: 220, height: 180 }}
+        />
+      </ThemeProvider>,
+    )
+
+    fireEvent.doubleClick(screen.getAllByText('Alice')[0])
+
+    const editors = container.querySelectorAll('input')
+    expect(editors).toHaveLength(1)
+    expect((editors[0] as HTMLInputElement).value).toBe('Alice')
+  })
+
+  it('renders a custom editTemplate and commits a value in one gesture', () => {
+    const onAfterEditEnd = vi.fn()
+
+    const { container } = render(
+      <ThemeProvider>
+        <Grid
+          columns={[
+            { id: 'id', header: [{ text: 'ID' }], width: 80 },
+            {
+              id: 'role',
+              header: [{ text: 'Role' }],
+              width: 160,
+              editTemplate: (value, _row, _column, api) => (
+                <select
+                  ref={api.ref as never}
+                  data-testid="role-editor"
+                  value={String(value)}
+                  onChange={(e) => api.onCommit(e.target.value)}
+                >
+                  <option value="Dev">Dev</option>
+                  <option value="Design">Design</option>
+                </select>
+              ),
+            },
+          ]}
+          data={[{ id: '1', role: 'Dev' }]}
+          editable
+          onAfterEditEnd={onAfterEditEnd}
+          style={{ width: 260, height: 180 }}
+        />
+      </ThemeProvider>,
+    )
+
+    fireEvent.doubleClick(screen.getByText('Dev'))
+
+    const editor = screen.getByTestId('role-editor') as HTMLSelectElement
+    expect(editor).toBeTruthy()
+    expect(container.querySelector('input')).toBeNull()
+
+    fireEvent.change(editor, { target: { value: 'Design' } })
+
+    expect(onAfterEditEnd).toHaveBeenCalledWith('1', 'role', 'Design')
+  })
+
+  it('advances with Tab from a plain editor into an editTemplate column', async () => {
+    const onAfterEditStart = vi.fn()
+
+    render(
+      <ThemeProvider>
+        <Grid
+          columns={[
+            { id: 'id', header: [{ text: 'ID' }], width: 80 },
+            { id: 'name', header: [{ text: 'Name' }], width: 140, editorType: 'input' },
+            {
+              id: 'role',
+              header: [{ text: 'Role' }],
+              width: 140,
+              editTemplate: (value, _row, _column, api) => (
+                <input
+                  data-testid="role-editor"
+                  ref={api.ref as never}
+                  value={String(value)}
+                  onChange={(e) => api.onChange(e.target.value)}
+                />
+              ),
+            },
+          ]}
+          data={[{ id: '1', name: 'Alice', role: 'Dev' }]}
+          editable
+          onAfterEditStart={onAfterEditStart}
+          style={{ width: 380, height: 180 }}
+        />
+      </ThemeProvider>,
+    )
+
+    fireEvent.doubleClick(screen.getByText('Alice'))
+    onAfterEditStart.mockClear()
+
+    const editor = document.querySelector('input') as HTMLInputElement
+    fireEvent.keyDown(editor, { key: 'Tab' })
+
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+
+    expect(onAfterEditStart).toHaveBeenCalledWith('1', 'role')
+    expect(screen.getByTestId('role-editor')).toBeTruthy()
+  })
+
+  it('commits exactly once when Enter is pressed in the built-in editor', () => {
+    const onAfterEditEnd = vi.fn()
+
+    const { container } = render(
+      <ThemeProvider>
+        <Grid
+          columns={[
+            { id: 'id', header: [{ text: 'ID' }], width: 80 },
+            { id: 'name', header: [{ text: 'Name' }], width: 140, editorType: 'input' },
+          ]}
+          data={[{ id: '1', name: 'Alice' }]}
+          editable
+          onAfterEditEnd={onAfterEditEnd}
+          style={{ width: 220, height: 180 }}
+        />
+      </ThemeProvider>,
+    )
+
+    fireEvent.doubleClick(screen.getByText('Alice'))
+    const editor = container.querySelector('input') as HTMLInputElement
+    fireEvent.change(editor, { target: { value: 'Bob' } })
+    fireEvent.keyDown(editor, { key: 'Enter' })
+
+    expect(onAfterEditEnd).toHaveBeenCalledTimes(1)
+    expect(onAfterEditEnd).toHaveBeenCalledWith('1', 'name', 'Bob')
+  })
+
+  const renderTemplateGrid = (
+    editTemplate: GridColumn<{ id: string; role: string }>['editTemplate'],
+    onAfterEditEnd = vi.fn(),
+  ) => {
+    const utils = render(
+      <ThemeProvider>
+        <Grid
+          columns={[
+            { id: 'id', header: [{ text: 'ID' }], width: 80 },
+            { id: 'role', header: [{ text: 'Role' }], width: 160, editTemplate },
+          ]}
+          data={[{ id: '1', role: 'Dev' }]}
+          editable
+          onAfterEditEnd={onAfterEditEnd}
+          style={{ width: 260, height: 180 }}
+        />
+      </ThemeProvider>,
+    )
+    fireEvent.doubleClick(screen.getByText('Dev'))
+    return { ...utils, onAfterEditEnd }
+  }
+
+  it('commits a staged value when Enter is pressed inside a custom editor', () => {
+    const { onAfterEditEnd } = renderTemplateGrid((value, _row, _column, api) => (
+      <input
+        data-testid="role-editor"
+        ref={api.ref as never}
+        value={String(value)}
+        onChange={(e) => api.onChange(e.target.value)}
+      />
+    ))
+
+    const editor = screen.getByTestId('role-editor')
+    fireEvent.change(editor, { target: { value: 'Design' } })
+    fireEvent.keyDown(editor, { key: 'Enter' })
+
+    expect(onAfterEditEnd).toHaveBeenCalledWith('1', 'role', 'Design')
+    expect(onAfterEditEnd).toHaveBeenCalledTimes(1)
+  })
+
+  it('cancels a custom editor on Escape without committing', () => {
+    const { onAfterEditEnd, container } = renderTemplateGrid((value, _row, _column, api) => (
+      <input
+        data-testid="role-editor"
+        ref={api.ref as never}
+        value={String(value)}
+        onChange={(e) => api.onChange(e.target.value)}
+      />
+    ))
+
+    const editor = screen.getByTestId('role-editor')
+    fireEvent.change(editor, { target: { value: 'Design' } })
+    fireEvent.keyDown(editor, { key: 'Escape' })
+
+    expect(onAfterEditEnd).not.toHaveBeenCalled()
+    expect(container.querySelector('[data-testid="role-editor"]')).toBeNull()
+  })
+
+  it('lets a template opt out of Enter with stopPropagation', () => {
+    const { onAfterEditEnd } = renderTemplateGrid((value, _row, _column, api) => (
+      <textarea
+        data-testid="role-editor"
+        ref={api.ref as never}
+        value={String(value)}
+        onChange={(e) => api.onChange(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') e.stopPropagation()
+        }}
+      />
+    ))
+
+    fireEvent.keyDown(screen.getByTestId('role-editor'), { key: 'Enter' })
+    expect(onAfterEditEnd).not.toHaveBeenCalled()
+  })
+
+  it('does not commit when focus moves between controls inside the editor', () => {
+    const { onAfterEditEnd } = renderTemplateGrid((value, _row, _column, api) => (
+      <div>
+        <input
+          data-testid="role-editor"
+          ref={api.ref as never}
+          value={String(value)}
+          onChange={(e) => api.onChange(e.target.value)}
+        />
+        <button data-testid="role-clear" onClick={() => api.onChange('')}>
+          clear
+        </button>
+      </div>
+    ))
+
+    const editor = screen.getByTestId('role-editor')
+    const clear = screen.getByTestId('role-clear')
+
+    fireEvent.blur(editor, { relatedTarget: clear })
+    expect(onAfterEditEnd).not.toHaveBeenCalled()
+
+    fireEvent.blur(editor, { relatedTarget: document.body })
+    expect(onAfterEditEnd).toHaveBeenCalledWith('1', 'role', 'Dev')
   })
 
   it('does not handle keys when keyNavigation is false', () => {

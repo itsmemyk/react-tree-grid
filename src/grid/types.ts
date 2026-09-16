@@ -63,6 +63,18 @@ export type GridMarkConfig<T = Record<string, unknown>> =
   | GridMarkRange
   | GridMarkFunction<T>
 
+/** Handles passed to `GridColumn.editTemplate` for driving the edit lifecycle. */
+export interface GridCellEditorApi {
+  /** Stage a value without closing the editor. */
+  onChange: (value: unknown) => void
+  /** Commit and close. An explicit value takes precedence over the staged one. */
+  onCommit: (value?: unknown) => void
+  /** Revert to the original value and close. */
+  onCancel: () => void
+  /** Attach to the control that should receive focus when editing opens. */
+  ref: (node: HTMLElement | null) => void
+}
+
 export interface GridColumn<T = Record<string, unknown>> {
   id: string
   header?: GridHeaderCell[]
@@ -76,6 +88,13 @@ export interface GridColumn<T = Record<string, unknown>> {
   gravity?: number
   type?: GridColumnType
   editorType?: GridEditorType
+  /** Render a custom inline editor. Implies the column is editable. */
+  editTemplate?: (
+    value: unknown,
+    row: T,
+    column: GridColumn<T>,
+    api: GridCellEditorApi,
+  ) => ReactNode
   template?: (value: unknown, row: T, column: GridColumn<T>) => ReactNode
   align?: 'left' | 'center' | 'right'
   htmlEnable?: boolean

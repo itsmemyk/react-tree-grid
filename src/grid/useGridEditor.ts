@@ -3,6 +3,11 @@ import type { DataStore } from '../core/data'
 import type { DataItem } from '../core/data/types'
 import type { GridColumn, GridRow } from './types'
 
+/** A column is editable if it declares an editor type or a custom editor template. */
+export function isColumnEditable<T extends GridRow>(col: GridColumn<T>): boolean {
+  return Boolean(col.editorType || col.editTemplate)
+}
+
 interface EditingCell {
   rowId: string
   colId: string
@@ -39,7 +44,7 @@ export function useGridEditor<T extends GridRow>(
   const startEdit = useCallback(
     (rowId: string, colId: string) => {
       const col = columns.find((c) => c.id === colId)
-      if (!col || !col.editorType) return
+      if (!col || !isColumnEditable(col)) return
 
       if (events.onBeforeEditStart) {
         const result = events.onBeforeEditStart(rowId, colId)
@@ -63,10 +68,11 @@ export function useGridEditor<T extends GridRow>(
   )
 
   const endEdit = useCallback(
-    (save: boolean) => {
+    (save: boolean, explicitValue?: unknown) => {
       if (!editingCell) return
 
-      const { rowId, colId, value, originalValue } = editingCell
+      const { rowId, colId, originalValue } = editingCell
+      const value = explicitValue !== undefined ? explicitValue : editingCell.value
 
       if (save) {
         if (events.onBeforeEditEnd) {
@@ -96,19 +102,25 @@ export function useGridEditor<T extends GridRow>(
 
   const handleEditorKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
+      // Stop propagation on the keys handled here: the grid root keeps a
+      // fallback handler for Enter/Escape while editing, and letting the event
+      // reach it would commit the same edit a second time.
       if (e.key === 'Enter') {
         e.preventDefault()
+        e.stopPropagation()
         endEdit(true)
       } else if (e.key === 'Escape') {
         e.preventDefault()
+        e.stopPropagation()
         endEdit(false)
       } else if (e.key === 'Tab') {
         e.preventDefault()
+        e.stopPropagation()
         endEdit(true)
         // Move to next editable cell
         if (editingCell) {
           const colIdx = columns.findIndex((c) => c.id === editingCell.colId)
-          const nextCol = columns.slice(colIdx + 1).find((c) => c.editorType)
+          const nextCol = columns.slice(colIdx + 1).find(isColumnEditable)
           if (nextCol) {
             // Start editing next cell in same row (defer to avoid state conflict)
             setTimeout(() => startEdit(editingCell.rowId, nextCol.id), 0)

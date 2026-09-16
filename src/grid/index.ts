@@ -20,6 +20,7 @@ export type { CsvExportConfig, ExcelExportConfig } from './export'
 export type { GridFilterState } from './useGridFilter'
 export type { FooterValues } from './useGridFooter'
 export type {
+  GridCellEditorApi,
   GridColumn,
   GridColumnType,
   GridEditorType,

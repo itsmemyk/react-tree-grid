@@ -16,6 +16,7 @@ import { createPortal } from 'react-dom'
 import { useVirtualScroll } from '../core/scroll'
 import type { DataStore } from '../core/data'
 import type { DataItem } from '../core/data/types'
+import { CellEditor } from './CellEditor'
 import styles from './grid.module.css'
 import type {
   GridApi,
@@ -142,6 +143,8 @@ interface RowInteraction {
   isEditing?: (rowId: string, colId: string) => boolean
   editingValue?: unknown
   onEditorChange?: (value: unknown) => void
+  onEditorCommit?: (value?: unknown) => void
+  onEditorCancel?: () => void
   onEditorKeyDown?: (e: React.KeyboardEvent) => void
   onEditorBlur?: () => void
   getComputedValue?: (rowId: string, colIndex: number) => unknown
@@ -279,11 +282,15 @@ function renderRow<T extends GridRow>(
             onMouseLeave={interaction?.onCellMouseLeave}
           >
             {editing ? (
-              <input
+              <CellEditor
                 className={stylesMap.cellEditor}
-                autoFocus
-                value={interaction?.editingValue === null || interaction?.editingValue === undefined ? '' : String(interaction.editingValue)}
-                onChange={(e) => interaction?.onEditorChange?.(e.target.value)}
+                wrapperClassName={stylesMap.cellEditorWrapper}
+                column={column}
+                row={row}
+                value={interaction?.editingValue}
+                onChange={(next) => interaction?.onEditorChange?.(next)}
+                onCommit={(next) => interaction?.onEditorCommit?.(next)}
+                onCancel={() => interaction?.onEditorCancel?.()}
                 onKeyDown={interaction?.onEditorKeyDown}
                 onBlur={interaction?.onEditorBlur}
               />
@@ -330,9 +337,12 @@ function renderSpansOverlay<T extends GridRow>(
     for (let c = 0; c < columns.length; c++) {
       const column = columns[c]
       const spanInfo = gridSpans.getSpan(row.id, column.id)
-      if (spanInfo) {
+      const editing = interaction?.isEditing?.(row.id, column.id)
+      // Skip the span while its cell is being edited — the underlying real cell
+      // renders the editor, and painting the span over it would both hide the
+      // editor and mount a second one that steals focus and commits instantly.
+      if (spanInfo && !editing) {
         const cellSelected = interaction?.isCellSelected?.(row.id, column.id)
-        const editing = interaction?.isEditing?.(row.id, column.id)
         cells.push(
           <div
             key={`span-${row.id}-${column.id}`}
@@ -366,18 +376,7 @@ function renderSpansOverlay<T extends GridRow>(
             onMouseEnter={(e) => interaction?.onCellMouseEnter?.(e, row.id, column.id)}
             onMouseLeave={interaction?.onCellMouseLeave}
           >
-            {editing ? (
-              <input
-                className={stylesMap.cellEditor}
-                autoFocus
-                value={interaction?.editingValue === null || interaction?.editingValue === undefined ? '' : String(interaction.editingValue)}
-                onChange={(e) => interaction?.onEditorChange?.(e.target.value)}
-                onKeyDown={interaction?.onEditorKeyDown}
-                onBlur={interaction?.onEditorBlur}
-              />
-            ) : (
-              spanInfo.span.text ?? getCellValue(row, column)
-            )}
+            {spanInfo.span.text ?? getCellValue(row, column)}
           </div>,
         )
       }
@@ -1273,6 +1272,8 @@ function GridInner<T extends GridRow>({
     isEditing: gridEditor.isEditing,
     editingValue: gridEditor.editingCell?.value,
     onEditorChange: gridEditor.setEditorValue,
+    onEditorCommit: (value?: unknown) => gridEditor.endEdit(true, value),
+    onEditorCancel: () => gridEditor.endEdit(false),
     onEditorKeyDown: gridEditor.handleEditorKeyDown,
     onEditorBlur: () => gridEditor.endEdit(true),
     onCellMouseEnter: (e, rowId, colId) => {
