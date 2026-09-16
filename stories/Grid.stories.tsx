@@ -1335,58 +1335,76 @@ export const FreezePanes: Story = {
   },
 }
 
-export const CustomCellEditors: Story = {
-  render: () => {
-    const columns: GridColumn<Employee>[] = [
-      { id: 'name', header: [{ text: 'Name' }], width: 160 },
-      {
-        id: 'role',
-        header: [{ text: 'Role (select)' }],
-        width: 180,
-        editTemplate: (value, _row, _column, api) => (
-          <select
-            ref={api.ref as never}
-            style={{ width: '100%', height: '100%', border: 'none', background: 'transparent' }}
-            value={String(value)}
-            onChange={(e) => api.onCommit(e.target.value)}
-          >
-            {ROLES.map((role) => (
-              <option key={role} value={role}>
-                {role}
-              </option>
-            ))}
-          </select>
-        ),
-      },
-      {
-        id: 'team',
-        header: [{ text: 'Notes (textarea)' }],
-        width: 220,
-        editTemplate: (value, _row, _column, api) => (
-          <textarea
-            ref={api.ref as never}
-            style={{ width: '100%', height: '100%', resize: 'none' }}
-            value={String(value)}
-            onChange={(e) => api.onChange(e.target.value)}
-            onKeyDown={(e) => {
-              // Enter inserts a newline instead of committing
-              if (e.key === 'Enter') e.stopPropagation()
-            }}
-            onBlur={() => api.onCommit()}
-          />
-        ),
-      },
-    ]
+const customEditorSeed: Employee[] = generateData(8)
 
-    return (
-      <ThemeProvider>
-        <Grid
-          columns={columns}
-          data={generateData(8)}
-          editable
-          style={{ width: 600, height: 340 }}
+function CustomEditorsDemo() {
+  const columns: GridColumn<Employee>[] = [
+    { id: 'name', header: [{ text: 'Name' }], width: 160 },
+    {
+      id: 'role',
+      header: [{ text: 'Role (select)' }],
+      width: 180,
+      editTemplate: (value, _row, _column, api) => (
+        <select
+          ref={api.ref as never}
+          style={{ width: '100%', height: '100%', border: 'none', background: 'transparent' }}
+          value={String(value)}
+          onChange={(e) => api.onCommit(e.target.value)}
+        >
+          {ROLES.map((role) => (
+            <option key={role} value={role}>
+              {role}
+            </option>
+          ))}
+        </select>
+      ),
+    },
+    {
+      id: 'team',
+      header: [{ text: 'Notes (textarea)' }],
+      width: 220,
+      editTemplate: (value, _row, _column, api) => (
+        <textarea
+          ref={api.ref as never}
+          style={{ width: '100%', height: '100%', resize: 'none' }}
+          value={String(value)}
+          onChange={(e) => api.onChange(e.target.value)}
+          onKeyDown={(e) => {
+            // Enter inserts a newline instead of committing
+            if (e.key === 'Enter') e.stopPropagation()
+          }}
+          onBlur={() => api.onCommit()}
         />
-      </ThemeProvider>
-    )
-  },
+      ),
+    },
+  ]
+
+  // A store is required for edits to persist — the grid writes commits through
+  // store.update(); without one, committed values are dropped.
+  const { items, store } = useDataStore<Employee>({ data: customEditorSeed })
+
+  return (
+    <div>
+      <p style={{ margin: '0 0 12px', color: '#666', fontSize: 13 }}>
+        Double-click a cell. <strong>Role</strong> commits as soon as you pick an
+        option. <strong>Notes</strong> keeps Enter for newlines — click outside to
+        commit. Escape cancels either.
+      </p>
+      <Grid<Employee>
+        columns={columns}
+        data={items}
+        store={store}
+        editable
+        selection="cell"
+        style={{ width: 600, height: 340 }}
+        onAfterEditEnd={(rowId, colId, value) =>
+          console.log(`Edited [${rowId}][${colId}] →`, value)
+        }
+      />
+    </div>
+  )
+}
+
+export const CustomCellEditors: Story = {
+  render: () => <CustomEditorsDemo />,
 }

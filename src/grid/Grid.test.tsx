@@ -1198,6 +1198,52 @@ describe('Grid', () => {
     expect(onAfterEditEnd).toHaveBeenCalledWith('1', 'role', 'Design')
   })
 
+  it('persists a value committed from a custom editor into the store', () => {
+    function StoreGrid() {
+      const { items, store } = useDataStore({ data: [{ id: '1', role: 'Dev' }] })
+      return (
+        <Grid
+          columns={[
+            { id: 'id', header: [{ text: 'ID' }], width: 80 },
+            {
+              id: 'role',
+              header: [{ text: 'Role' }],
+              width: 160,
+              editTemplate: (value, _row, _column, api) => (
+                <select
+                  ref={api.ref as never}
+                  data-testid="role-editor"
+                  value={String(value)}
+                  onChange={(e) => api.onCommit(e.target.value)}
+                >
+                  <option value="Dev">Dev</option>
+                  <option value="Design">Design</option>
+                </select>
+              ),
+            },
+          ]}
+          data={items}
+          store={store}
+          editable
+          style={{ width: 260, height: 180 }}
+        />
+      )
+    }
+
+    render(
+      <ThemeProvider>
+        <StoreGrid />
+      </ThemeProvider>,
+    )
+
+    fireEvent.doubleClick(screen.getByText('Dev'))
+    fireEvent.change(screen.getByTestId('role-editor'), { target: { value: 'Design' } })
+
+    // The editor closes and the cell shows the committed value
+    expect(screen.queryByTestId('role-editor')).toBeNull()
+    expect(screen.getByText('Design')).toBeTruthy()
+  })
+
   it('advances with Tab from a plain editor into an editTemplate column', async () => {
     const onAfterEditStart = vi.fn()
 
