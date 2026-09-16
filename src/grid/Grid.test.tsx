@@ -1131,6 +1131,29 @@ describe('Grid', () => {
     expect(onAfterEditStart).toHaveBeenCalledWith('1', 'name')
   })
 
+  it('renders the default editor for an editorType column in a span cell', () => {
+    const { container } = render(
+      <ThemeProvider>
+        <Grid
+          columns={[
+            { id: 'id', header: [{ text: 'ID' }], width: 80 },
+            { id: 'name', header: [{ text: 'Name' }], width: 140, editorType: 'input' },
+          ]}
+          data={[{ id: '1', name: 'Alice' }]}
+          spans={[{ row: '1', column: 'name', colspan: 1, text: 'Alice' }]}
+          editable
+          style={{ width: 220, height: 180 }}
+        />
+      </ThemeProvider>,
+    )
+
+    fireEvent.doubleClick(screen.getAllByText('Alice')[0])
+
+    const editors = container.querySelectorAll('input')
+    expect(editors).toHaveLength(1)
+    expect((editors[0] as HTMLInputElement).value).toBe('Alice')
+  })
+
   it('does not handle keys when keyNavigation is false', () => {
     const onAfterSelect = vi.fn()
 

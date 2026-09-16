@@ -330,9 +330,12 @@ function renderSpansOverlay<T extends GridRow>(
     for (let c = 0; c < columns.length; c++) {
       const column = columns[c]
       const spanInfo = gridSpans.getSpan(row.id, column.id)
-      if (spanInfo) {
+      const editing = interaction?.isEditing?.(row.id, column.id)
+      // Skip the span while its cell is being edited — the underlying real cell
+      // renders the editor, and painting the span over it would both hide the
+      // editor and mount a second one that steals focus and commits instantly.
+      if (spanInfo && !editing) {
         const cellSelected = interaction?.isCellSelected?.(row.id, column.id)
-        const editing = interaction?.isEditing?.(row.id, column.id)
         cells.push(
           <div
             key={`span-${row.id}-${column.id}`}
@@ -366,18 +369,7 @@ function renderSpansOverlay<T extends GridRow>(
             onMouseEnter={(e) => interaction?.onCellMouseEnter?.(e, row.id, column.id)}
             onMouseLeave={interaction?.onCellMouseLeave}
           >
-            {editing ? (
-              <input
-                className={stylesMap.cellEditor}
-                autoFocus
-                value={interaction?.editingValue === null || interaction?.editingValue === undefined ? '' : String(interaction.editingValue)}
-                onChange={(e) => interaction?.onEditorChange?.(e.target.value)}
-                onKeyDown={interaction?.onEditorKeyDown}
-                onBlur={interaction?.onEditorBlur}
-              />
-            ) : (
-              spanInfo.span.text ?? getCellValue(row, column)
-            )}
+            {spanInfo.span.text ?? getCellValue(row, column)}
           </div>,
         )
       }
