@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.5.3] - 2026-09-16
+
+### Fixed
+
+- **Footer aggregate formatting** — numeric footer aggregates are formatted with the column's `template` again, guarded by a numeric check and a fallback to the raw value so templates that read row fields cannot crash the footer.
+
 ## [0.5.2] - 2026-05-25
 
 ### Fixed
