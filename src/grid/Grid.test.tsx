@@ -1154,6 +1154,50 @@ describe('Grid', () => {
     expect((editors[0] as HTMLInputElement).value).toBe('Alice')
   })
 
+  it('renders a custom editTemplate and commits a value in one gesture', () => {
+    const onAfterEditEnd = vi.fn()
+
+    const { container } = render(
+      <ThemeProvider>
+        <Grid
+          columns={[
+            { id: 'id', header: [{ text: 'ID' }], width: 80 },
+            {
+              id: 'role',
+              header: [{ text: 'Role' }],
+              width: 160,
+              editTemplate: (value, _row, _column, api) => (
+                <select
+                  ref={api.ref as never}
+                  data-testid="role-editor"
+                  value={String(value)}
+                  onChange={(e) => api.onCommit(e.target.value)}
+                >
+                  <option value="Dev">Dev</option>
+                  <option value="Design">Design</option>
+                </select>
+              ),
+            },
+          ]}
+          data={[{ id: '1', role: 'Dev' }]}
+          editable
+          onAfterEditEnd={onAfterEditEnd}
+          style={{ width: 260, height: 180 }}
+        />
+      </ThemeProvider>,
+    )
+
+    fireEvent.doubleClick(screen.getByText('Dev'))
+
+    const editor = screen.getByTestId('role-editor') as HTMLSelectElement
+    expect(editor).toBeTruthy()
+    expect(container.querySelector('input')).toBeNull()
+
+    fireEvent.change(editor, { target: { value: 'Design' } })
+
+    expect(onAfterEditEnd).toHaveBeenCalledWith('1', 'role', 'Design')
+  })
+
   it('does not handle keys when keyNavigation is false', () => {
     const onAfterSelect = vi.fn()
 

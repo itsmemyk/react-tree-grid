@@ -143,6 +143,8 @@ interface RowInteraction {
   isEditing?: (rowId: string, colId: string) => boolean
   editingValue?: unknown
   onEditorChange?: (value: unknown) => void
+  onEditorCommit?: (value?: unknown) => void
+  onEditorCancel?: () => void
   onEditorKeyDown?: (e: React.KeyboardEvent) => void
   onEditorBlur?: () => void
   getComputedValue?: (rowId: string, colIndex: number) => unknown
@@ -282,8 +284,12 @@ function renderRow<T extends GridRow>(
             {editing ? (
               <CellEditor
                 className={stylesMap.cellEditor}
+                column={column}
+                row={row}
                 value={interaction?.editingValue}
                 onChange={(next) => interaction?.onEditorChange?.(next)}
+                onCommit={(next) => interaction?.onEditorCommit?.(next)}
+                onCancel={() => interaction?.onEditorCancel?.()}
                 onKeyDown={interaction?.onEditorKeyDown}
                 onBlur={interaction?.onEditorBlur}
               />
@@ -1265,6 +1271,8 @@ function GridInner<T extends GridRow>({
     isEditing: gridEditor.isEditing,
     editingValue: gridEditor.editingCell?.value,
     onEditorChange: gridEditor.setEditorValue,
+    onEditorCommit: (value?: unknown) => gridEditor.endEdit(true, value),
+    onEditorCancel: () => gridEditor.endEdit(false),
     onEditorKeyDown: gridEditor.handleEditorKeyDown,
     onEditorBlur: () => gridEditor.endEdit(true),
     onCellMouseEnter: (e, rowId, colId) => {
