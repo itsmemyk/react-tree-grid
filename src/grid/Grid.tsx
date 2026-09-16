@@ -1058,6 +1058,13 @@ function GridInner<T extends GridRow>({
     if (cell.content) {
       const computed = values[column.id]?.[rowIndex]
       if (computed !== undefined) {
+        if (typeof computed === 'number' && column.template) {
+          try {
+            return column.template(computed, null as unknown as T, column)
+          } catch {
+            return String(computed)
+          }
+        }
         return String(computed)
       }
       return ''
