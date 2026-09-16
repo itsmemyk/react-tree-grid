@@ -1198,6 +1198,51 @@ describe('Grid', () => {
     expect(onAfterEditEnd).toHaveBeenCalledWith('1', 'role', 'Design')
   })
 
+  it('advances with Tab from a plain editor into an editTemplate column', async () => {
+    const onAfterEditStart = vi.fn()
+
+    render(
+      <ThemeProvider>
+        <Grid
+          columns={[
+            { id: 'id', header: [{ text: 'ID' }], width: 80 },
+            { id: 'name', header: [{ text: 'Name' }], width: 140, editorType: 'input' },
+            {
+              id: 'role',
+              header: [{ text: 'Role' }],
+              width: 140,
+              editTemplate: (value, _row, _column, api) => (
+                <input
+                  data-testid="role-editor"
+                  ref={api.ref as never}
+                  value={String(value)}
+                  onChange={(e) => api.onChange(e.target.value)}
+                />
+              ),
+            },
+          ]}
+          data={[{ id: '1', name: 'Alice', role: 'Dev' }]}
+          editable
+          onAfterEditStart={onAfterEditStart}
+          style={{ width: 380, height: 180 }}
+        />
+      </ThemeProvider>,
+    )
+
+    fireEvent.doubleClick(screen.getByText('Alice'))
+    onAfterEditStart.mockClear()
+
+    const editor = document.querySelector('input') as HTMLInputElement
+    fireEvent.keyDown(editor, { key: 'Tab' })
+
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+
+    expect(onAfterEditStart).toHaveBeenCalledWith('1', 'role')
+    expect(screen.getByTestId('role-editor')).toBeTruthy()
+  })
+
   it('commits exactly once when Enter is pressed in the built-in editor', () => {
     const onAfterEditEnd = vi.fn()
 
