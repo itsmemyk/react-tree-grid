@@ -16,6 +16,7 @@ import { createPortal } from 'react-dom'
 import { useVirtualScroll } from '../core/scroll'
 import type { DataStore } from '../core/data'
 import type { DataItem } from '../core/data/types'
+import { CellEditor } from './CellEditor'
 import styles from './grid.module.css'
 import type {
   GridApi,
@@ -279,11 +280,10 @@ function renderRow<T extends GridRow>(
             onMouseLeave={interaction?.onCellMouseLeave}
           >
             {editing ? (
-              <input
+              <CellEditor
                 className={stylesMap.cellEditor}
-                autoFocus
-                value={interaction?.editingValue === null || interaction?.editingValue === undefined ? '' : String(interaction.editingValue)}
-                onChange={(e) => interaction?.onEditorChange?.(e.target.value)}
+                value={interaction?.editingValue}
+                onChange={(next) => interaction?.onEditorChange?.(next)}
                 onKeyDown={interaction?.onEditorKeyDown}
                 onBlur={interaction?.onEditorBlur}
               />
