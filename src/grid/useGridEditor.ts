@@ -102,14 +102,20 @@ export function useGridEditor<T extends GridRow>(
 
   const handleEditorKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
+      // Stop propagation on the keys handled here: the grid root keeps a
+      // fallback handler for Enter/Escape while editing, and letting the event
+      // reach it would commit the same edit a second time.
       if (e.key === 'Enter') {
         e.preventDefault()
+        e.stopPropagation()
         endEdit(true)
       } else if (e.key === 'Escape') {
         e.preventDefault()
+        e.stopPropagation()
         endEdit(false)
       } else if (e.key === 'Tab') {
         e.preventDefault()
+        e.stopPropagation()
         endEdit(true)
         // Move to next editable cell
         if (editingCell) {
