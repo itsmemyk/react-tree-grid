@@ -3,6 +3,11 @@ import type { DataStore } from '../core/data'
 import type { DataItem } from '../core/data/types'
 import type { GridColumn, GridRow } from './types'
 
+/** A column is editable if it declares an editor type or a custom editor template. */
+export function isColumnEditable<T extends GridRow>(col: GridColumn<T>): boolean {
+  return Boolean(col.editorType || col.editTemplate)
+}
+
 interface EditingCell {
   rowId: string
   colId: string
@@ -39,7 +44,7 @@ export function useGridEditor<T extends GridRow>(
   const startEdit = useCallback(
     (rowId: string, colId: string) => {
       const col = columns.find((c) => c.id === colId)
-      if (!col || !col.editorType) return
+      if (!col || !isColumnEditable(col)) return
 
       if (events.onBeforeEditStart) {
         const result = events.onBeforeEditStart(rowId, colId)
@@ -108,7 +113,7 @@ export function useGridEditor<T extends GridRow>(
         // Move to next editable cell
         if (editingCell) {
           const colIdx = columns.findIndex((c) => c.id === editingCell.colId)
-          const nextCol = columns.slice(colIdx + 1).find((c) => c.editorType)
+          const nextCol = columns.slice(colIdx + 1).find(isColumnEditable)
           if (nextCol) {
             // Start editing next cell in same row (defer to avoid state conflict)
             setTimeout(() => startEdit(editingCell.rowId, nextCol.id), 0)

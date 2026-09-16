@@ -1104,6 +1104,33 @@ describe('Grid', () => {
     expect(container.querySelector('input')).toBeNull()
   })
 
+  it('makes a column editable when it has editTemplate but no editorType', () => {
+    const onAfterEditStart = vi.fn()
+
+    render(
+      <ThemeProvider>
+        <Grid
+          columns={[
+            { id: 'id', header: [{ text: 'ID' }], width: 80 },
+            {
+              id: 'name',
+              header: [{ text: 'Name' }],
+              width: 140,
+              editTemplate: (value) => <span>{String(value)}</span>,
+            },
+          ]}
+          data={[{ id: '1', name: 'Alice' }]}
+          editable
+          onAfterEditStart={onAfterEditStart}
+          style={{ width: 220, height: 180 }}
+        />
+      </ThemeProvider>,
+    )
+
+    fireEvent.doubleClick(screen.getByText('Alice'))
+    expect(onAfterEditStart).toHaveBeenCalledWith('1', 'name')
+  })
+
   it('does not handle keys when keyNavigation is false', () => {
     const onAfterSelect = vi.fn()
 
