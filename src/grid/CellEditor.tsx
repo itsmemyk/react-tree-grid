@@ -1,4 +1,4 @@
-import { useCallback, useRef, type KeyboardEvent } from 'react'
+import { useCallback, useRef, type FocusEvent, type KeyboardEvent } from 'react'
 import type { GridCellEditorApi, GridColumn, GridRow } from './types'
 
 export interface CellEditorProps<T extends GridRow> {
@@ -6,6 +6,7 @@ export interface CellEditorProps<T extends GridRow> {
   row: T
   value: unknown
   className?: string
+  wrapperClassName?: string
   onChange: (value: unknown) => void
   onCommit: (value?: unknown) => void
   onCancel: () => void
@@ -25,6 +26,7 @@ export function CellEditor<T extends GridRow>({
   row,
   value,
   className,
+  wrapperClassName,
   onChange,
   onCommit,
   onCancel,
@@ -60,5 +62,28 @@ export function CellEditor<T extends GridRow>({
     ref: setFocusTarget,
   }
 
-  return <>{column.editTemplate(value, row, column, api)}</>
+  // Enter/Escape/Tab are delegated to the same handler the built-in input uses,
+  // so custom editors behave identically. A template that calls
+  // stopPropagation on a key never reaches this handler — that is the opt-out.
+  const handleBlur = (e: FocusEvent<HTMLDivElement>) => {
+    if (!e.currentTarget.contains(e.relatedTarget as Node | null)) {
+      onBlur?.()
+    }
+  }
+
+  return (
+    <div
+      className={wrapperClassName}
+      tabIndex={-1}
+      onKeyDown={onKeyDown}
+      onBlur={handleBlur}
+      ref={(node) => {
+        // Focus the wrapper only when the template never claimed a target,
+        // so Escape and blur-to-commit still work for non-focusable content.
+        if (node && !focusTargetRef.current) node.focus()
+      }}
+    >
+      {column.editTemplate(value, row, column, api)}
+    </div>
+  )
 }

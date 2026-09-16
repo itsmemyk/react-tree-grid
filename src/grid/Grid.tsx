@@ -284,6 +284,7 @@ function renderRow<T extends GridRow>(
             {editing ? (
               <CellEditor
                 className={stylesMap.cellEditor}
+                wrapperClassName={stylesMap.cellEditorWrapper}
                 column={column}
                 row={row}
                 value={interaction?.editingValue}
