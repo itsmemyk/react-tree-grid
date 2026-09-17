@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.6.0] - 2026-09-17
+
+### Added
+
+- **Custom cell editors** — new `editTemplate` column prop renders any React node as a cell's inline editor:
+  `(value, row, column, api) => ReactNode`, where `api` is `{ onChange, onCommit, onCancel, ref }`.
+  - `api.onCommit(value?)` commits and closes; an explicit value takes precedence over the staged one, so a control can commit in a single gesture without a stale read.
+  - `api.onChange(value)` stages a value; the grid's Enter handler commits it.
+  - `api.onCancel()` reverts; `api.ref` marks the control to focus when editing opens.
+  - A column with `editTemplate` is editable on its own — `editorType` is not required — and `Tab` advances into it.
+  - The grid keeps Enter/Escape/Tab and blur-to-commit. Call `stopPropagation()` on a key to take it over, e.g. Enter inside a textarea.
+  - Focus leaving the editor commits; moving between controls *inside* it does not.
+- **`GridCellEditorApi`** type exported for typing custom editor components.
+
+### Fixed
+
+- **Double commit on Enter** — the editor's own key handler committed and the event then reached the grid root's fallback handler, which committed again: `onAfterEditEnd` fired twice and the store was written twice per edit.
+- **Editing a span-origin cell** — the span overlay painted over the cell being edited and mounted a second autofocused input, which stole focus and made the first commit instantly. A double-click opened and closed the editor in one gesture.
+
+### Notes
+
+- `editorType` still renders a text input for every one of its six values; it marks a column editable but does not yet select a widget. Use `editTemplate` for a real dropdown, date picker or checkbox.
+
 ## [0.5.3] - 2026-09-16
 
 ### Fixed

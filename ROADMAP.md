@@ -1,6 +1,6 @@
 # Roadmap
 
-Current version: **v0.5.3**
+Current version: **v0.6.0**
 
 Features are grouped into milestones. Each milestone is independently releasable.
 
@@ -38,9 +38,9 @@ Group rows by one or more columns with a drag-panel UI, nested groups, and expan
 
 Allow fully custom React components as cell editors, not just the built-in input types.
 
-- [ ] `editTemplate` column prop — `(value, row, col, onChange, onCommit) => ReactNode`
-- [ ] Editor lifecycle: focus management, commit on blur/Enter, cancel on Escape
-- [ ] Works alongside existing `editorType` values — `editTemplate` takes precedence when set
+- [x] `editTemplate` column prop — `(value, row, column, api) => ReactNode`, `api` = `{ onChange, onCommit, onCancel, ref }`
+- [x] Editor lifecycle: focus management, commit on blur/Enter, cancel on Escape, `stopPropagation` to opt out per key
+- [x] Works alongside existing `editorType` values — `editTemplate` takes precedence, and implies the column is editable
 
 ---
 
