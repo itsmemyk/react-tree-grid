@@ -484,6 +484,17 @@ export declare interface GridProps<T extends GridRow = GridRow> {
     rightSplit?: number;
     topSplit?: number;
     bottomSplit?: number;
+    /**
+     * Row IDs pinned to the fixed top panel, in order; removed from the scrollable area.
+     * Each ID pins once, unknown IDs are ignored, and pinned rows ignore store filters
+     * and grouping. `topSplit` then freezes the first unpinned rows below them.
+     */
+    pinnedTopRows?: string[];
+    /**
+     * Row IDs pinned to the fixed bottom panel, in order. An ID also listed in
+     * `pinnedTopRows` pins to the top.
+     */
+    pinnedBottomRows?: string[];
     /** Auto-fit column widths to content (grid-level). */
     adjust?: GridAdjustOption;
     /** Distribute remaining width proportionally across flexible columns. */
@@ -577,6 +588,8 @@ export declare interface GridRowDragData {
 export declare type GridRowDropPosition = 'top' | 'bottom' | 'in';
 
 declare interface GridSelectionConfig {
+    /** Rows in on-screen order, used for Shift range selection; defaults to `data`. */
+    getDisplayRows?: () => GridRow[];
     mode: SelectionMode_2;
     multiselection: boolean;
     disabled: boolean;
@@ -995,7 +1008,9 @@ export declare function useGridSort<T extends GridRow>(store: DataStore<T & Data
  * - covered cells (cells hidden because they're inside a span)
  * - range extension (ensures partially visible spans are rendered)
  */
-export declare function useGridSpans<T extends GridRow>(spans: GridSpan[] | undefined, columns: GridColumn<T>[], rowIds: string[], colWidths: Record<string, number>, rowHeights: Record<string, number>): GridSpansResult;
+export declare function useGridSpans<T extends GridRow>(spans: GridSpan[] | undefined, columns: GridColumn<T>[], rowIds: string[], colWidths: Record<string, number>, rowHeights: Record<string, number>, 
+/** Row indexes where a new region (e.g. fixed panel) begins; a rowspan never crosses one. */
+regionStarts?: number[]): GridSpansResult;
 
 export declare function useRowDrag<T extends GridRow>(rows: T[], config: {
     store?: DataStore<T & DataItem>;
