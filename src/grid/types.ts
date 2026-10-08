@@ -195,6 +195,10 @@ export interface GridProps<T extends GridRow = GridRow> {
   rightSplit?: number
   topSplit?: number
   bottomSplit?: number
+  /** Row IDs pinned to the fixed top panel, in order; removed from the scrollable area. */
+  pinnedTopRows?: string[]
+  /** Row IDs pinned to the fixed bottom panel, in order; removed from the scrollable area. */
+  pinnedBottomRows?: string[]
   /** Auto-fit column widths to content (grid-level). */
   adjust?: GridAdjustOption
   /** Distribute remaining width proportionally across flexible columns. */

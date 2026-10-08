@@ -67,6 +67,9 @@ type RowWithHeight<T extends GridRow> = T & {
   $height: number
 }
 
+// Stable default so pinned-row memos don't recompute on every render
+const NO_PINNED_ROWS: string[] = []
+
 function normalizeColumns<T extends GridRow>(
   columns: GridColumn<T>[],
 ): NormalizedColumn<T>[] {
@@ -406,6 +409,8 @@ function GridInner<T extends GridRow>({
   rightSplit = 0,
   topSplit = 0,
   bottomSplit = 0,
+  pinnedTopRows = NO_PINNED_ROWS,
+  pinnedBottomRows = NO_PINNED_ROWS,
   adjust,
   autoWidth,
   autoHeight,
@@ -1504,6 +1509,7 @@ function GridInner<T extends GridRow>({
         {topRows.length ? (
           <div
             className={[styles.fixedRows, styles.fixedRowsTop].join(' ')}
+            data-testid="grid-fixed-top"
             style={{
               height: fixedTopHeight,
               width: bodyClientWidth,
@@ -1570,6 +1576,7 @@ function GridInner<T extends GridRow>({
         {bottomRows.length ? (
           <div
             className={[styles.fixedRows, styles.fixedRowsBottom].join(' ')}
+            data-testid="grid-fixed-bottom"
             style={{
               height: fixedBottomHeight,
               width: bodyClientWidth,
