@@ -38,7 +38,14 @@ export function useGridEditor<T extends GridRow>(
   columns: GridColumn<T>[],
   events: GridEditorEvents,
 ) {
-  const [editingCell, setEditingCell] = useState<EditingCell | null>(null)
+  const [editingCell, setEditingCellState] = useState<EditingCell | null>(null)
+  // Mirrors editingCell synchronously, so a second endEdit in the same event
+  // (e.g. a template's onBlur commit plus the wrapper's blur) sees the edit closed
+  const editingRef = useRef<EditingCell | null>(null)
+  const setEditingCell = useCallback((next: EditingCell | null) => {
+    editingRef.current = next
+    setEditingCellState(next)
+  }, [])
   const editorRef = useRef<HTMLInputElement | null>(null)
 
   const startEdit = useCallback(
@@ -65,15 +72,16 @@ export function useGridEditor<T extends GridRow>(
 
       events.onAfterEditStart?.(rowId, colId)
     },
-    [columns, data, store, events],
+    [columns, data, store, events, setEditingCell],
   )
 
   const endEdit = useCallback(
     (save: boolean, explicitValue?: unknown) => {
-      if (!editingCell) return
+      const current = editingRef.current
+      if (!current) return
 
-      const { rowId, colId, originalValue } = editingCell
-      const value = explicitValue !== undefined ? explicitValue : editingCell.value
+      const { rowId, colId, originalValue } = current
+      const value = explicitValue !== undefined ? explicitValue : current.value
 
       if (save) {
         if (events.onBeforeEditEnd) {
@@ -91,14 +99,15 @@ export function useGridEditor<T extends GridRow>(
 
       setEditingCell(null)
     },
-    [editingCell, store, events],
+    [setEditingCell, store, events],
   )
 
   const setEditorValue = useCallback(
     (value: unknown) => {
-      setEditingCell((prev) => (prev ? { ...prev, value } : null))
+      const current = editingRef.current
+      if (current) setEditingCell({ ...current, value })
     },
-    [],
+    [setEditingCell],
   )
 
   const handleEditorKeyDown = useCallback(

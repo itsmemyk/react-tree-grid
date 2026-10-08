@@ -1442,6 +1442,21 @@ function GridInner<T extends GridRow>({
     [],
   )
 
+  // When an edit closes, the editor unmounts and focus drops to <body>; hand it
+  // back to the grid so arrow keys keep working. Focus moved elsewhere is left alone.
+  const isEditing = gridEditor.editingCell !== null
+  const wasEditingRef = useRef(false)
+  useEffect(() => {
+    if (wasEditingRef.current && !isEditing && keyNavigation) {
+      const root = rootRef.current
+      const active = document.activeElement
+      if (root && (!active || active === document.body)) {
+        root.focus({ preventScroll: true })
+      }
+    }
+    wasEditingRef.current = isEditing
+  }, [isEditing, keyNavigation])
+
   const gridKeyboard = useGridKeyboard({
     enabled: keyNavigation,
     data: displayData,

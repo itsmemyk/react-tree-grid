@@ -2045,6 +2045,64 @@ describe('Grid', () => {
     })
   })
 
+  it('commits a blur once when the editor template also commits on blur', () => {
+    const onAfterEditEnd = vi.fn()
+    render(
+      <ThemeProvider>
+        <Grid
+          columns={[
+            {
+              id: 'notes',
+              header: [{ text: 'Notes' }],
+              width: 200,
+              editTemplate: (value, _row, _column, api) => (
+                <textarea
+                  ref={api.ref as never}
+                  value={String(value)}
+                  onChange={(e) => api.onChange(e.target.value)}
+                  onBlur={() => api.onCommit()}
+                />
+              ),
+            },
+          ]}
+          data={[{ id: '1', notes: 'Hello' }]}
+          editable
+          onAfterEditEnd={onAfterEditEnd}
+          style={{ width: 300, height: 200 }}
+        />
+      </ThemeProvider>,
+    )
+
+    fireEvent.doubleClick(screen.getByText('Hello'))
+    const editor = document.querySelector('textarea') as HTMLTextAreaElement
+    fireEvent.change(editor, { target: { value: 'Hi' } })
+    fireEvent.blur(editor)
+
+    expect(onAfterEditEnd).toHaveBeenCalledTimes(1)
+  })
+
+  it('returns keyboard focus to the grid after Enter commits an edit', () => {
+    const { container } = render(
+      <ThemeProvider>
+        <Grid
+          columns={[{ id: 'name', header: [{ text: 'Name' }], width: 200, editorType: 'input' }]}
+          data={[{ id: '1', name: 'Alice' }, { id: '2', name: 'Bob' }]}
+          editable
+          selection="cell"
+          style={{ width: 300, height: 200 }}
+        />
+      </ThemeProvider>,
+    )
+    const grid = container.querySelector('[data-rgs-key-navigation="true"]') as HTMLDivElement
+
+    fireEvent.doubleClick(screen.getByText('Alice'))
+    const editor = container.querySelector('input') as HTMLInputElement
+    editor.focus()
+    fireEvent.keyDown(editor, { key: 'Enter' })
+
+    expect(document.activeElement).toBe(grid)
+  })
+
   it('shows formula results in the right column when columns are frozen', () => {
     render(
       <ThemeProvider>
