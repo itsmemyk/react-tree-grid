@@ -51,7 +51,8 @@ export function useGridEditor<T extends GridRow>(
         if (result === false) return
       }
 
-      const row = data.find((r) => r.id === rowId)
+      // Fall back to the store for rows its filter dropped from data (e.g. pinned rows)
+      const row = data.find((r) => r.id === rowId) ?? (store?.getItem(rowId) as T | undefined)
       if (!row) return
 
       const value = row[colId]
@@ -64,7 +65,7 @@ export function useGridEditor<T extends GridRow>(
 
       events.onAfterEditStart?.(rowId, colId)
     },
-    [columns, data, events],
+    [columns, data, store, events],
   )
 
   const endEdit = useCallback(

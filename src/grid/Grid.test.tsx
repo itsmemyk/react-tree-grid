@@ -2212,6 +2212,89 @@ describe('Grid', () => {
       expect(onBeforeRowDrag).not.toHaveBeenCalled()
     })
 
+    it('keeps a pinned row visible and editable when a store filter hides it', () => {
+      let storeRef: ReturnType<typeof useDataStore>['store'] | undefined
+      function FilteredGrid() {
+        const { items, store } = useDataStore({ data: rows })
+        storeRef = store
+        return (
+          <Grid
+            columns={cols.map((c) => (c.id === 'name' ? { ...c, editorType: 'input' as const } : c))}
+            data={items}
+            store={store}
+            editable
+            pinnedTopRows={['3']}
+            style={{ width: 400, height: 300 }}
+          />
+        )
+      }
+      render(
+        <ThemeProvider>
+          <FilteredGrid />
+        </ThemeProvider>,
+      )
+
+      act(() => {
+        storeRef!.filter((item) => item.name !== 'Gamma')
+      })
+
+      const topPanel = screen.getByTestId('grid-fixed-top')
+      expect(within(topPanel).getByText('Gamma')).toBeInTheDocument()
+
+      fireEvent.doubleClick(within(topPanel).getByText('Gamma'))
+      const editor = topPanel.querySelector('input') as HTMLInputElement
+      expect(editor).toBeTruthy()
+      fireEvent.change(editor, { target: { value: 'Gamma 2' } })
+      fireEvent.keyDown(editor, { key: 'Enter' })
+
+      expect(storeRef!.getItem('3').name).toBe('Gamma 2')
+    })
+
+    it('does not mark pinned rows as draggable', () => {
+      render(
+        <ThemeProvider>
+          <Grid columns={cols} data={rows} pinnedTopRows={['3']} dragItem="row" style={{ width: 400, height: 300 }} />
+        </ThemeProvider>,
+      )
+
+      const pinned = screen.getByTestId('grid-fixed-top').querySelector('[data-rgs-id="3"]') as HTMLElement
+      expect(pinned.className).not.toContain('rowDraggable')
+      expect((screen.getByText('Alpha').closest('[data-rgs-id="1"]') as HTMLElement).className).toContain('rowDraggable')
+    })
+
+    it('draws a span that starts on a pinned row inside its panel', () => {
+      render(
+        <ThemeProvider>
+          <Grid
+            columns={cols}
+            data={rows}
+            pinnedTopRows={['3']}
+            spans={[{ row: '3', column: 'name', colspan: 1, text: 'Pinned span' }]}
+            style={{ width: 400, height: 300 }}
+          />
+        </ThemeProvider>,
+      )
+
+      expect(within(screen.getByTestId('grid-fixed-top')).getByText('Pinned span')).toBeInTheDocument()
+    })
+
+    it('stops a rowspan at the edge of the region it starts in', () => {
+      render(
+        <ThemeProvider>
+          <Grid
+            columns={cols}
+            data={rows}
+            pinnedBottomRows={['4']}
+            spans={[{ row: '3', column: 'name', rowspan: 2, text: 'Body span' }]}
+            style={{ width: 400, height: 300 }}
+          />
+        </ThemeProvider>,
+      )
+
+      // Row 3 is the last body row; row 4 sits in the bottom panel
+      expect(screen.getByText('Body span').style.height).toBe('40px')
+    })
+
     describe('keyboard scrolling', () => {
       const manyRows = Array.from({ length: 40 }, (_, i) => ({ id: String(i + 1), name: `Row ${i + 1}` }))
 

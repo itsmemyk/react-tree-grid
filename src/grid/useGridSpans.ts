@@ -45,6 +45,8 @@ export function useGridSpans<T extends GridRow>(
   rowIds: string[],
   colWidths: Record<string, number>,
   rowHeights: Record<string, number>,
+  /** Row indexes where a new region (e.g. fixed panel) begins; a rowspan never crosses one. */
+  regionStarts: number[] = [],
 ): GridSpansResult {
   return useMemo(() => {
     const origins = new Map<string, SpanInfo>()
@@ -81,7 +83,11 @@ export function useGridSpans<T extends GridRow>(
       const colIdx = colIndexMap.get(span.column)
       if (rowIdx === undefined || colIdx === undefined) continue
 
-      const rowspan = Math.max(1, span.rowspan ?? 1)
+      const regionEnd = regionStarts.reduce(
+        (end, start) => (start > rowIdx && start < end ? start : end),
+        rowIds.length,
+      )
+      const rowspan = Math.min(Math.max(1, span.rowspan ?? 1), regionEnd - rowIdx)
       const colspan = Math.max(1, span.colspan ?? 1)
 
       // Calculate total pixel dimensions
@@ -155,5 +161,5 @@ export function useGridSpans<T extends GridRow>(
     }
 
     return { getSpan, isCovered, extendRange }
-  }, [spans, columns, rowIds, colWidths, rowHeights])
+  }, [spans, columns, rowIds, colWidths, rowHeights, regionStarts])
 }

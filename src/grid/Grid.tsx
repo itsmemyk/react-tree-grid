@@ -140,6 +140,7 @@ interface RowInteraction {
   getRowRef?: (rowId: string) => ((node: HTMLDivElement | null) => void) | undefined
   onRowPointerDown?: (rowId: string, e: React.PointerEvent<HTMLElement>) => void
   rowDragEnabled?: boolean
+  isRowDraggable?: (rowId: string) => boolean
   onCellClick?: (rowId: string, colId: string, e: React.MouseEvent) => void
   onCellDblClick?: (rowId: string, colId: string, e: React.MouseEvent) => void
   onCellMouseEnter?: (e: React.MouseEvent, rowId: string, colId: string) => void
@@ -211,6 +212,7 @@ function renderRow<T extends GridRow>(
   }
 
   const rowSelected = interaction?.isRowSelected?.(row.id)
+  const rowDraggable = !!interaction?.rowDragEnabled && interaction.isRowDraggable?.(row.id) !== false
 
   return (
     <div
@@ -220,7 +222,7 @@ function renderRow<T extends GridRow>(
         stylesMap.row,
         row.$css ? row.$css : '',
         interaction?.getRowClassName?.(row.id) ?? '',
-        interaction?.rowDragEnabled ? stylesMap.rowDraggable : '',
+        rowDraggable ? stylesMap.rowDraggable : '',
         rowSelected ? stylesMap.rowSelected : '',
       ]
         .filter(Boolean)
@@ -228,8 +230,8 @@ function renderRow<T extends GridRow>(
       style={{ height: getRowHeight(row, 40) }}
       data-rgs-id={row.id}
       onPointerDown={
-        interaction?.rowDragEnabled
-          ? (e) => interaction.onRowPointerDown?.(row.id, e)
+        rowDraggable
+          ? (e) => interaction?.onRowPointerDown?.(row.id, e)
           : undefined
       }
     >
@@ -798,15 +800,16 @@ function GridInner<T extends GridRow>({
     }
     const byId = new Map(baseDataRows.map((r) => [r.id, r]))
     const resolve = (ids: string[]) => ids.flatMap((id) => {
-      const row = byId.get(id)
-      if (!row) return []
+      // A store filter drops rows from data; pinned rows stay visible regardless
+      const row = byId.get(id) ?? (store?.getItem(id) as T | undefined)
+      if (!row || row.hidden) return []
       return [{
         ...row,
         $height: adjustResult.rowHeightOverrides[row.id] ?? row.$height ?? rowHeight,
       } as RowWithHeight<T>]
     })
     return { top: resolve(pinnedIds.top), bottom: resolve(pinnedIds.bottom) }
-  }, [pinnedIds, baseDataRows, rowHeight, adjustResult.rowHeightOverrides])
+  }, [pinnedIds, baseDataRows, store, rowHeight, adjustResult.rowHeightOverrides])
 
   const unpinnedData = useMemo(
     () => (pinnedIds.all.size ? normalizedData.filter((r) => !pinnedIds.all.has(r.id)) : normalizedData),
@@ -841,7 +844,12 @@ function GridInner<T extends GridRow>({
     return m
   }, [displayData])
 
-  const gridSpans = useGridSpans(spans, columnReorder.orderedColumns, rowIds, colWidthMap, rowHeightMap)
+  // Spans stay inside the region (top panel, body, bottom panel) their origin row is in
+  const spanRegionStarts = useMemo(
+    () => [effectiveTopSplit, displayData.length - effectiveBottomSplit],
+    [effectiveTopSplit, effectiveBottomSplit, displayData.length],
+  )
+  const gridSpans = useGridSpans(spans, columnReorder.orderedColumns, rowIds, colWidthMap, rowHeightMap, spanRegionStarts)
 
   useImperativeHandle(
     ref,
@@ -1319,11 +1327,10 @@ function GridInner<T extends GridRow>({
       ? (rowId) => (pinnedIds.all.has(rowId) ? undefined : rowDrag.getRowProps(rowId).ref)
       : undefined,
     onRowPointerDown: rowDrag.enabled
-      ? (rowId, e) => {
-          if (!pinnedIds.all.has(rowId)) rowDrag.getRowProps(rowId).onPointerDown(e)
-        }
+      ? (rowId, e) => rowDrag.getRowProps(rowId).onPointerDown(e)
       : undefined,
     rowDragEnabled: rowDrag.enabled,
+    isRowDraggable: (rowId) => !pinnedIds.all.has(rowId),
     onCellClick: (rowId, colId, e) => {
       gridSelection.handleClick(rowId, colId, e.ctrlKey || e.metaKey, e.shiftKey)
       onCellClick?.(rowId, colId, e)
@@ -1603,6 +1610,7 @@ function GridInner<T extends GridRow>({
                 }}
               >
                 {topRows.map((row) => renderRow(row, centerColumns, styles, rowInteraction, fixedRightColumns.length > 0))}
+                {renderSpansOverlay(topRows, centerColumns, styles, gridSpans, rowInteraction, rowHeight, fixedRightColumns.length > 0)}
               </div>
             </div>
 
@@ -1671,6 +1679,7 @@ function GridInner<T extends GridRow>({
                 }}
               >
                 {bottomRows.map((row) => renderRow(row, centerColumns, styles, rowInteraction, fixedRightColumns.length > 0))}
+                {renderSpansOverlay(bottomRows, centerColumns, styles, gridSpans, rowInteraction, rowHeight, fixedRightColumns.length > 0)}
               </div>
             </div>
 
