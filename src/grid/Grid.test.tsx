@@ -2085,5 +2085,175 @@ describe('Grid', () => {
       const body = screen.getByTestId('grid-body')
       expect(body.querySelector('[data-rgs-id="2"]')).toBeNull()
     })
+
+    it('renders a row once when its ID is repeated or listed in both pin lists', () => {
+      const { container } = render(
+        <ThemeProvider>
+          <Grid
+            columns={cols}
+            data={rows}
+            pinnedTopRows={['3', '3']}
+            pinnedBottomRows={['3', '2', '2']}
+            style={{ width: 400, height: 300 }}
+          />
+        </ThemeProvider>,
+      )
+
+      expect(container.querySelectorAll('[data-rgs-id="3"]')).toHaveLength(1)
+      expect(container.querySelectorAll('[data-rgs-id="2"]')).toHaveLength(1)
+      expect(within(screen.getByTestId('grid-fixed-top')).getByText('Gamma')).toBeInTheDocument()
+      expect(within(screen.getByTestId('grid-fixed-bottom')).getByText('Beta')).toBeInTheDocument()
+    })
+
+    it('ignores pinned IDs that match no row', () => {
+      render(
+        <ThemeProvider>
+          <Grid columns={cols} data={rows} pinnedTopRows={['nope']} style={{ width: 400, height: 300 }} />
+        </ThemeProvider>,
+      )
+
+      expect(screen.queryByTestId('grid-fixed-top')).toBeNull()
+    })
+
+    it('fills topSplit with unpinned rows and never shows a row in two panels', () => {
+      const { container } = render(
+        <ThemeProvider>
+          <Grid
+            columns={cols}
+            data={rows}
+            topSplit={2}
+            pinnedBottomRows={['1', '2', '3']}
+            style={{ width: 400, height: 300 }}
+          />
+        </ThemeProvider>,
+      )
+
+      for (const id of ['1', '2', '3', '4']) {
+        expect(container.querySelectorAll(`[data-rgs-id="${id}"]`)).toHaveLength(1)
+      }
+      expect(within(screen.getByTestId('grid-fixed-top')).getByText('Delta')).toBeInTheDocument()
+    })
+
+    it('shift-click selects the range in displayed order', () => {
+      const tenRows = Array.from({ length: 10 }, (_, i) => ({ id: String(i + 1), name: `Row ${i + 1}` }))
+      const { container } = render(
+        <ThemeProvider>
+          <Grid
+            columns={cols}
+            data={tenRows}
+            pinnedTopRows={['8']}
+            selection="row"
+            multiselection
+            style={{ width: 400, height: 600 }}
+          />
+        </ThemeProvider>,
+      )
+
+      fireEvent.click(screen.getByText('Row 8'))
+      fireEvent.click(screen.getByText('Row 1'), { shiftKey: true })
+
+      const selected = Array.from(container.querySelectorAll('[data-rgs-id][class*="rowSelected"]'))
+        .map((el) => el.getAttribute('data-rgs-id'))
+      expect(new Set(selected)).toEqual(new Set(['8', '1']))
+    })
+
+    it('keeps a pinned row visible when its group is collapsed', () => {
+      const groupData = [
+        { id: '1', dept: 'Eng', status: 'Active' },
+        { id: '2', dept: 'Eng', status: 'Inactive' },
+        { id: '3', dept: 'HR', status: 'Active' },
+      ]
+      const groupColumns = [
+        { id: 'dept', header: [{ text: 'Dept' }], width: 150 },
+        { id: 'status', header: [{ text: 'Status' }], width: 150 },
+      ]
+      render(
+        <ThemeProvider>
+          <Grid
+            columns={groupColumns}
+            data={groupData}
+            groupable
+            group={{ order: ['dept'] }}
+            pinnedTopRows={['2']}
+            style={{ width: 400, height: 300 }}
+          />
+        </ThemeProvider>,
+      )
+
+      // Pinned row is not counted in its group
+      expect(screen.getByText('Eng (1)')).toBeInTheDocument()
+
+      for (const button of screen.getAllByRole('button', { name: 'Collapse group' })) {
+        fireEvent.click(button)
+      }
+
+      expect(within(screen.getByTestId('grid-fixed-top')).getByText('Inactive')).toBeInTheDocument()
+    })
+
+    it('does not start a row drag from a pinned row', () => {
+      const onBeforeRowDrag = vi.fn()
+      render(
+        <ThemeProvider>
+          <Grid
+            columns={cols}
+            data={rows}
+            pinnedTopRows={['3']}
+            dragItem="row"
+            onBeforeRowDrag={onBeforeRowDrag}
+            style={{ width: 400, height: 300 }}
+          />
+        </ThemeProvider>,
+      )
+
+      const pinned = within(screen.getByTestId('grid-fixed-top')).getByText('Gamma').closest('[data-rgs-id="3"]') as HTMLElement
+      const target = screen.getByText('Alpha').closest('[data-rgs-id="1"]') as HTMLElement
+      dispatchPointerDrag(pinned, target, { moveY: 70 })
+
+      expect(onBeforeRowDrag).not.toHaveBeenCalled()
+    })
+
+    describe('keyboard scrolling', () => {
+      const manyRows = Array.from({ length: 40 }, (_, i) => ({ id: String(i + 1), name: `Row ${i + 1}` }))
+
+      const setup = () => {
+        const { container } = render(
+          <ThemeProvider>
+            <Grid
+              columns={cols}
+              data={manyRows}
+              pinnedTopRows={['1', '2']}
+              pinnedBottomRows={['40']}
+              selection="cell"
+              leftSplit={1}
+              style={{ width: 400, height: 300 }}
+            />
+          </ThemeProvider>,
+        )
+        const grid = container.querySelector('[data-rgs-key-navigation="true"]') as HTMLDivElement
+        const body = screen.getByTestId('grid-body')
+        Object.defineProperty(body, 'scrollTop', { configurable: true, writable: true, value: 0 })
+        // The frozen-left strip spans exactly the scrollable band between the pinned panels
+        const band = container.querySelector('[class*="fixedColumnsLeft"]') as HTMLElement
+        return { grid, body, bandHeight: Number.parseFloat(band.style.height) }
+      }
+
+      it('scrolls a body row out from under the pinned panels', () => {
+        const { grid, body, bandHeight } = setup()
+        fireEvent.click(screen.getByText('Row 3'))
+        for (let i = 0; i < 4; i += 1) fireEvent.keyDown(grid, { key: 'ArrowDown' })
+
+        // Row 7 is the 5th scrollable row: its bottom edge must sit at the band's bottom edge
+        expect(body.scrollTop).toBe(5 * 40 - bandHeight)
+      })
+
+      it('does not scroll when focus moves onto a pinned row', () => {
+        const { grid, body } = setup()
+        fireEvent.click(screen.getByText('Row 3'))
+        body.scrollTop = 400
+        fireEvent.keyDown(grid, { key: 'ArrowUp' })
+
+        expect(body.scrollTop).toBe(400)
+      })
+    })
   })
 })

@@ -587,8 +587,23 @@ function GridInner<T extends GridRow>({
     defaultSortStates,
   )
 
+  // ─── Pinned rows ──────────────────────────────────────────────────
+  // Each ID pins once; an ID in both lists pins to the top
+  const pinnedIds = useMemo(() => {
+    const top = [...new Set(pinnedTopRows)]
+    const topSet = new Set(top)
+    const bottom = [...new Set(pinnedBottomRows)].filter((id) => !topSet.has(id))
+    return { top, bottom, all: new Set([...top, ...bottom]) }
+  }, [pinnedTopRows, pinnedBottomRows])
+
+  // Pinned rows stay out of grouping so collapsing a group can't hide them
+  const groupInput = useMemo(
+    () => (pinnedIds.all.size ? activeData.filter((row) => !pinnedIds.all.has(row.id)) : activeData),
+    [activeData, pinnedIds],
+  )
+
   // ─── Grouping ─────────────────────────────────────────────────────
-  const gridGroup = useGridGroup(activeData, group?.order ?? [], store ? [] : gridSort.sortingStates)
+  const gridGroup = useGridGroup(groupInput, group?.order ?? [], store ? [] : gridSort.sortingStates)
 
   const handleAddGroup = useCallback((colId: string) => {
     const nextOrder = gridGroup.groupOrder.includes(colId)
@@ -634,7 +649,10 @@ function GridInner<T extends GridRow>({
   // ─── Selection ────────────────────────────────────────────────────
   const selectionMode = typeof selectionProp === 'string' ? selectionProp : 'complex'
   const selectionDisabled = selectionProp === false
+  // Rows in on-screen order, assigned once displayData is computed below
+  const displayOrderRef = useRef<GridRow[]>([])
   const gridSelection = useGridSelection(rowDrag.orderedRows, {
+    getDisplayRows: () => displayOrderRef.current,
     mode: selectionMode,
     multiselection,
     disabled: selectionDisabled,
@@ -762,8 +780,7 @@ function GridInner<T extends GridRow>({
     ? adjustResult.footerRowHeights.reduce((sum, h) => sum + h, 0)
     : footerRowCount * footerRowHeight
 
-  // Pre-compute row/col dimension maps for spans (before normalizedData to avoid dependency cycle)
-  const normalizedData = useMemo(
+    const normalizedData = useMemo(
     () =>
       visibleDataRows.map((row) => ({
         ...row,
@@ -775,33 +792,38 @@ function GridInner<T extends GridRow>({
 
   // Pinned rows: lift rows by ID into the fixed top/bottom panels by moving them
   // to the ends of displayData and widening the effective splits
-  const pinnedTopData = useMemo(() => {
-    if (!pinnedTopRows.length) return NO_PINNED_DATA as RowWithHeight<T>[]
-    const byId = new Map(normalizedData.map((r) => [r.id, r]))
-    return pinnedTopRows
-      .map((id) => byId.get(id))
-      .filter((r): r is RowWithHeight<T> => r != null)
-  }, [normalizedData, pinnedTopRows])
+  const pinnedData = useMemo(() => {
+    if (!pinnedIds.all.size) {
+      return { top: NO_PINNED_DATA as RowWithHeight<T>[], bottom: NO_PINNED_DATA as RowWithHeight<T>[] }
+    }
+    const byId = new Map(baseDataRows.map((r) => [r.id, r]))
+    const resolve = (ids: string[]) => ids.flatMap((id) => {
+      const row = byId.get(id)
+      if (!row) return []
+      return [{
+        ...row,
+        $height: adjustResult.rowHeightOverrides[row.id] ?? row.$height ?? rowHeight,
+      } as RowWithHeight<T>]
+    })
+    return { top: resolve(pinnedIds.top), bottom: resolve(pinnedIds.bottom) }
+  }, [pinnedIds, baseDataRows, rowHeight, adjustResult.rowHeightOverrides])
 
-  const pinnedBottomData = useMemo(() => {
-    if (!pinnedBottomRows.length) return NO_PINNED_DATA as RowWithHeight<T>[]
-    const topIds = new Set(pinnedTopRows)
-    const byId = new Map(normalizedData.map((r) => [r.id, r]))
-    return pinnedBottomRows
-      .filter((id) => !topIds.has(id))
-      .map((id) => byId.get(id))
-      .filter((r): r is RowWithHeight<T> => r != null)
-  }, [normalizedData, pinnedTopRows, pinnedBottomRows])
+  const unpinnedData = useMemo(
+    () => (pinnedIds.all.size ? normalizedData.filter((r) => !pinnedIds.all.has(r.id)) : normalizedData),
+    [normalizedData, pinnedIds],
+  )
 
   const displayData = useMemo(() => {
-    if (!pinnedTopData.length && !pinnedBottomData.length) return normalizedData
-    const pinned = new Set([...pinnedTopData, ...pinnedBottomData].map((r) => r.id))
-    const unpinned = normalizedData.filter((r) => !pinned.has(r.id))
-    return [...pinnedTopData, ...unpinned, ...pinnedBottomData]
-  }, [normalizedData, pinnedTopData, pinnedBottomData])
+    if (!pinnedData.top.length && !pinnedData.bottom.length) return unpinnedData
+    return [...pinnedData.top, ...unpinnedData, ...pinnedData.bottom]
+  }, [unpinnedData, pinnedData])
+  displayOrderRef.current = displayData
 
-  const effectiveTopSplit = topSplit + pinnedTopData.length
-  const effectiveBottomSplit = bottomSplit + pinnedBottomData.length
+  // topSplit/bottomSplit freeze the first/last unpinned rows, without overlapping
+  const clampedTopSplit = Math.min(topSplit, unpinnedData.length)
+  const clampedBottomSplit = Math.min(bottomSplit, unpinnedData.length - clampedTopSplit)
+  const effectiveTopSplit = pinnedData.top.length + clampedTopSplit
+  const effectiveBottomSplit = pinnedData.bottom.length + clampedBottomSplit
 
   // Span support
   const rowIds = useMemo(
@@ -961,6 +983,8 @@ function GridInner<T extends GridRow>({
     rightSplit,
     topSplit: effectiveTopSplit,
     bottomSplit: effectiveBottomSplit,
+    fixedTopHeight,
+    fixedBottomHeight,
   })
   const visibleColumns = displayColumns.slice(virtual.xStart, virtual.xEnd + 1)
   const visibleRows = displayData.slice(virtual.yStart, virtual.yEnd + 1)
@@ -1290,9 +1314,14 @@ function GridInner<T extends GridRow>({
     isCellSelected: gridSelection.isCellSelected,
     getRowClassName: (rowId) => gridCss.rowCssMap[rowId],
     getCellClassName: (rowId, colId) => gridCss.cellCssMap[colId]?.[rowId],
-    getRowRef: rowDrag.enabled ? (rowId) => rowDrag.getRowProps(rowId).ref : undefined,
+    // Pinned rows are neither drag sources nor drop targets: their position is fixed
+    getRowRef: rowDrag.enabled
+      ? (rowId) => (pinnedIds.all.has(rowId) ? undefined : rowDrag.getRowProps(rowId).ref)
+      : undefined,
     onRowPointerDown: rowDrag.enabled
-      ? (rowId, e) => rowDrag.getRowProps(rowId).onPointerDown(e)
+      ? (rowId, e) => {
+          if (!pinnedIds.all.has(rowId)) rowDrag.getRowProps(rowId).onPointerDown(e)
+        }
       : undefined,
     rowDragEnabled: rowDrag.enabled,
     onCellClick: (rowId, colId, e) => {
@@ -1335,16 +1364,22 @@ function GridInner<T extends GridRow>({
 
       const visibleCols = normalizedColumns
 
-      // Vertical: scroll to make row visible
-      const rowTop = rowIdx * rowHeight
-      const rowBottom = rowTop + rowHeight
-      const viewTop = body.scrollTop
-      const viewBottom = viewTop + bodyClientHeight
+      // Vertical: scroll to make row visible within the band between the fixed
+      // top/bottom panels; rows inside those panels are always visible
+      const scrollRowIdx = rowIdx - effectiveTopSplit
+      const scrollRowCount = displayData.length - effectiveTopSplit - effectiveBottomSplit
+      if (scrollRowIdx >= 0 && scrollRowIdx < scrollRowCount) {
+        const bandHeight = bodyClientHeight - fixedTopHeight - fixedBottomHeight
+        const rowTop = scrollRowIdx * rowHeight
+        const rowBottom = rowTop + rowHeight
+        const viewTop = body.scrollTop
+        const viewBottom = viewTop + bandHeight
 
-      if (rowTop < viewTop) {
-        body.scrollTop = rowTop
-      } else if (rowBottom > viewBottom) {
-        body.scrollTop = rowBottom - bodyClientHeight
+        if (rowTop < viewTop) {
+          body.scrollTop = rowTop
+        } else if (rowBottom > viewBottom) {
+          body.scrollTop = rowBottom - bandHeight
+        }
       }
 
       // Horizontal: scroll to make column visible (accounting for frozen columns)
@@ -1367,7 +1402,8 @@ function GridInner<T extends GridRow>({
         }
       }
     },
-    [normalizedColumns, rowHeight, bodyClientHeight, bodyClientWidth, fixedLeftWidth, fixedRightWidth, effectiveLeftSplit, rightSplit],
+    [normalizedColumns, rowHeight, bodyClientHeight, bodyClientWidth, fixedLeftWidth, fixedRightWidth, effectiveLeftSplit, rightSplit,
+      effectiveTopSplit, effectiveBottomSplit, displayData.length, fixedTopHeight, fixedBottomHeight],
   )
 
   const pageScroll = useCallback(
