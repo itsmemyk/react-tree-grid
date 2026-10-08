@@ -64,6 +64,9 @@ export const TreeGrid = forwardRef<TreeGridRef, TreeGridProps<TreeGridRow>>(func
     groupAggregate,
     onCellClick,
     onDragRowIn,
+    onDragRowOut,
+    canRowDrop,
+    onAfterRowDrag,
     onAfterRowDrop,
     ...gridProps
   } = props
@@ -200,6 +203,36 @@ export const TreeGrid = forwardRef<TreeGridRef, TreeGridProps<TreeGridRow>>(func
     onDragRowIn?.(dragData, event)
   }
 
+  const clearExpandTimer = () => {
+    if (expandTimerRef.current !== null) {
+      window.clearTimeout(expandTimerRef.current)
+      expandTimerRef.current = null
+    }
+  }
+
+  // Leaving a row before the delay elapses cancels its auto-expand
+  const handleDragRowOut: GridProps<InternalTreeGridRow>['onDragRowOut'] = (dragData, event) => {
+    clearExpandTimer()
+    onDragRowOut?.(dragData, event)
+  }
+
+  const handleAfterRowDrag: GridProps<InternalTreeGridRow>['onAfterRowDrag'] = (dragData, event) => {
+    clearExpandTimer()
+    onAfterRowDrag?.(dragData, event)
+  }
+
+  // A row can't be dropped onto itself or into its own subtree
+  const handleCanRowDrop: GridProps<InternalTreeGridRow>['canRowDrop'] = (dragData, event) => {
+    if (dragData.target) {
+      let insideSubtree = false
+      store.eachParent(dragData.target, (item) => {
+        if (item.id === dragData.start) insideSubtree = true
+      }, true)
+      if (insideSubtree) return false
+    }
+    return canRowDrop?.(dragData, event)
+  }
+
   const handleAfterRowDrop: GridProps<InternalTreeGridRow>['onAfterRowDrop'] = (dragData, event) => {
     if (dragData.target && dragData.position) {
       if (dropBehaviour === 'child') {
@@ -227,6 +260,9 @@ export const TreeGrid = forwardRef<TreeGridRef, TreeGridProps<TreeGridRow>>(func
         store={store}
         onCellClick={handleCellClick}
         onDragRowIn={handleDragRowIn}
+        onDragRowOut={handleDragRowOut}
+        canRowDrop={handleCanRowDrop}
+        onAfterRowDrag={handleAfterRowDrag}
         onAfterRowDrop={handleAfterRowDrop}
       />
     </div>

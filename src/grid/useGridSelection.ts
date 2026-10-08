@@ -11,6 +11,8 @@ interface GridSelectionEvents {
 }
 
 interface GridSelectionConfig {
+  /** Rows in on-screen order, used for Shift range selection; defaults to `data`. */
+  getDisplayRows?: () => GridRow[]
   mode: SelectionMode
   multiselection: boolean
   disabled: boolean
@@ -72,12 +74,13 @@ export function useGridSelection<T extends GridRow>(
           })
         } else if (multiselection && shiftKey && lastClickedRow) {
           // Range select
-          const startIdx = data.findIndex((r) => r.id === lastClickedRow)
-          const endIdx = data.findIndex((r) => r.id === rowId)
+          const rows = config.getDisplayRows?.() ?? data
+          const startIdx = rows.findIndex((r) => r.id === lastClickedRow)
+          const endIdx = rows.findIndex((r) => r.id === rowId)
           if (startIdx >= 0 && endIdx >= 0) {
             const from = Math.min(startIdx, endIdx)
             const to = Math.max(startIdx, endIdx)
-            const rangeIds = data.slice(from, to + 1).map((r) => r.id)
+            const rangeIds = rows.slice(from, to + 1).filter((r) => !r.$group).map((r) => r.id)
             setSelectedRows(new Set(rangeIds))
           }
         } else {
@@ -96,12 +99,13 @@ export function useGridSelection<T extends GridRow>(
             return next
           })
         } else if (multiselection && shiftKey && lastClickedRow) {
-          const startIdx = data.findIndex((r) => r.id === lastClickedRow)
-          const endIdx = data.findIndex((r) => r.id === rowId)
+          const rows = config.getDisplayRows?.() ?? data
+          const startIdx = rows.findIndex((r) => r.id === lastClickedRow)
+          const endIdx = rows.findIndex((r) => r.id === rowId)
           if (startIdx >= 0 && endIdx >= 0) {
             const from = Math.min(startIdx, endIdx)
             const to = Math.max(startIdx, endIdx)
-            const rangeIds = data.slice(from, to + 1).map((r) => r.id)
+            const rangeIds = rows.slice(from, to + 1).filter((r) => !r.$group).map((r) => r.id)
             setSelectedRows(new Set(rangeIds))
           }
         } else {
@@ -109,7 +113,8 @@ export function useGridSelection<T extends GridRow>(
         }
       }
 
-      setLastClickedRow(rowId)
+      // A Shift range keeps its anchor so further Shift moves extend it
+      if (!(multiselection && shiftKey && lastClickedRow)) setLastClickedRow(rowId)
       events.onAfterSelect?.(rowId, colId)
     },
     [config, data, lastClickedRow],

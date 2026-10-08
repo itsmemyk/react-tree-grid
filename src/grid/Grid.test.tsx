@@ -1,5 +1,5 @@
 import { createRef } from 'react'
-import { act, createEvent, fireEvent, render, screen } from '@testing-library/react'
+import { act, createEvent, fireEvent, render, screen, within } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { ThemeProvider } from '../core/theme'
 import { Grid } from './Grid'
@@ -2007,6 +2007,618 @@ describe('Grid', () => {
       act(() => { ref.current!.clearGroups() })
       expect(screen.queryByTestId('group-chip-dept')).toBeNull()
       expect(screen.getByTestId('group-panel')).toBeTruthy()
+    })
+  })
+
+  describe('shift range anchor', () => {
+    const tenRows = Array.from({ length: 10 }, (_, i) => ({ id: String(i + 1), name: `Row ${i + 1}` }))
+    const renderGrid = () => render(
+      <ThemeProvider>
+        <Grid
+          columns={[{ id: 'name', header: [{ text: 'Name' }], width: 160 }]}
+          data={tenRows}
+          selection="row"
+          multiselection
+          style={{ width: 300, height: 600 }}
+        />
+      </ThemeProvider>,
+    )
+    const selectedIds = (container: HTMLElement) =>
+      Array.from(container.querySelectorAll('[data-rgs-id][class*="rowSelected"]')).map((el) => el.getAttribute('data-rgs-id'))
+
+    it('keeps the anchor across repeated shift-clicks', () => {
+      const { container } = renderGrid()
+      fireEvent.click(screen.getByText('Row 2'))
+      fireEvent.click(screen.getByText('Row 5'), { shiftKey: true })
+      fireEvent.click(screen.getByText('Row 7'), { shiftKey: true })
+
+      expect(selectedIds(container)).toEqual(['2', '3', '4', '5', '6', '7'])
+    })
+
+    it('extends the range with Shift+ArrowDown', () => {
+      const { container } = renderGrid()
+      const grid = container.querySelector('[data-rgs-key-navigation="true"]') as HTMLDivElement
+      fireEvent.click(screen.getByText('Row 2'))
+      for (let i = 0; i < 3; i += 1) fireEvent.keyDown(grid, { key: 'ArrowDown', shiftKey: true })
+
+      expect(selectedIds(container)).toEqual(['2', '3', '4', '5'])
+    })
+  })
+
+  it('commits a blur once when the editor template also commits on blur', () => {
+    const onAfterEditEnd = vi.fn()
+    render(
+      <ThemeProvider>
+        <Grid
+          columns={[
+            {
+              id: 'notes',
+              header: [{ text: 'Notes' }],
+              width: 200,
+              editTemplate: (value, _row, _column, api) => (
+                <textarea
+                  ref={api.ref as never}
+                  value={String(value)}
+                  onChange={(e) => api.onChange(e.target.value)}
+                  onBlur={() => api.onCommit()}
+                />
+              ),
+            },
+          ]}
+          data={[{ id: '1', notes: 'Hello' }]}
+          editable
+          onAfterEditEnd={onAfterEditEnd}
+          style={{ width: 300, height: 200 }}
+        />
+      </ThemeProvider>,
+    )
+
+    fireEvent.doubleClick(screen.getByText('Hello'))
+    const editor = document.querySelector('textarea') as HTMLTextAreaElement
+    fireEvent.change(editor, { target: { value: 'Hi' } })
+    fireEvent.blur(editor)
+
+    expect(onAfterEditEnd).toHaveBeenCalledTimes(1)
+  })
+
+  it('returns keyboard focus to the grid after Enter commits an edit', () => {
+    const { container } = render(
+      <ThemeProvider>
+        <Grid
+          columns={[{ id: 'name', header: [{ text: 'Name' }], width: 200, editorType: 'input' }]}
+          data={[{ id: '1', name: 'Alice' }, { id: '2', name: 'Bob' }]}
+          editable
+          selection="cell"
+          style={{ width: 300, height: 200 }}
+        />
+      </ThemeProvider>,
+    )
+    const grid = container.querySelector('[data-rgs-key-navigation="true"]') as HTMLDivElement
+
+    fireEvent.doubleClick(screen.getByText('Alice'))
+    const editor = container.querySelector('input') as HTMLInputElement
+    editor.focus()
+    fireEvent.keyDown(editor, { key: 'Enter' })
+
+    expect(document.activeElement).toBe(grid)
+  })
+
+  it('leaves navigation keys to header filter inputs', () => {
+    function FilterGrid() {
+      const { items, store } = useDataStore({ data: [{ id: '1', name: 'Alice' }, { id: '2', name: 'Bob' }] })
+      return (
+        <Grid
+          columns={[{ id: 'name', header: [{ text: 'Name' }, { content: 'inputFilter' }], width: 200 }]}
+          data={items}
+          store={store}
+          selection="cell"
+          style={{ width: 300, height: 200 }}
+        />
+      )
+    }
+    const { container } = render(
+      <ThemeProvider>
+        <FilterGrid />
+      </ThemeProvider>,
+    )
+    fireEvent.click(screen.getByText('Alice'))
+    const filter = container.querySelector('input') as HTMLInputElement
+
+    for (const key of ['ArrowLeft', 'ArrowDown', 'Home', 'End', 'Tab', 'Enter']) {
+      // fireEvent returns false when the grid called preventDefault
+      expect(fireEvent.keyDown(filter, { key }), key).toBe(true)
+    }
+  })
+
+  describe('row order and row drag', () => {
+    const dragCols = [
+      { id: 'id', header: [{ text: 'ID' }], width: 80 },
+      { id: 'name', header: [{ text: 'Name' }], width: 140 },
+    ]
+    const people = [
+      { id: '1', name: 'Alice' },
+      { id: '2', name: 'Bob' },
+      { id: '3', name: 'Carla' },
+    ]
+    const names = (container: HTMLElement) => Array.from(container.querySelectorAll('[data-rgs-col-id="name"]'))
+      .filter((node) => node.className.includes('cell'))
+      .map((node) => node.textContent?.trim())
+      .filter(Boolean)
+    const mockRect = (el: HTMLElement, top: number) => vi.spyOn(el, 'getBoundingClientRect').mockReturnValue({
+      top, bottom: top + 40, left: 0, right: 220, width: 220, height: 40, x: 0, y: top, toJSON: () => '',
+    })
+
+    it('follows a new data prop order without a store', () => {
+      const { container, rerender } = render(
+        <ThemeProvider>
+          <Grid columns={dragCols} data={people} style={{ width: 240, height: 200 }} />
+        </ThemeProvider>,
+      )
+      rerender(
+        <ThemeProvider>
+          <Grid columns={dragCols} data={[...people].reverse()} style={{ width: 240, height: 200 }} />
+        </ThemeProvider>,
+      )
+
+      expect(names(container).slice(0, 3)).toEqual(['Carla', 'Bob', 'Alice'])
+    })
+
+    it('drops above a lower row without overshooting', () => {
+      const { container } = render(
+        <ThemeProvider>
+          <Grid columns={dragCols} data={people} dragItem="row" style={{ width: 240, height: 200 }} />
+        </ThemeProvider>,
+      )
+      const alice = screen.getByText('Alice').closest('[data-rgs-id="1"]') as HTMLElement
+      const carla = screen.getByText('Carla').closest('[data-rgs-id="3"]') as HTMLElement
+      mockRect(alice, 0)
+      mockRect(carla, 80)
+
+      dispatchPointerDrag(alice, carla, { moveY: 85 })
+
+      expect(names(container).slice(0, 3)).toEqual(['Bob', 'Alice', 'Carla'])
+    })
+
+    it('drops below a lower row without overshooting when using a store', () => {
+      function StoreGrid() {
+        const { items, store } = useDataStore({ data: people })
+        return <Grid columns={dragCols} data={items} store={store} dragItem="row" style={{ width: 240, height: 200 }} />
+      }
+      const { container } = render(
+        <ThemeProvider>
+          <StoreGrid />
+        </ThemeProvider>,
+      )
+      const alice = screen.getByText('Alice').closest('[data-rgs-id="1"]') as HTMLElement
+      const bob = screen.getByText('Bob').closest('[data-rgs-id="2"]') as HTMLElement
+      mockRect(alice, 0)
+      mockRect(bob, 40)
+
+      dispatchPointerDrag(alice, bob, { moveY: 70 })
+
+      expect(names(container).slice(0, 3)).toEqual(['Bob', 'Alice', 'Carla'])
+    })
+
+    it('accepts drops on the scrollable part of a row when columns are frozen', () => {
+      const { container } = render(
+        <ThemeProvider>
+          <Grid columns={dragCols} data={people} leftSplit={1} dragItem="row" style={{ width: 240, height: 200 }} />
+        </ThemeProvider>,
+      )
+      const alice = screen.getByText('Alice').closest('[data-rgs-id="1"]') as HTMLElement
+      // Carla's row in the scrollable (non-frozen) section holds the Name cell
+      const carlaCenter = screen.getByText('Carla').closest('[data-rgs-id="3"]') as HTMLElement
+      mockRect(alice, 0)
+      mockRect(carlaCenter, 80)
+
+      dispatchPointerDrag(alice, carlaCenter, { moveY: 110 })
+
+      expect(names(container).slice(0, 3)).toEqual(['Bob', 'Carla', 'Alice'])
+    })
+  })
+
+  describe('variable row heights', () => {
+    // Every third row is 120px tall: each triple spans 200px
+    const tallRows = Array.from({ length: 90 }, (_, i) => ({
+      id: String(i + 1),
+      name: `Row ${i + 1}`,
+      ...(i % 3 === 0 ? { $height: 120 } : {}),
+    }))
+    const setup = () => {
+      const { container } = render(
+        <ThemeProvider>
+          <Grid
+            columns={[{ id: 'name', header: [{ text: 'Name' }], width: 200 }]}
+            data={tallRows}
+            selection="cell"
+            style={{ width: 300, height: 400 }}
+          />
+        </ThemeProvider>,
+      )
+      const body = screen.getByTestId('grid-body')
+      Object.defineProperty(body, 'scrollTop', { configurable: true, writable: true, value: 0 })
+      return { container, body }
+    }
+
+    it('renders the rows that are actually at the scroll position', () => {
+      const { container, body } = setup()
+      body.scrollTop = 1000
+      fireEvent.scroll(body)
+
+      // 1000px is the top of row 16 (5 triples); the window starts 2 rows earlier for overscan
+      const firstRendered = body.querySelector('[class*="rows"] [data-rgs-id]')?.getAttribute('data-rgs-id')
+      expect(firstRendered).toBe('14')
+      expect(container.querySelector('[data-rgs-id="16"]')).toBeTruthy()
+    })
+
+    it('sizes the scroll area from the real row heights', () => {
+      const { container } = setup()
+      const spacer = container.querySelector('[class*="bodyInner"]') as HTMLElement
+      expect(spacer.style.height).toBe(`${30 * 200}px`)
+    })
+
+    it('scrolls a tall row fully into view from the keyboard', () => {
+      const { container, body } = setup()
+      const grid = container.querySelector('[data-rgs-key-navigation="true"]') as HTMLDivElement
+      fireEvent.click(screen.getByText('Row 1'))
+      // Row 7 is 120px tall and spans 400..520
+      for (let i = 0; i < 6; i += 1) fireEvent.keyDown(grid, { key: 'ArrowDown' })
+
+      // Body is 400 - 40 (header) = 360px tall, so row 7's bottom edge lands at the bottom: 520 - 360
+      expect(body.scrollTop).toBe(160)
+    })
+  })
+
+  it('shows formula results in the right column when columns are frozen', () => {
+    render(
+      <ThemeProvider>
+        <Grid
+          columns={[
+            { id: 'label', header: [{ text: 'Label' }], width: 100 },
+            { id: 'value', header: [{ text: 'Value' }], width: 100 },
+            { id: 'doubled', header: [{ text: 'Doubled' }], width: 100 },
+          ]}
+          data={[
+            { id: 'r1', label: 'Alpha', value: 10, doubled: '=B1*2' },
+          ]}
+          formulas
+          leftSplit={1}
+          style={{ width: 400, height: 200 }}
+        />
+      </ThemeProvider>,
+    )
+
+    const cell = document.querySelector('[data-rgs-id="r1"] [data-rgs-col-id="doubled"]') as HTMLElement
+    expect(cell.textContent).toBe('20')
+  })
+
+  describe('pinned rows', () => {
+    const cols = [
+      { id: 'id', header: [{ text: 'ID' }], width: 80 },
+      { id: 'name', header: [{ text: 'Name' }], width: 160 },
+    ]
+    const rows = [
+      { id: '1', name: 'Alpha' },
+      { id: '2', name: 'Beta' },
+      { id: '3', name: 'Gamma' },
+      { id: '4', name: 'Delta' },
+    ]
+
+    it('renders a pinnedTopRows row in the fixed top panel', () => {
+      render(
+        <ThemeProvider>
+          <Grid
+            columns={cols}
+            data={rows}
+            pinnedTopRows={['3']}
+            style={{ width: 400, height: 300 }}
+          />
+        </ThemeProvider>,
+      )
+
+      const topPanel = screen.getByTestId('grid-fixed-top')
+      expect(within(topPanel).getByText('Gamma')).toBeInTheDocument()
+    })
+
+    it('removes a pinnedTopRows row from the scrollable body', () => {
+      render(
+        <ThemeProvider>
+          <Grid
+            columns={cols}
+            data={rows}
+            pinnedTopRows={['3']}
+            style={{ width: 400, height: 300 }}
+          />
+        </ThemeProvider>,
+      )
+
+      const body = screen.getByTestId('grid-body')
+      expect(body.querySelector('[data-rgs-id="3"]')).toBeNull()
+    })
+
+    it('renders a pinnedBottomRows row in the fixed bottom panel', () => {
+      render(
+        <ThemeProvider>
+          <Grid
+            columns={cols}
+            data={rows}
+            pinnedBottomRows={['2']}
+            style={{ width: 400, height: 300 }}
+          />
+        </ThemeProvider>,
+      )
+
+      const bottomPanel = screen.getByTestId('grid-fixed-bottom')
+      expect(within(bottomPanel).getByText('Beta')).toBeInTheDocument()
+    })
+
+    it('removes a pinnedBottomRows row from the scrollable body', () => {
+      render(
+        <ThemeProvider>
+          <Grid
+            columns={cols}
+            data={rows}
+            pinnedBottomRows={['2']}
+            style={{ width: 400, height: 300 }}
+          />
+        </ThemeProvider>,
+      )
+
+      const body = screen.getByTestId('grid-body')
+      expect(body.querySelector('[data-rgs-id="2"]')).toBeNull()
+    })
+
+    it('renders a row once when its ID is repeated or listed in both pin lists', () => {
+      const { container } = render(
+        <ThemeProvider>
+          <Grid
+            columns={cols}
+            data={rows}
+            pinnedTopRows={['3', '3']}
+            pinnedBottomRows={['3', '2', '2']}
+            style={{ width: 400, height: 300 }}
+          />
+        </ThemeProvider>,
+      )
+
+      expect(container.querySelectorAll('[data-rgs-id="3"]')).toHaveLength(1)
+      expect(container.querySelectorAll('[data-rgs-id="2"]')).toHaveLength(1)
+      expect(within(screen.getByTestId('grid-fixed-top')).getByText('Gamma')).toBeInTheDocument()
+      expect(within(screen.getByTestId('grid-fixed-bottom')).getByText('Beta')).toBeInTheDocument()
+    })
+
+    it('ignores pinned IDs that match no row', () => {
+      render(
+        <ThemeProvider>
+          <Grid columns={cols} data={rows} pinnedTopRows={['nope']} style={{ width: 400, height: 300 }} />
+        </ThemeProvider>,
+      )
+
+      expect(screen.queryByTestId('grid-fixed-top')).toBeNull()
+    })
+
+    it('fills topSplit with unpinned rows and never shows a row in two panels', () => {
+      const { container } = render(
+        <ThemeProvider>
+          <Grid
+            columns={cols}
+            data={rows}
+            topSplit={2}
+            pinnedBottomRows={['1', '2', '3']}
+            style={{ width: 400, height: 300 }}
+          />
+        </ThemeProvider>,
+      )
+
+      for (const id of ['1', '2', '3', '4']) {
+        expect(container.querySelectorAll(`[data-rgs-id="${id}"]`)).toHaveLength(1)
+      }
+      expect(within(screen.getByTestId('grid-fixed-top')).getByText('Delta')).toBeInTheDocument()
+    })
+
+    it('shift-click selects the range in displayed order', () => {
+      const tenRows = Array.from({ length: 10 }, (_, i) => ({ id: String(i + 1), name: `Row ${i + 1}` }))
+      const { container } = render(
+        <ThemeProvider>
+          <Grid
+            columns={cols}
+            data={tenRows}
+            pinnedTopRows={['8']}
+            selection="row"
+            multiselection
+            style={{ width: 400, height: 600 }}
+          />
+        </ThemeProvider>,
+      )
+
+      fireEvent.click(screen.getByText('Row 8'))
+      fireEvent.click(screen.getByText('Row 1'), { shiftKey: true })
+
+      const selected = Array.from(container.querySelectorAll('[data-rgs-id][class*="rowSelected"]'))
+        .map((el) => el.getAttribute('data-rgs-id'))
+      expect(new Set(selected)).toEqual(new Set(['8', '1']))
+    })
+
+    it('keeps a pinned row visible when its group is collapsed', () => {
+      const groupData = [
+        { id: '1', dept: 'Eng', status: 'Active' },
+        { id: '2', dept: 'Eng', status: 'Inactive' },
+        { id: '3', dept: 'HR', status: 'Active' },
+      ]
+      const groupColumns = [
+        { id: 'dept', header: [{ text: 'Dept' }], width: 150 },
+        { id: 'status', header: [{ text: 'Status' }], width: 150 },
+      ]
+      render(
+        <ThemeProvider>
+          <Grid
+            columns={groupColumns}
+            data={groupData}
+            groupable
+            group={{ order: ['dept'] }}
+            pinnedTopRows={['2']}
+            style={{ width: 400, height: 300 }}
+          />
+        </ThemeProvider>,
+      )
+
+      // Pinned row is not counted in its group
+      expect(screen.getByText('Eng (1)')).toBeInTheDocument()
+
+      for (const button of screen.getAllByRole('button', { name: 'Collapse group' })) {
+        fireEvent.click(button)
+      }
+
+      expect(within(screen.getByTestId('grid-fixed-top')).getByText('Inactive')).toBeInTheDocument()
+    })
+
+    it('does not start a row drag from a pinned row', () => {
+      const onBeforeRowDrag = vi.fn()
+      render(
+        <ThemeProvider>
+          <Grid
+            columns={cols}
+            data={rows}
+            pinnedTopRows={['3']}
+            dragItem="row"
+            onBeforeRowDrag={onBeforeRowDrag}
+            style={{ width: 400, height: 300 }}
+          />
+        </ThemeProvider>,
+      )
+
+      const pinned = within(screen.getByTestId('grid-fixed-top')).getByText('Gamma').closest('[data-rgs-id="3"]') as HTMLElement
+      const target = screen.getByText('Alpha').closest('[data-rgs-id="1"]') as HTMLElement
+      dispatchPointerDrag(pinned, target, { moveY: 70 })
+
+      expect(onBeforeRowDrag).not.toHaveBeenCalled()
+    })
+
+    it('keeps a pinned row visible and editable when a store filter hides it', () => {
+      let storeRef: ReturnType<typeof useDataStore>['store'] | undefined
+      function FilteredGrid() {
+        const { items, store } = useDataStore({ data: rows })
+        storeRef = store
+        return (
+          <Grid
+            columns={cols.map((c) => (c.id === 'name' ? { ...c, editorType: 'input' as const } : c))}
+            data={items}
+            store={store}
+            editable
+            pinnedTopRows={['3']}
+            style={{ width: 400, height: 300 }}
+          />
+        )
+      }
+      render(
+        <ThemeProvider>
+          <FilteredGrid />
+        </ThemeProvider>,
+      )
+
+      act(() => {
+        storeRef!.filter((item) => item.name !== 'Gamma')
+      })
+
+      const topPanel = screen.getByTestId('grid-fixed-top')
+      expect(within(topPanel).getByText('Gamma')).toBeInTheDocument()
+
+      fireEvent.doubleClick(within(topPanel).getByText('Gamma'))
+      const editor = topPanel.querySelector('input') as HTMLInputElement
+      expect(editor).toBeTruthy()
+      fireEvent.change(editor, { target: { value: 'Gamma 2' } })
+      fireEvent.keyDown(editor, { key: 'Enter' })
+
+      expect(storeRef!.getItem('3').name).toBe('Gamma 2')
+    })
+
+    it('does not mark pinned rows as draggable', () => {
+      render(
+        <ThemeProvider>
+          <Grid columns={cols} data={rows} pinnedTopRows={['3']} dragItem="row" style={{ width: 400, height: 300 }} />
+        </ThemeProvider>,
+      )
+
+      const pinned = screen.getByTestId('grid-fixed-top').querySelector('[data-rgs-id="3"]') as HTMLElement
+      expect(pinned.className).not.toContain('rowDraggable')
+      expect((screen.getByText('Alpha').closest('[data-rgs-id="1"]') as HTMLElement).className).toContain('rowDraggable')
+    })
+
+    it('draws a span that starts on a pinned row inside its panel', () => {
+      render(
+        <ThemeProvider>
+          <Grid
+            columns={cols}
+            data={rows}
+            pinnedTopRows={['3']}
+            spans={[{ row: '3', column: 'name', colspan: 1, text: 'Pinned span' }]}
+            style={{ width: 400, height: 300 }}
+          />
+        </ThemeProvider>,
+      )
+
+      expect(within(screen.getByTestId('grid-fixed-top')).getByText('Pinned span')).toBeInTheDocument()
+    })
+
+    it('stops a rowspan at the edge of the region it starts in', () => {
+      render(
+        <ThemeProvider>
+          <Grid
+            columns={cols}
+            data={rows}
+            pinnedBottomRows={['4']}
+            spans={[{ row: '3', column: 'name', rowspan: 2, text: 'Body span' }]}
+            style={{ width: 400, height: 300 }}
+          />
+        </ThemeProvider>,
+      )
+
+      // Row 3 is the last body row; row 4 sits in the bottom panel
+      expect(screen.getByText('Body span').style.height).toBe('40px')
+    })
+
+    describe('keyboard scrolling', () => {
+      const manyRows = Array.from({ length: 40 }, (_, i) => ({ id: String(i + 1), name: `Row ${i + 1}` }))
+
+      const setup = () => {
+        const { container } = render(
+          <ThemeProvider>
+            <Grid
+              columns={cols}
+              data={manyRows}
+              pinnedTopRows={['1', '2']}
+              pinnedBottomRows={['40']}
+              selection="cell"
+              leftSplit={1}
+              style={{ width: 400, height: 300 }}
+            />
+          </ThemeProvider>,
+        )
+        const grid = container.querySelector('[data-rgs-key-navigation="true"]') as HTMLDivElement
+        const body = screen.getByTestId('grid-body')
+        Object.defineProperty(body, 'scrollTop', { configurable: true, writable: true, value: 0 })
+        // The frozen-left strip spans exactly the scrollable band between the pinned panels
+        const band = container.querySelector('[class*="fixedColumnsLeft"]') as HTMLElement
+        return { grid, body, bandHeight: Number.parseFloat(band.style.height) }
+      }
+
+      it('scrolls a body row out from under the pinned panels', () => {
+        const { grid, body, bandHeight } = setup()
+        fireEvent.click(screen.getByText('Row 3'))
+        for (let i = 0; i < 4; i += 1) fireEvent.keyDown(grid, { key: 'ArrowDown' })
+
+        // Row 7 is the 5th scrollable row: its bottom edge must sit at the band's bottom edge
+        expect(body.scrollTop).toBe(5 * 40 - bandHeight)
+      })
+
+      it('does not scroll when focus moves onto a pinned row', () => {
+        const { grid, body } = setup()
+        fireEvent.click(screen.getByText('Row 3'))
+        body.scrollTop = 400
+        fireEvent.keyDown(grid, { key: 'ArrowUp' })
+
+        expect(body.scrollTop).toBe(400)
+      })
     })
   })
 })

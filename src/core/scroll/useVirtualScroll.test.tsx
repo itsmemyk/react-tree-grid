@@ -106,4 +106,82 @@ describe('useVirtualScroll', () => {
     expect(result.current.yStart).toBe(3)
     expect(result.current.yEnd).toBe(6)
   })
+
+  it('sizes the row window from explicit fixed panel heights', () => {
+    const { result } = renderHook(() =>
+      useVirtualScroll({
+        totalRows: 20,
+        totalCols: 1,
+        rowHeight: 40,
+        colWidths: [100],
+        containerWidth: 100,
+        containerHeight: 200,
+        overscan: 0,
+        topSplit: 2,
+        // Two pinned rows of 20px each, not 2 × rowHeight
+        fixedTopHeight: 40,
+      }),
+    )
+
+    // 160px of scrollable band → 4 rows (indexes 2..5)
+    expect(result.current.yStart).toBe(2)
+    expect(result.current.yEnd).toBe(5)
+  })
+
+  it('returns an empty row window when every row is fixed', () => {
+    const { result } = renderHook(() =>
+      useVirtualScroll({
+        totalRows: 3,
+        totalCols: 1,
+        rowHeight: 40,
+        colWidths: [100],
+        containerWidth: 100,
+        containerHeight: 200,
+        topSplit: 1,
+        bottomSplit: 2,
+      }),
+    )
+
+    expect(result.current.yEnd).toBeLessThan(result.current.yStart)
+  })
+
+  describe('variable row heights', () => {
+    // Every third row is 120px, the rest 40px: each triple spans 200px
+    const heights = Array.from({ length: 300 }, (_, i) => (i % 3 === 0 ? 120 : 40))
+    const total = heights.reduce((a, b) => a + b, 0)
+
+    const setup = () => renderHook(() =>
+      useVirtualScroll({
+        totalRows: heights.length,
+        totalCols: 1,
+        rowHeight: 40,
+        rowHeights: heights,
+        colWidths: [100],
+        containerWidth: 100,
+        containerHeight: 400,
+        overscan: 0,
+      }),
+    )
+
+    it('uses the real total height', () => {
+      expect(setup().result.current.totalHeight).toBe(total)
+    })
+
+    it('finds the first visible row from real offsets', () => {
+      const { result } = setup()
+      act(() => result.current.onScroll(0, 1000))
+      // 1000px = 5 triples → row 15 starts exactly at 1000
+      expect(result.current.yStart).toBe(15)
+      expect(result.current.offsetY).toBe(1000)
+      // 400px band: rows 15 (120) 16 (40) 17 (40) 18 (120) 19 (40) 20 (40) = 400
+      expect(result.current.yEnd).toBe(20)
+      expect(result.current.getRowTop(16)).toBe(1120)
+    })
+
+    it('reaches the last row at the end of the scroll range', () => {
+      const { result } = setup()
+      act(() => result.current.onScroll(0, total))
+      expect(result.current.yEnd).toBe(heights.length - 1)
+    })
+  })
 })

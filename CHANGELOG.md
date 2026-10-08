@@ -1,5 +1,33 @@
 # Changelog
 
+## [0.7.0] - 2026-10-08
+
+### Added
+
+- **Pinned rows** — new `pinnedTopRows` / `pinnedBottomRows` grid props pin rows by ID into fixed top/bottom panels, removing them from the scrollable area.
+  - Rows appear in list order; each ID pins once, an ID in both lists pins to the top, and unknown IDs are ignored.
+  - Pinned rows scroll horizontally with the body and work with frozen columns, selection, inline editing, tooltips, row CSS and `$height`.
+  - Pinned rows stay visible when a store filter would hide them and sit outside grouping, so collapsing a group never hides them.
+  - `topSplit` / `bottomSplit` freeze the first / last *unpinned* rows, and never overlap the pinned panels.
+  - Pinned rows can't be dragged and aren't drop targets; cell spans stay within the panel or body they start in, and spans starting on a pinned row are drawn in its panel.
+
+### Fixed
+
+- **Virtual scroll with variable row heights** — grids using `autoHeight` or per-row `$height` assumed every row was `rowHeight` tall: scrolling skipped rows, the end of the list scrolled into blank space, and keyboard navigation lost the focused row. Rows are now windowed from their real heights.
+- **Edit committed twice on blur** — an `editTemplate` that commits on blur (e.g. a textarea) fired `onAfterEditEnd` and wrote the store twice.
+- **Keyboard focus lost after editing** — after Enter, Escape or Tab closed an editor, focus fell to the page and arrow keys stopped working; it now returns to the grid.
+- **Shift range anchor** — repeated Shift+click or Shift+arrow moved the range anchor, so ranges restarted instead of extending.
+- **Header filter keys** — arrow keys, Home/End, Tab and Enter typed into a header filter input were swallowed by grid navigation.
+- **Data prop order ignored without a store** — passing the same rows in a new order kept the old order.
+- **Row drag drop position** — dragging a row down with a store, or onto the top half of a lower row, placed it one row too far.
+- **Row drag with frozen columns** — only the frozen part of a row accepted drops; every rendered section of a row is now a drop target, and rows no longer re-register on each render.
+- **TreeGrid drag** — collapsed rows the pointer merely passed over were auto-expanded; dropping a row into its own subtree is now refused.
+- **Shift range selection order** — Shift+click and Shift+arrow ranges followed the underlying data order rather than the on-screen order, so after sorting (or pinning) they selected the wrong rows. Group header rows are no longer included in ranges.
+- **Keyboard scrolling under frozen rows** — arrow-key navigation could leave the focused row hidden behind the frozen top/bottom rows; moving focus onto a frozen row no longer jumps the scroll position.
+- **Virtual scroll with every row frozen** — when no rows were left to scroll, one frozen row was also drawn in the body.
+- **Formula results in the wrong column** — with frozen columns or horizontal virtual scrolling, formula cells looked up their result by position within the rendered column slice, so they showed another column's value or the raw formula text.
+- **Virtual scroll with custom frozen-row heights** — the visible window assumed frozen rows were `rowHeight` tall, leaving a blank strip when they were shorter.
+
 ## [0.6.0] - 2026-09-17
 
 ### Added

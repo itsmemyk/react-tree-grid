@@ -111,3 +111,61 @@ describe('TreeGrid groupBy', () => {
     expect(screen.getByText('HR')).toBeTruthy()
   })
 })
+
+describe('TreeGrid row drag', () => {
+  const dragData: TreeGridRow[] = [
+    { id: 'x', name: 'Xavier' },
+    { id: 'p', name: 'Parent', $opened: false, items: [{ id: 'q', name: 'Hidden child' }] },
+    { id: 'z', name: 'Zed' },
+  ]
+  const rowOf = (text: string) => screen.getByText(text).closest('[data-rgs-id]') as HTMLElement
+  const mockRect = (el: HTMLElement, top: number) => vi.spyOn(el, 'getBoundingClientRect').mockReturnValue({
+    top, bottom: top + 40, left: 0, right: 200, width: 200, height: 40, x: 0, y: top, toJSON: () => '',
+  })
+
+  it('does not auto-expand a collapsed row the pointer only passes over', () => {
+    vi.useFakeTimers()
+    try {
+      render(<ThemeProvider><TreeGrid columns={columns} data={dragData} dragItem="row" style={{ width: 300, height: 300 }} /></ThemeProvider>)
+      const x = rowOf('Xavier')
+      const p = rowOf('Parent')
+      const z = rowOf('Zed')
+      mockRect(x, 0)
+      mockRect(p, 40)
+      mockRect(z, 80)
+
+      fireEvent.pointerDown(x, { clientX: 10, clientY: 10 })
+      fireEvent.pointerMove(p, { clientX: 10, clientY: 50 })
+      fireEvent.pointerMove(z, { clientX: 10, clientY: 110 })
+      fireEvent.pointerUp(z, { clientX: 10, clientY: 110 })
+      act(() => {
+        vi.advanceTimersByTime(500)
+      })
+
+      expect(screen.queryByText('Hidden child')).toBeNull()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('refuses to drop a row onto its own descendant', () => {
+    const onAfterRowDrop = vi.fn()
+    const { container } = render(
+      <ThemeProvider>
+        <TreeGrid columns={columns} data={data} dragItem="row" onAfterRowDrop={onAfterRowDrop} style={{ width: 300, height: 300 }} />
+      </ThemeProvider>,
+    )
+    const root = rowOf('Root 1')
+    const child = rowOf('Child 1')
+    mockRect(root, 0)
+    mockRect(child, 40)
+
+    fireEvent.pointerDown(root, { clientX: 10, clientY: 10 })
+    fireEvent.pointerMove(child, { clientX: 10, clientY: 70 })
+    fireEvent.pointerUp(child, { clientX: 10, clientY: 70 })
+
+    expect(onAfterRowDrop).not.toHaveBeenCalled()
+    const order = Array.from(container.querySelectorAll('[data-rgs-id]')).map((el) => el.getAttribute('data-rgs-id'))
+    expect([...new Set(order)]).toEqual(['root-1', 'child-1', 'root-2'])
+  })
+})

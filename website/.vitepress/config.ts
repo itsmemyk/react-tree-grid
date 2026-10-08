@@ -15,7 +15,7 @@ export default defineConfig({
       { text: 'API', link: '/api/grid', activeMatch: '/api/' },
       { text: 'Examples', link: '/examples/grid-basic', activeMatch: '/examples/' },
       {
-        text: 'v0.6.0',
+        text: 'v0.7.0',
         items: [
           { text: 'Changelog', link: 'https://github.com/itsmemyk/react-tree-grid/blob/master/CHANGELOG.md' },
           { text: 'npm', link: 'https://www.npmjs.com/package/@itsmemyk/react-tree-grid' },
@@ -77,6 +77,7 @@ export default defineConfig({
             { text: 'Sortable & Filterable', link: '/examples/grid-sortable-filterable' },
             { text: 'Inline Editing', link: '/examples/grid-inline-editing' },
             { text: 'Frozen Columns', link: '/examples/grid-frozen-columns' },
+            { text: 'Pinned Rows', link: '/examples/grid-pinned-rows' },
             { text: 'Custom Cell Renderer', link: '/examples/grid-custom-cell' },
           ],
         },

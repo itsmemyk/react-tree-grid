@@ -115,6 +115,10 @@ export function useGridKeyboard(config: GridKeyboardConfig) {
         return
       }
 
+      // Keys typed into a form field inside the grid (e.g. a header filter) belong to that field
+      const target = e.target as HTMLElement
+      if (target.closest('input, textarea, select, [contenteditable="true"]')) return
+
       // --- Navigation keys (only when not editing) ---
       const focus = getFocusedIndices()
 
