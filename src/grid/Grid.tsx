@@ -985,8 +985,14 @@ function GridInner<T extends GridRow>({
       ? Math.max(fixedLeftWidth, totalWidth - fixedRightWidth)
       : Math.max(fixedLeftWidth, bodyClientWidth - fixedRightWidth)
     : 0
+  // Per-row heights only when they vary, so uniform grids keep the arithmetic fast path
+  const virtualRowHeights = useMemo(
+    () => (displayData.some((r) => r.$height !== rowHeight) ? displayData.map((r) => r.$height) : undefined),
+    [displayData, rowHeight],
+  )
   const virtual = useVirtualScroll({
     totalRows: displayData.length,
+    rowHeights: virtualRowHeights,
     totalCols: displayColumns.length,
     rowHeight,
     colWidths: displayColumns.map((column) => column.$width),
@@ -1384,8 +1390,8 @@ function GridInner<T extends GridRow>({
       const scrollRowCount = displayData.length - effectiveTopSplit - effectiveBottomSplit
       if (scrollRowIdx >= 0 && scrollRowIdx < scrollRowCount) {
         const bandHeight = bodyClientHeight - fixedTopHeight - fixedBottomHeight
-        const rowTop = scrollRowIdx * rowHeight
-        const rowBottom = rowTop + rowHeight
+        const rowTop = virtual.getRowTop(rowIdx)
+        const rowBottom = rowTop + (displayData[rowIdx]?.$height ?? rowHeight)
         const viewTop = body.scrollTop
         const viewBottom = viewTop + bandHeight
 
@@ -1417,7 +1423,7 @@ function GridInner<T extends GridRow>({
       }
     },
     [normalizedColumns, rowHeight, bodyClientHeight, bodyClientWidth, fixedLeftWidth, fixedRightWidth, effectiveLeftSplit, rightSplit,
-      effectiveTopSplit, effectiveBottomSplit, displayData.length, fixedTopHeight, fixedBottomHeight],
+      effectiveTopSplit, effectiveBottomSplit, displayData, fixedTopHeight, fixedBottomHeight, virtual.getRowTop],
   )
 
   const pageScroll = useCallback(

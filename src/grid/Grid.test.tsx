@@ -2217,6 +2217,58 @@ describe('Grid', () => {
     })
   })
 
+  describe('variable row heights', () => {
+    // Every third row is 120px tall: each triple spans 200px
+    const tallRows = Array.from({ length: 90 }, (_, i) => ({
+      id: String(i + 1),
+      name: `Row ${i + 1}`,
+      ...(i % 3 === 0 ? { $height: 120 } : {}),
+    }))
+    const setup = () => {
+      const { container } = render(
+        <ThemeProvider>
+          <Grid
+            columns={[{ id: 'name', header: [{ text: 'Name' }], width: 200 }]}
+            data={tallRows}
+            selection="cell"
+            style={{ width: 300, height: 400 }}
+          />
+        </ThemeProvider>,
+      )
+      const body = screen.getByTestId('grid-body')
+      Object.defineProperty(body, 'scrollTop', { configurable: true, writable: true, value: 0 })
+      return { container, body }
+    }
+
+    it('renders the rows that are actually at the scroll position', () => {
+      const { container, body } = setup()
+      body.scrollTop = 1000
+      fireEvent.scroll(body)
+
+      // 1000px is the top of row 16 (5 triples); the window starts 2 rows earlier for overscan
+      const firstRendered = body.querySelector('[class*="rows"] [data-rgs-id]')?.getAttribute('data-rgs-id')
+      expect(firstRendered).toBe('14')
+      expect(container.querySelector('[data-rgs-id="16"]')).toBeTruthy()
+    })
+
+    it('sizes the scroll area from the real row heights', () => {
+      const { container } = setup()
+      const spacer = container.querySelector('[class*="bodyInner"]') as HTMLElement
+      expect(spacer.style.height).toBe(`${30 * 200}px`)
+    })
+
+    it('scrolls a tall row fully into view from the keyboard', () => {
+      const { container, body } = setup()
+      const grid = container.querySelector('[data-rgs-key-navigation="true"]') as HTMLDivElement
+      fireEvent.click(screen.getByText('Row 1'))
+      // Row 7 is 120px tall and spans 400..520
+      for (let i = 0; i < 6; i += 1) fireEvent.keyDown(grid, { key: 'ArrowDown' })
+
+      // Body is 400 - 40 (header) = 360px tall, so row 7's bottom edge lands at the bottom: 520 - 360
+      expect(body.scrollTop).toBe(160)
+    })
+  })
+
   it('shows formula results in the right column when columns are frozen', () => {
     render(
       <ThemeProvider>
