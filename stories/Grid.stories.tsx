@@ -1408,3 +1408,80 @@ function CustomEditorsDemo() {
 export const CustomCellEditors: Story = {
   render: () => <CustomEditorsDemo />,
 }
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// STORY: Pinned Rows
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+const PIN_CANDIDATES = ['1', '5', '10', '25', '50', '100']
+
+function PinnedRowsDemo() {
+  const [pinnedTop, setPinnedTop] = useState<string[]>(['5'])
+  const [pinnedBottom, setPinnedBottom] = useState<string[]>(['100'])
+
+  const toggle = (id: string, list: string[], setList: (next: string[]) => void, other: string[], setOther: (next: string[]) => void) => {
+    setOther(other.filter((p) => p !== id))
+    setList(list.includes(id) ? list.filter((p) => p !== id) : [...list, id])
+  }
+
+  const buttonStyle = (active: boolean) => ({
+    padding: '4px 10px',
+    background: active ? '#3b82f6' : '#f3f4f6',
+    color: active ? '#fff' : '#111',
+    border: '1px solid #d1d5db',
+    borderRadius: 4,
+    cursor: 'pointer',
+  })
+
+  return (
+    <div>
+      <p style={{ margin: '0 0 12px', color: '#666', fontSize: 13 }}>
+        Pin rows by ID to the top or bottom. Pinned rows leave the scrollable area, stay visible on vertical scroll,
+        and scroll horizontally with the body. The first two columns are frozen and the grid is editable.
+      </p>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 12 }}>
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+          <span style={{ width: 60, fontSize: 13 }}>Top:</span>
+          {PIN_CANDIDATES.map((id) => (
+            <button
+              key={id}
+              type="button"
+              style={buttonStyle(pinnedTop.includes(id))}
+              onClick={() => toggle(id, pinnedTop, setPinnedTop, pinnedBottom, setPinnedBottom)}
+            >
+              #{id}
+            </button>
+          ))}
+        </div>
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+          <span style={{ width: 60, fontSize: 13 }}>Bottom:</span>
+          {PIN_CANDIDATES.map((id) => (
+            <button
+              key={id}
+              type="button"
+              style={buttonStyle(pinnedBottom.includes(id))}
+              onClick={() => toggle(id, pinnedBottom, setPinnedBottom, pinnedTop, setPinnedTop)}
+            >
+              #{id}
+            </button>
+          ))}
+        </div>
+      </div>
+      <Grid<Employee>
+        columns={baseColumns.map((c) => ({ ...c, width: (c.width ?? 100) + 60 }))}
+        data={data200}
+        pinnedTopRows={pinnedTop}
+        pinnedBottomRows={pinnedBottom}
+        leftSplit={2}
+        editable
+        selection="row"
+        style={{ width: '100%', height: GRID_HEIGHT }}
+      />
+    </div>
+  )
+}
+
+export const PinnedRows: Story = {
+  name: 'Pinned Rows',
+  render: () => <PinnedRowsDemo />,
+}
