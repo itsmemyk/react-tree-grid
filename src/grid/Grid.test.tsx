@@ -2103,6 +2103,33 @@ describe('Grid', () => {
     expect(document.activeElement).toBe(grid)
   })
 
+  it('leaves navigation keys to header filter inputs', () => {
+    function FilterGrid() {
+      const { items, store } = useDataStore({ data: [{ id: '1', name: 'Alice' }, { id: '2', name: 'Bob' }] })
+      return (
+        <Grid
+          columns={[{ id: 'name', header: [{ text: 'Name' }, { content: 'inputFilter' }], width: 200 }]}
+          data={items}
+          store={store}
+          selection="cell"
+          style={{ width: 300, height: 200 }}
+        />
+      )
+    }
+    const { container } = render(
+      <ThemeProvider>
+        <FilterGrid />
+      </ThemeProvider>,
+    )
+    fireEvent.click(screen.getByText('Alice'))
+    const filter = container.querySelector('input') as HTMLInputElement
+
+    for (const key of ['ArrowLeft', 'ArrowDown', 'Home', 'End', 'Tab', 'Enter']) {
+      // fireEvent returns false when the grid called preventDefault
+      expect(fireEvent.keyDown(filter, { key }), key).toBe(true)
+    }
+  })
+
   it('shows formula results in the right column when columns are frozen', () => {
     render(
       <ThemeProvider>
