@@ -72,11 +72,15 @@ export function useRowDrag<T extends GridRow>(
 ) {
   const enabled = config.dragItem === 'row' || config.dragMode === 'both'
   const componentIdRef = useRef(`grid-row-dnd-${uid()}`)
-  const rowNodesRef = useRef(new Map<string, HTMLElement>())
-  const rowTargetDisposersRef = useRef(new Map<string, () => void>())
+  // A row can render in several sections (frozen columns, pinned panels), so each
+  // rendered element is its own drop target, keyed by a unique registration id
+  const rowTargetsRef = useRef(new Map<HTMLElement, { registrationId: string; dispose: () => void }>())
+  const targetNodesRef = useRef(new Map<string, HTMLElement>())
+  const registrationSeqRef = useRef(0)
   const dragStateRef = useRef<GridRowDragData | null>(null)
   const dragStartRef = useRef<string | null>(null)
   const [orderedRowIds, setOrderedRowIds] = useState(() => rows.map((row) => row.id))
+  const prevPropIdsRef = useRef<string[]>(rows.map((row) => row.id))
   const [dropIndicator, setDropIndicator] = useState<DropIndicator | null>(null)
 
   useEffect(() => {
@@ -84,9 +88,22 @@ export function useRowDrag<T extends GridRow>(
       return
     }
 
+    const nextIds = rows.map((row) => row.id)
+    const nextSet = new Set(nextIds)
+    const prevPropIds = prevPropIdsRef.current
+    prevPropIdsRef.current = nextIds
+
+    // The parent reordered rows it already had: adopt its order over any local drag order
+    const prevSet = new Set(prevPropIds)
+    const keptNow = nextIds.filter((id) => prevSet.has(id))
+    const keptBefore = prevPropIds.filter((id) => nextSet.has(id))
+    if (keptNow.some((id, index) => id !== keptBefore[index])) {
+      setOrderedRowIds(nextIds)
+      return
+    }
+
+    // Otherwise keep the local order, dropping removed rows and appending new ones
     setOrderedRowIds((prev) => {
-      const nextIds = rows.map((row) => row.id)
-      const nextSet = new Set(nextIds)
       const merged = prev.filter((id) => nextSet.has(id))
       nextIds.forEach((id) => {
         if (!merged.includes(id)) {
@@ -134,24 +151,23 @@ export function useRowDrag<T extends GridRow>(
     }
   }, [config.dragMode, config.store, getDropIndex])
 
-  const unregisterRowTarget = useCallback((rowId: string) => {
-    const disposer = rowTargetDisposersRef.current.get(rowId)
-    if (disposer) {
-      disposer()
-      rowTargetDisposersRef.current.delete(rowId)
-    }
+  const unregisterNode = useCallback((node: HTMLElement) => {
+    const entry = rowTargetsRef.current.get(node)
+    if (!entry) return
+    entry.dispose()
+    rowTargetsRef.current.delete(node)
+    targetNodesRef.current.delete(entry.registrationId)
   }, [])
 
   const registerRow = useCallback((rowId: string, node: HTMLElement | null) => {
-    rowNodesRef.current.delete(rowId)
-    unregisterRowTarget(rowId)
+    if (!node) return
+    // Refresh: a new ref (settings changed) replaces this element's old registration
+    unregisterNode(node)
+    if (!enabled || config.dragMode === 'source') return
 
-    if (!node || !enabled || config.dragMode === 'source') {
-      return
-    }
-
-    rowNodesRef.current.set(rowId, node)
-    const registrationId = `${componentIdRef.current}:${rowId}`
+    registrationSeqRef.current += 1
+    const registrationId = `${componentIdRef.current}:${rowId}:${registrationSeqRef.current}`
+    targetNodesRef.current.set(registrationId, node)
     const unregister = dragManager.registerTarget({
       id: registrationId,
       componentId: componentIdRef.current,
@@ -177,13 +193,19 @@ export function useRowDrag<T extends GridRow>(
         return event.clientY <= midpoint ? 'top' : 'bottom'
       },
     })
-    rowTargetDisposersRef.current.set(rowId, unregister)
-  }, [config.dragMode, enabled, unregisterRowTarget])
+    rowTargetsRef.current.set(node, { registrationId, dispose: unregister })
+  }, [config.dragMode, enabled, unregisterNode])
+
+  // Drop registrations whose element has left the DOM (unmounted row or section)
+  useEffect(() => {
+    for (const node of [...rowTargetsRef.current.keys()]) {
+      if (!node.isConnected) unregisterNode(node)
+    }
+  })
 
   useEffect(() => () => {
-    rowTargetDisposersRef.current.forEach((dispose) => dispose())
-    rowTargetDisposersRef.current.clear()
-  }, [])
+    for (const node of [...rowTargetsRef.current.keys()]) unregisterNode(node)
+  }, [unregisterNode])
 
   const resolvePayload = useCallback((): {
     payload: GridRowDragData
@@ -207,7 +229,7 @@ export function useRowDrag<T extends GridRow>(
     }
 
     const [componentId, rowId] = target.split(':')
-    const rowNode = rowNodesRef.current.get(rowId) ?? null
+    const rowNode = targetNodesRef.current.get(target) ?? null
     const viewportNode = config.viewportRef.current
     let top: number | null = null
     if (rowNode && viewportNode) {
@@ -246,8 +268,10 @@ export function useRowDrag<T extends GridRow>(
       return
     }
 
+    // The target index counts the dragged row itself; moving down, it's removed first
     if (config.store) {
-      config.store.move(payload.start, targetIndex)
+      const fromIndex = config.store.getIndex(payload.start)
+      config.store.move(payload.start, fromIndex >= 0 && fromIndex < targetIndex ? targetIndex - 1 : targetIndex)
       return
     }
 
@@ -256,10 +280,7 @@ export function useRowDrag<T extends GridRow>(
       if (fromIndex < 0) {
         return prev
       }
-      let nextIndex = targetIndex
-      if (payload.position === 'bottom' && fromIndex < targetIndex) {
-        nextIndex -= 1
-      }
+      const nextIndex = fromIndex < targetIndex ? targetIndex - 1 : targetIndex
       if (fromIndex === nextIndex) {
         return prev
       }
@@ -391,10 +412,25 @@ export function useRowDrag<T extends GridRow>(
     window.addEventListener('pointerup', handleUp, { once: true })
   }, [applyDrop, config.dragMode, enabled, events, resolvePayload])
 
-  const getRowProps = useCallback((rowId: string) => ({
-    ref: (node: HTMLDivElement | null) => registerRow(rowId, node),
-    onPointerDown: (event: ReactPointerEvent<HTMLElement>) => handleRowPointerDown(event, rowId),
-  }), [handleRowPointerDown, registerRow])
+  // Stable per-row refs, so React doesn't detach and re-attach every row on each render
+  const rowRefsRef = useRef(new Map<string, (node: HTMLDivElement | null) => void>())
+  const registerRowRef = useRef(registerRow)
+  if (registerRowRef.current !== registerRow) {
+    registerRowRef.current = registerRow
+    rowRefsRef.current = new Map()
+  }
+
+  const getRowProps = useCallback((rowId: string) => {
+    let ref = rowRefsRef.current.get(rowId)
+    if (!ref) {
+      ref = (node: HTMLDivElement | null) => registerRow(rowId, node)
+      rowRefsRef.current.set(rowId, ref)
+    }
+    return {
+      ref,
+      onPointerDown: (event: ReactPointerEvent<HTMLElement>) => handleRowPointerDown(event, rowId),
+    }
+  }, [handleRowPointerDown, registerRow])
 
   return {
     enabled,

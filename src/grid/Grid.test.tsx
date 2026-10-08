@@ -2130,6 +2130,93 @@ describe('Grid', () => {
     }
   })
 
+  describe('row order and row drag', () => {
+    const dragCols = [
+      { id: 'id', header: [{ text: 'ID' }], width: 80 },
+      { id: 'name', header: [{ text: 'Name' }], width: 140 },
+    ]
+    const people = [
+      { id: '1', name: 'Alice' },
+      { id: '2', name: 'Bob' },
+      { id: '3', name: 'Carla' },
+    ]
+    const names = (container: HTMLElement) => Array.from(container.querySelectorAll('[data-rgs-col-id="name"]'))
+      .filter((node) => node.className.includes('cell'))
+      .map((node) => node.textContent?.trim())
+      .filter(Boolean)
+    const mockRect = (el: HTMLElement, top: number) => vi.spyOn(el, 'getBoundingClientRect').mockReturnValue({
+      top, bottom: top + 40, left: 0, right: 220, width: 220, height: 40, x: 0, y: top, toJSON: () => '',
+    })
+
+    it('follows a new data prop order without a store', () => {
+      const { container, rerender } = render(
+        <ThemeProvider>
+          <Grid columns={dragCols} data={people} style={{ width: 240, height: 200 }} />
+        </ThemeProvider>,
+      )
+      rerender(
+        <ThemeProvider>
+          <Grid columns={dragCols} data={[...people].reverse()} style={{ width: 240, height: 200 }} />
+        </ThemeProvider>,
+      )
+
+      expect(names(container).slice(0, 3)).toEqual(['Carla', 'Bob', 'Alice'])
+    })
+
+    it('drops above a lower row without overshooting', () => {
+      const { container } = render(
+        <ThemeProvider>
+          <Grid columns={dragCols} data={people} dragItem="row" style={{ width: 240, height: 200 }} />
+        </ThemeProvider>,
+      )
+      const alice = screen.getByText('Alice').closest('[data-rgs-id="1"]') as HTMLElement
+      const carla = screen.getByText('Carla').closest('[data-rgs-id="3"]') as HTMLElement
+      mockRect(alice, 0)
+      mockRect(carla, 80)
+
+      dispatchPointerDrag(alice, carla, { moveY: 85 })
+
+      expect(names(container).slice(0, 3)).toEqual(['Bob', 'Alice', 'Carla'])
+    })
+
+    it('drops below a lower row without overshooting when using a store', () => {
+      function StoreGrid() {
+        const { items, store } = useDataStore({ data: people })
+        return <Grid columns={dragCols} data={items} store={store} dragItem="row" style={{ width: 240, height: 200 }} />
+      }
+      const { container } = render(
+        <ThemeProvider>
+          <StoreGrid />
+        </ThemeProvider>,
+      )
+      const alice = screen.getByText('Alice').closest('[data-rgs-id="1"]') as HTMLElement
+      const bob = screen.getByText('Bob').closest('[data-rgs-id="2"]') as HTMLElement
+      mockRect(alice, 0)
+      mockRect(bob, 40)
+
+      dispatchPointerDrag(alice, bob, { moveY: 70 })
+
+      expect(names(container).slice(0, 3)).toEqual(['Bob', 'Alice', 'Carla'])
+    })
+
+    it('accepts drops on the scrollable part of a row when columns are frozen', () => {
+      const { container } = render(
+        <ThemeProvider>
+          <Grid columns={dragCols} data={people} leftSplit={1} dragItem="row" style={{ width: 240, height: 200 }} />
+        </ThemeProvider>,
+      )
+      const alice = screen.getByText('Alice').closest('[data-rgs-id="1"]') as HTMLElement
+      // Carla's row in the scrollable (non-frozen) section holds the Name cell
+      const carlaCenter = screen.getByText('Carla').closest('[data-rgs-id="3"]') as HTMLElement
+      mockRect(alice, 0)
+      mockRect(carlaCenter, 80)
+
+      dispatchPointerDrag(alice, carlaCenter, { moveY: 110 })
+
+      expect(names(container).slice(0, 3)).toEqual(['Bob', 'Carla', 'Alice'])
+    })
+  })
+
   it('shows formula results in the right column when columns are frozen', () => {
     render(
       <ThemeProvider>
