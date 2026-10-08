@@ -1,5 +1,5 @@
 import { createRef } from 'react'
-import { act, createEvent, fireEvent, render, screen } from '@testing-library/react'
+import { act, createEvent, fireEvent, render, screen, within } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { ThemeProvider } from '../core/theme'
 import { Grid } from './Grid'
@@ -2007,6 +2007,83 @@ describe('Grid', () => {
       act(() => { ref.current!.clearGroups() })
       expect(screen.queryByTestId('group-chip-dept')).toBeNull()
       expect(screen.getByTestId('group-panel')).toBeTruthy()
+    })
+  })
+
+  describe('pinned rows', () => {
+    const cols = [
+      { id: 'id', header: [{ text: 'ID' }], width: 80 },
+      { id: 'name', header: [{ text: 'Name' }], width: 160 },
+    ]
+    const rows = [
+      { id: '1', name: 'Alpha' },
+      { id: '2', name: 'Beta' },
+      { id: '3', name: 'Gamma' },
+      { id: '4', name: 'Delta' },
+    ]
+
+    it('renders a pinnedTopRows row in the fixed top panel', () => {
+      render(
+        <ThemeProvider>
+          <Grid
+            columns={cols}
+            data={rows}
+            pinnedTopRows={['3']}
+            style={{ width: 400, height: 300 }}
+          />
+        </ThemeProvider>,
+      )
+
+      const topPanel = screen.getByTestId('grid-fixed-top')
+      expect(within(topPanel).getByText('Gamma')).toBeInTheDocument()
+    })
+
+    it('removes a pinnedTopRows row from the scrollable body', () => {
+      render(
+        <ThemeProvider>
+          <Grid
+            columns={cols}
+            data={rows}
+            pinnedTopRows={['3']}
+            style={{ width: 400, height: 300 }}
+          />
+        </ThemeProvider>,
+      )
+
+      const body = screen.getByTestId('grid-body')
+      expect(body.querySelector('[data-rgs-id="3"]')).toBeNull()
+    })
+
+    it('renders a pinnedBottomRows row in the fixed bottom panel', () => {
+      render(
+        <ThemeProvider>
+          <Grid
+            columns={cols}
+            data={rows}
+            pinnedBottomRows={['2']}
+            style={{ width: 400, height: 300 }}
+          />
+        </ThemeProvider>,
+      )
+
+      const bottomPanel = screen.getByTestId('grid-fixed-bottom')
+      expect(within(bottomPanel).getByText('Beta')).toBeInTheDocument()
+    })
+
+    it('removes a pinnedBottomRows row from the scrollable body', () => {
+      render(
+        <ThemeProvider>
+          <Grid
+            columns={cols}
+            data={rows}
+            pinnedBottomRows={['2']}
+            style={{ width: 400, height: 300 }}
+          />
+        </ThemeProvider>,
+      )
+
+      const body = screen.getByTestId('grid-body')
+      expect(body.querySelector('[data-rgs-id="2"]')).toBeNull()
     })
   })
 })
