@@ -113,7 +113,8 @@ export function useGridSelection<T extends GridRow>(
         }
       }
 
-      setLastClickedRow(rowId)
+      // A Shift range keeps its anchor so further Shift moves extend it
+      if (!(multiselection && shiftKey && lastClickedRow)) setLastClickedRow(rowId)
       events.onAfterSelect?.(rowId, colId)
     },
     [config, data, lastClickedRow],

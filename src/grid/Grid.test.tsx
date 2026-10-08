@@ -2010,6 +2010,41 @@ describe('Grid', () => {
     })
   })
 
+  describe('shift range anchor', () => {
+    const tenRows = Array.from({ length: 10 }, (_, i) => ({ id: String(i + 1), name: `Row ${i + 1}` }))
+    const renderGrid = () => render(
+      <ThemeProvider>
+        <Grid
+          columns={[{ id: 'name', header: [{ text: 'Name' }], width: 160 }]}
+          data={tenRows}
+          selection="row"
+          multiselection
+          style={{ width: 300, height: 600 }}
+        />
+      </ThemeProvider>,
+    )
+    const selectedIds = (container: HTMLElement) =>
+      Array.from(container.querySelectorAll('[data-rgs-id][class*="rowSelected"]')).map((el) => el.getAttribute('data-rgs-id'))
+
+    it('keeps the anchor across repeated shift-clicks', () => {
+      const { container } = renderGrid()
+      fireEvent.click(screen.getByText('Row 2'))
+      fireEvent.click(screen.getByText('Row 5'), { shiftKey: true })
+      fireEvent.click(screen.getByText('Row 7'), { shiftKey: true })
+
+      expect(selectedIds(container)).toEqual(['2', '3', '4', '5', '6', '7'])
+    })
+
+    it('extends the range with Shift+ArrowDown', () => {
+      const { container } = renderGrid()
+      const grid = container.querySelector('[data-rgs-key-navigation="true"]') as HTMLDivElement
+      fireEvent.click(screen.getByText('Row 2'))
+      for (let i = 0; i < 3; i += 1) fireEvent.keyDown(grid, { key: 'ArrowDown', shiftKey: true })
+
+      expect(selectedIds(container)).toEqual(['2', '3', '4', '5'])
+    })
+  })
+
   it('shows formula results in the right column when columns are frozen', () => {
     render(
       <ThemeProvider>
