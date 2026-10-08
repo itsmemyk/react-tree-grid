@@ -152,7 +152,7 @@ interface RowInteraction {
   onEditorCancel?: () => void
   onEditorKeyDown?: (e: React.KeyboardEvent) => void
   onEditorBlur?: () => void
-  getComputedValue?: (rowId: string, colIndex: number) => unknown
+  getComputedValue?: (rowId: string, colId: string) => unknown
   groupOrder?: string[]
   collapsedGroups?: Set<string>
   toggleGroupExpanded?: (rowId: string) => void
@@ -302,7 +302,7 @@ function renderRow<T extends GridRow>(
               />
             ) : (
               interaction?.getComputedValue != null
-                ? String(interaction.getComputedValue(row.id, colIndex) ?? getCellValue(row, column))
+                ? String(interaction.getComputedValue(row.id, column.id) ?? getCellValue(row, column))
                 : getCellValue(row, column)
             )}
           </div>
@@ -686,6 +686,11 @@ function GridInner<T extends GridRow>({
   const columnIds = useMemo(
     () => columnReorder.orderedColumns.map((c) => String(c.id)),
     [columnReorder.orderedColumns],
+  )
+  // Formula results are keyed by index in the full column list, not the rendered slice
+  const columnIndexById = useMemo(
+    () => new Map(columnIds.map((id, index) => [id, index])),
+    [columnIds],
   )
   const formulaHook = useFormulas(
     store as unknown as import('../core/data').DataStore<{ id: string } & Record<string, unknown>> | undefined,
@@ -1357,7 +1362,9 @@ function GridInner<T extends GridRow>({
       }
     },
     onCellMouseLeave: gridTooltip.handleCellMouseLeave,
-    getComputedValue: formulas ? formulaHook.getComputedValue : undefined,
+    getComputedValue: formulas
+      ? (rowId, colId) => formulaHook.getComputedValue(rowId, columnIndexById.get(colId) ?? -1)
+      : undefined,
     groupOrder: gridGroup.active ? gridGroup.groupOrder : undefined,
     collapsedGroups: gridGroup.active ? gridGroup.collapsedGroups : undefined,
     toggleGroupExpanded: gridGroup.active ? gridGroup.toggleExpanded : undefined,

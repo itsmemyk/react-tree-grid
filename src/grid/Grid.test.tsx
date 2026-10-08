@@ -2010,6 +2010,29 @@ describe('Grid', () => {
     })
   })
 
+  it('shows formula results in the right column when columns are frozen', () => {
+    render(
+      <ThemeProvider>
+        <Grid
+          columns={[
+            { id: 'label', header: [{ text: 'Label' }], width: 100 },
+            { id: 'value', header: [{ text: 'Value' }], width: 100 },
+            { id: 'doubled', header: [{ text: 'Doubled' }], width: 100 },
+          ]}
+          data={[
+            { id: 'r1', label: 'Alpha', value: 10, doubled: '=B1*2' },
+          ]}
+          formulas
+          leftSplit={1}
+          style={{ width: 400, height: 200 }}
+        />
+      </ThemeProvider>,
+    )
+
+    const cell = document.querySelector('[data-rgs-id="r1"] [data-rgs-col-id="doubled"]') as HTMLElement
+    expect(cell.textContent).toBe('20')
+  })
+
   describe('pinned rows', () => {
     const cols = [
       { id: 'id', header: [{ text: 'ID' }], width: 80 },
