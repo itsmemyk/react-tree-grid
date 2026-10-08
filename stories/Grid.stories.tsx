@@ -1415,7 +1415,15 @@ export const CustomCellEditors: Story = {
 
 const PIN_CANDIDATES = ['1', '5', '10', '25', '50', '100']
 
+const pinnedColumns: GridColumn<Employee>[] = baseColumns.map((c) => ({
+  ...c,
+  width: (c.width ?? 100) + 60,
+  // Name and Role are editable: double-click or press Enter
+  ...(c.id === 'name' || c.id === 'role' ? { editorType: 'input' as const } : {}),
+}))
+
 function PinnedRowsDemo() {
+  const { items, store } = useDataStore<Employee>({ data: data200 })
   const [pinnedTop, setPinnedTop] = useState<string[]>(['5'])
   const [pinnedBottom, setPinnedBottom] = useState<string[]>(['100'])
 
@@ -1437,7 +1445,7 @@ function PinnedRowsDemo() {
     <div>
       <p style={{ margin: '0 0 12px', color: '#666', fontSize: 13 }}>
         Pin rows by ID to the top or bottom. Pinned rows leave the scrollable area, stay visible on vertical scroll,
-        and scroll horizontally with the body. The first two columns are frozen and the grid is editable.
+        and scroll horizontally with the body. The first two columns are frozen; Name and Role are editable.
       </p>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 12 }}>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
@@ -1468,13 +1476,15 @@ function PinnedRowsDemo() {
         </div>
       </div>
       <Grid<Employee>
-        columns={baseColumns.map((c) => ({ ...c, width: (c.width ?? 100) + 60 }))}
-        data={data200}
+        columns={pinnedColumns}
+        data={items}
+        store={store}
         pinnedTopRows={pinnedTop}
         pinnedBottomRows={pinnedBottom}
         leftSplit={2}
         editable
         selection="row"
+        multiselection
         style={{ width: '100%', height: GRID_HEIGHT }}
       />
     </div>
