@@ -12,6 +12,10 @@ export interface UseVirtualScrollOptions {
   rightSplit?: number
   topSplit?: number
   bottomSplit?: number
+  /** Actual height of the top fixed rows; defaults to `topSplit * rowHeight`. */
+  fixedTopHeight?: number
+  /** Actual height of the bottom fixed rows; defaults to `bottomSplit * rowHeight`. */
+  fixedBottomHeight?: number
   headerHeight?: number
   footerHeight?: number
 }
@@ -88,6 +92,8 @@ export function useVirtualScroll({
   rightSplit = 0,
   topSplit = 0,
   bottomSplit = 0,
+  fixedTopHeight = topSplit * rowHeight,
+  fixedBottomHeight = bottomSplit * rowHeight,
   headerHeight = 0,
   footerHeight = 0,
 }: UseVirtualScrollOptions): UseVirtualScrollReturn {
@@ -110,8 +116,6 @@ export function useVirtualScroll({
     containerWidth - fixedLeftWidth - fixedRightWidth,
     0,
   )
-  const fixedTopHeight = topSplit * rowHeight
-  const fixedBottomHeight = bottomSplit * rowHeight
   const adjustedContainerHeight = Math.max(
     containerHeight - headerHeight - footerHeight - fixedTopHeight - fixedBottomHeight,
     0,
@@ -121,10 +125,10 @@ export function useVirtualScroll({
   const visibleRowCount = Math.ceil(adjustedContainerHeight / rowHeight)
   const rawYStart = Math.floor(scrollTop / rowHeight)
   const yStart = Math.max(0, rawYStart - overscan)
-  const yEnd = Math.min(
-    Math.max(viewportRowCount - 1, 0),
-    rawYStart + visibleRowCount + overscan - 1,
-  )
+  // No scrollable rows → empty window (yEnd < yStart)
+  const yEnd = viewportRowCount === 0
+    ? yStart - 1
+    : Math.min(viewportRowCount - 1, rawYStart + visibleRowCount + overscan - 1)
 
   const effectiveWidths = colWidths.slice(leftSplit, totalCols - rightSplit || totalCols)
   const xStart = effectiveWidths.length

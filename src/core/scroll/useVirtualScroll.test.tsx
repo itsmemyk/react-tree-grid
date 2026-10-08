@@ -106,4 +106,42 @@ describe('useVirtualScroll', () => {
     expect(result.current.yStart).toBe(3)
     expect(result.current.yEnd).toBe(6)
   })
+
+  it('sizes the row window from explicit fixed panel heights', () => {
+    const { result } = renderHook(() =>
+      useVirtualScroll({
+        totalRows: 20,
+        totalCols: 1,
+        rowHeight: 40,
+        colWidths: [100],
+        containerWidth: 100,
+        containerHeight: 200,
+        overscan: 0,
+        topSplit: 2,
+        // Two pinned rows of 20px each, not 2 × rowHeight
+        fixedTopHeight: 40,
+      }),
+    )
+
+    // 160px of scrollable band → 4 rows (indexes 2..5)
+    expect(result.current.yStart).toBe(2)
+    expect(result.current.yEnd).toBe(5)
+  })
+
+  it('returns an empty row window when every row is fixed', () => {
+    const { result } = renderHook(() =>
+      useVirtualScroll({
+        totalRows: 3,
+        totalCols: 1,
+        rowHeight: 40,
+        colWidths: [100],
+        containerWidth: 100,
+        containerHeight: 200,
+        topSplit: 1,
+        bottomSplit: 2,
+      }),
+    )
+
+    expect(result.current.yEnd).toBeLessThan(result.current.yStart)
+  })
 })
