@@ -195,9 +195,16 @@ export interface GridProps<T extends GridRow = GridRow> {
   rightSplit?: number
   topSplit?: number
   bottomSplit?: number
-  /** Row IDs pinned to the fixed top panel, in order; removed from the scrollable area. */
+  /**
+   * Row IDs pinned to the fixed top panel, in order; removed from the scrollable area.
+   * Each ID pins once, unknown IDs are ignored, and pinned rows ignore store filters
+   * and grouping. `topSplit` then freezes the first unpinned rows below them.
+   */
   pinnedTopRows?: string[]
-  /** Row IDs pinned to the fixed bottom panel, in order; removed from the scrollable area. */
+  /**
+   * Row IDs pinned to the fixed bottom panel, in order. An ID also listed in
+   * `pinnedTopRows` pins to the top.
+   */
   pinnedBottomRows?: string[]
   /** Auto-fit column widths to content (grid-level). */
   adjust?: GridAdjustOption

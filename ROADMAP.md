@@ -1,6 +1,6 @@
 # Roadmap
 
-Current version: **v0.6.0**
+Current version: **v0.7.0**
 
 Features are grouped into milestones. Each milestone is independently releasable.
 
@@ -49,18 +49,19 @@ Allow fully custom React components as cell editors, not just the built-in input
 Pin arbitrary rows by ID to the top or bottom of the grid, keeping them visible while the rest of the data scrolls.
 
 ### Props
-- [ ] `pinnedTopRows?: string[]` — row IDs to pin at the top; rows are removed from the scrollable area
-- [ ] `pinnedBottomRows?: string[]` — row IDs to pin at the bottom; rows are removed from the scrollable area
+- [x] `pinnedTopRows?: string[]` — row IDs to pin at the top; rows are removed from the scrollable area
+- [x] `pinnedBottomRows?: string[]` — row IDs to pin at the bottom; rows are removed from the scrollable area
 
 ### Behaviour
-- [ ] Pinned rows scroll horizontally in sync with the grid body
-- [ ] Pinned rows support inline editing when `editable: true`
-- [ ] Per-row height via `$height` already works; pinned rows respect it
-- [ ] Pinned rows interact correctly with frozen left/right columns (corner cells rendered separately)
-- [ ] Selection, CSS overrides, and tooltips work the same as regular rows
+- [x] Pinned rows scroll horizontally in sync with the grid body
+- [x] Pinned rows support inline editing when `editable: true`
+- [x] Per-row height via `$height` already works; pinned rows respect it
+- [x] Pinned rows interact correctly with frozen left/right columns (corner cells rendered separately)
+- [x] Selection, CSS overrides, and tooltips work the same as regular rows
+- [x] Pinned rows stay visible through store filters and grouping; not draggable; spans stay within their panel
 
 ### Events
-- [ ] `onBeforePin` / `onAfterPin` — called when `pinnedTopRows` or `pinnedBottomRows` changes
+- ~~`onBeforePin` / `onAfterPin`~~ — dropped: the pin lists are controlled props, so the parent already owns every change
 
 ---
 

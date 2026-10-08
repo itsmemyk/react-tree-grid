@@ -23,6 +23,7 @@ The best open-source alternative to [DHTMLX TreeGrid](https://dhtmlx.com/docs/pr
 - Light and dark themes via `ThemeProvider`
 - CSS custom properties (`--react-tree-grid-*`) for token-level theming
 - Frozen rows and columns (left, right, top, bottom splits)
+- Pinned rows by ID (`pinnedTopRows`, `pinnedBottomRows`)
 - Multi-level column headers and footer aggregates (`sum`, `avg`, `count`, `min`, `max`)
 - Inline cell editing with built-in editor types (`input`, `select`, `combo`, `datePicker`, `multiselect`)
 - Row and column drag-and-drop reorder
@@ -246,6 +247,8 @@ All theme values are exposed as CSS custom properties prefixed with `--react-tre
 | `rightSplit` | `number` | — | Freeze N right columns |
 | `topSplit` | `number` | — | Freeze N top rows |
 | `bottomSplit` | `number` | — | Freeze N bottom rows |
+| `pinnedTopRows` | `string[]` | — | Pin rows by ID to the top |
+| `pinnedBottomRows` | `string[]` | — | Pin rows by ID to the bottom |
 | `dragItem` | `'item' \| 'both'` | — | Enable row drag-and-drop |
 | `adjust` | `boolean \| 'data' \| 'header' \| 'footer'` | — | Auto-fit column widths |
 | `autoHeight` | `boolean` | `false` | Grow grid height to fit all rows |

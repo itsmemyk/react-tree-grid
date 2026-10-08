@@ -45,7 +45,10 @@ import { Grid } from '@itsmemyk/react-tree-grid/grid'
 | `multiselection` | `boolean` | `false` | Allow multi-row/cell selection |
 | `leftSplit` | `number` | — | Freeze N columns from the left |
 | `rightSplit` | `number` | — | Freeze N columns from the right |
-| `topSplit` | `number` | — | Freeze N header rows from the top |
+| `topSplit` | `number` | — | Freeze the first N unpinned rows at the top |
+| `bottomSplit` | `number` | — | Freeze the last N unpinned rows at the bottom |
+| `pinnedTopRows` | `string[]` | — | Row IDs pinned to the top panel, in order — see [Pinned Rows](/examples/grid-pinned-rows) |
+| `pinnedBottomRows` | `string[]` | — | Row IDs pinned to the bottom panel, in order |
 | `dragItem` | `'row' \| 'column'` | — | Enable drag-and-drop for rows or columns |
 | `dragMode` | `'source' \| 'target' \| 'both'` | — | Drag role of this grid |
 | `formulas` | `boolean` | `false` | Enable formula engine in cells |
