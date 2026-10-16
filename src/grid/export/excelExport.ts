@@ -12,14 +12,59 @@ export interface ExcelExportConfig {
 }
 
 /**
- * Escape XML special characters.
+ * Escape XML special characters and drop characters that are illegal in XML 1.0
+ * (C0 control chars other than tab/LF/CR, unpaired surrogates, U+FFFE/U+FFFF).
  */
 function escapeXml(value: string): string {
   return value
+    // eslint-disable-next-line no-control-regex
+    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\uFFFE\uFFFF]/g, '')
+    .replace(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g, '')
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
+}
+
+/** Inline string cell. xml:space="preserve" keeps leading/trailing whitespace. */
+function textCell(ref: string, text: string): string {
+  return `<c r="${ref}" t="inlineStr"><is><t xml:space="preserve">${escapeXml(text)}</t></is></c>`
+}
+
+/** cellXfs indexes defined in STYLES_XML */
+const STYLE_DATE = 1
+const STYLE_DATETIME = 2
+
+const STYLES_XML = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+<fonts count="1"><font><sz val="11"/><name val="Calibri"/></font></fonts>
+<fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills>
+<borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>
+<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
+<cellXfs count="3"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="14" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/><xf numFmtId="22" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/></cellXfs>
+<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>
+</styleSheet>`
+
+const MS_PER_DAY = 86400000
+const EXCEL_EPOCH = Date.UTC(1899, 11, 30)
+
+/**
+ * Convert a Date to an Excel serial date number (1900 date system), using the
+ * date's local wall-clock time since Excel dates carry no time zone.
+ */
+function toExcelSerial(d: Date): number {
+  const utc = Date.UTC(
+    d.getFullYear(), d.getMonth(), d.getDate(),
+    d.getHours(), d.getMinutes(), d.getSeconds(), d.getMilliseconds(),
+  )
+  return (utc - EXCEL_EPOCH) / MS_PER_DAY
+}
+
+function dateCell(ref: string, d: Date): string {
+  if (isNaN(d.getTime())) return `<c r="${ref}"/>`
+  const serial = toExcelSerial(d)
+  const style = Number.isInteger(serial) ? STYLE_DATE : STYLE_DATETIME
+  return `<c r="${ref}" s="${style}"><v>${serial}</v></c>`
 }
 
 /**
@@ -62,7 +107,7 @@ export function exportGridToExcel<T extends DataItem>(
     const cells = exportColumns
       .map((col, ci) => {
         const text = col.header?.[0]?.text ?? col.id
-        return `<c r="${colLetter(ci)}${rowNum}" t="inlineStr"><is><t>${escapeXml(text)}</t></is></c>`
+        return textCell(`${colLetter(ci)}${rowNum}`, text)
       })
       .join('')
     rows.push(`<row r="${rowNum}">${cells}</row>`)
@@ -78,11 +123,13 @@ export function exportGridToExcel<T extends DataItem>(
         if (raw === null || raw === undefined || raw === '') {
           return `<c r="${ref}"/>`
         }
-        const num = Number(raw)
-        if (!isNaN(num) && typeof raw !== 'boolean') {
-          return `<c r="${ref}"><v>${num}</v></c>`
+        // Only real finite numbers become numeric cells; numeric-looking
+        // strings ("007", "1e3", "0x1F", " ") stay text.
+        if (typeof raw === 'number' && Number.isFinite(raw)) {
+          return `<c r="${ref}"><v>${raw}</v></c>`
         }
-        return `<c r="${ref}" t="inlineStr"><is><t>${escapeXml(String(raw))}</t></is></c>`
+        if (raw instanceof Date) return dateCell(ref, raw)
+        return textCell(ref, String(raw))
       })
       .join('')
     rows.push(`<row r="${rowNum}">${cells}</row>`)
@@ -98,6 +145,7 @@ export function exportGridToExcel<T extends DataItem>(
 <Default Extension="xml" ContentType="application/xml"/>
 <Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
 <Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>
 </Types>`
 
   const rels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
@@ -108,6 +156,7 @@ export function exportGridToExcel<T extends DataItem>(
   const workbookRels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
 <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
+<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
 </Relationships>`
 
   const workbook = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
@@ -127,6 +176,7 @@ export function exportGridToExcel<T extends DataItem>(
     { path: 'xl/_rels/workbook.xml.rels', data: encode(workbookRels) },
     { path: 'xl/workbook.xml', data: encode(workbook) },
     { path: 'xl/worksheets/sheet1.xml', data: encode(sheet) },
+    { path: 'xl/styles.xml', data: encode(STYLES_XML) },
   ]
 
   return buildZip(files)
@@ -169,11 +219,12 @@ function buildZip(
   }> = []
   const parts: Uint8Array[] = []
   let offset = 0
+  const stamp = dosDateTime(new Date())
 
   // Local file headers + data
   for (const file of files) {
     const pathBytes = encode(file.path)
-    const header = localFileHeader(pathBytes, file.data)
+    const header = localFileHeader(pathBytes, file.data, stamp)
     entries.push({ path: pathBytes, data: file.data, offset })
     parts.push(header, file.data)
     offset += header.length + file.data.length
@@ -182,7 +233,7 @@ function buildZip(
   // Central directory
   const centralStart = offset
   for (const entry of entries) {
-    const cd = centralDirectoryEntry(entry.path, entry.data, entry.offset)
+    const cd = centralDirectoryEntry(entry.path, entry.data, entry.offset, stamp)
     parts.push(cd)
     offset += cd.length
   }
@@ -201,7 +252,21 @@ function buildZip(
   })
 }
 
-function localFileHeader(path: Uint8Array, data: Uint8Array): Uint8Array {
+interface DosDateTime {
+  time: number
+  date: number
+}
+
+/** MS-DOS date/time used by ZIP headers (local time, 2-second resolution, years 1980–2107). */
+function dosDateTime(d: Date): DosDateTime {
+  const year = Math.min(Math.max(d.getFullYear(), 1980), 2107)
+  return {
+    time: (d.getHours() << 11) | (d.getMinutes() << 5) | (d.getSeconds() >> 1),
+    date: ((year - 1980) << 9) | ((d.getMonth() + 1) << 5) | d.getDate(),
+  }
+}
+
+function localFileHeader(path: Uint8Array, data: Uint8Array, stamp: DosDateTime): Uint8Array {
   const buf = new ArrayBuffer(30 + path.length)
   const view = new DataView(buf)
   const arr = new Uint8Array(buf)
@@ -210,8 +275,8 @@ function localFileHeader(path: Uint8Array, data: Uint8Array): Uint8Array {
   view.setUint16(4, 20, true) // version needed
   view.setUint16(6, 0, true) // flags
   view.setUint16(8, 0, true) // compression (store)
-  view.setUint16(10, 0, true) // mod time
-  view.setUint16(12, 0, true) // mod date
+  view.setUint16(10, stamp.time, true) // mod time
+  view.setUint16(12, stamp.date, true) // mod date
   view.setUint32(14, crc32(data), true) // crc32
   view.setUint32(18, data.length, true) // compressed size
   view.setUint32(22, data.length, true) // uncompressed size
@@ -226,6 +291,7 @@ function centralDirectoryEntry(
   path: Uint8Array,
   data: Uint8Array,
   localOffset: number,
+  stamp: DosDateTime,
 ): Uint8Array {
   const buf = new ArrayBuffer(46 + path.length)
   const view = new DataView(buf)
@@ -236,8 +302,8 @@ function centralDirectoryEntry(
   view.setUint16(6, 20, true) // version needed
   view.setUint16(8, 0, true) // flags
   view.setUint16(10, 0, true) // compression
-  view.setUint16(12, 0, true) // mod time
-  view.setUint16(14, 0, true) // mod date
+  view.setUint16(12, stamp.time, true) // mod time
+  view.setUint16(14, stamp.date, true) // mod date
   view.setUint32(16, crc32(data), true)
   view.setUint32(20, data.length, true)
   view.setUint32(24, data.length, true)
