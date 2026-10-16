@@ -685,6 +685,12 @@ function GridInner<T extends GridRow>({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dataProxy?.url])
 
+  // Clicking inside a scroll area focuses it (it has tabIndex -1 to stay out of
+  // the Tab order); hand focus to the root, which handles keys and shows no outline
+  const returnFocusToRoot = (event: React.FocusEvent<HTMLDivElement>) => {
+    if (event.target === event.currentTarget && keyNavigation) rootRef.current?.focus({ preventScroll: true })
+  }
+
   // A new remote sort or filter restarts at page 1, so show it from the top
   // rather than leaving the old scroll offset (which would also page ahead)
   const reloadFromFirstPage = (opts: LoadOptions) => {
@@ -1765,6 +1771,7 @@ function GridInner<T extends GridRow>({
           className={styles.headerScroller}
           // Scroll containers are keyboard-focusable in Chrome; the grid root owns focus
           tabIndex={-1}
+          onFocus={returnFocusToRoot}
           style={{
             marginLeft: fixedLeftWidth,
             marginRight: fixedRightWidth + verticalScrollbarWidth,
@@ -1828,7 +1835,7 @@ function GridInner<T extends GridRow>({
             }}
           />
         ) : null}
-        <div ref={bodyRef} className={styles.body} onScroll={handleScroll} data-testid="grid-body" tabIndex={-1}>
+        <div ref={bodyRef} className={styles.body} onScroll={handleScroll} data-testid="grid-body" tabIndex={-1} onFocus={returnFocusToRoot}>
           {/* Spacer establishes scroll dimensions */}
           <div
             className={styles.bodyInner}
@@ -2062,6 +2069,7 @@ function GridInner<T extends GridRow>({
             ref={footerScrollRef}
             className={styles.headerScroller}
             tabIndex={-1}
+            onFocus={returnFocusToRoot}
             style={{
               marginLeft: fixedLeftWidth,
               marginRight: fixedRightWidth + verticalScrollbarWidth,
