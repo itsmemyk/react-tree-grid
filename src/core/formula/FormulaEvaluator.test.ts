@@ -81,3 +81,48 @@ describe('evaluateFormula', () => {
     expect(evaluateFormula(parseFormula('=A1'), getCellValue, visiting)).toBe('#CIRC')
   })
 })
+
+describe('evaluateFormula operators and functions', () => {
+  const ev = (f: string) => evaluateFormula(parseFormula(f), getCellValue, new Set())
+
+  it('evaluates 2*3>5 as true', () => {
+    expect(ev('=2*3>5')).toBe(true)
+  })
+
+  it('evaluates A1+B1>12 as true', () => {
+    expect(ev('=A1+B1>12')).toBe(true)
+  })
+
+  it('evaluates IF(A1*2>15,"big","small") → "big"', () => {
+    expect(ev('=IF(A1*2>15,"big","small")')).toBe('big')
+  })
+
+  it('evaluates .5*4 → 2', () => {
+    expect(ev('=.5*4')).toBe(2)
+  })
+
+  it('evaluates powers', () => {
+    expect(ev('=2^3')).toBe(8)
+    expect(ev('=2*3^2')).toBe(18)
+    expect(ev('=2^3^2')).toBe(512)
+    expect(ev('=2^-1')).toBe(0.5)
+  })
+
+  it('evaluates <>', () => {
+    expect(ev('=A1<>B1')).toBe(true)
+    expect(ev('=A1<>10')).toBe(false)
+  })
+
+  it('treats AVERAGE as an alias of AVG', () => {
+    expect(ev('=AVERAGE(A1:A3)')).toBe(20)
+  })
+
+  it('returns 0 for MIN/MAX of an empty range', () => {
+    expect(ev('=MIN(A10:A12)')).toBe(0)
+    expect(ev('=MAX(A10:A12)')).toBe(0)
+  })
+
+  it('propagates error values through comparisons', () => {
+    expect(ev('=A1/0>1')).toBe('#DIV/0')
+  })
+})

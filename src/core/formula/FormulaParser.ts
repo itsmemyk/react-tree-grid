@@ -34,9 +34,10 @@ function tokenize(src: string): Token[] {
     const ch = src[i]
     if (/\s/.test(ch)) { i++; continue }
 
-    if (/\d/.test(ch)) {
+    if (/\d/.test(ch) || (ch === '.' && /\d/.test(src[i + 1] ?? ''))) {
       let num = ''
       while (i < src.length && /[\d.]/.test(src[i])) num += src[i++]
+      if (!/^(\d+\.?\d*|\.\d+)$/.test(num)) throw new ParseError(`Invalid number: ${num}`)
       tokens.push({ type: 'NUMBER', value: num })
       continue
     }
@@ -69,9 +70,10 @@ function tokenize(src: string): Token[] {
     if (ch === ')') { tokens.push({ type: 'RPAREN', value: ')' }); i++; continue }
     if (ch === ',') { tokens.push({ type: 'COMMA', value: ',' }); i++; continue }
     if (ch === ':') { tokens.push({ type: 'COLON', value: ':' }); i++; continue }
-    if (/[+\-*/&<>=!]/.test(ch)) {
+    if (/[+\-*/^&<>=!]/.test(ch)) {
       let op = ch; i++
-      if (i < src.length && /[=]/.test(src[i])) op += src[i++]
+      if (/[<>!]/.test(ch) && src[i] === '=') op += src[i++]
+      else if (ch === '<' && src[i] === '>') op += src[i++]
       tokens.push({ type: 'OP', value: op })
       continue
     }
@@ -110,11 +112,28 @@ class Parser {
     return node
   }
 
-  private parseExpr(): ASTNode { return this.parseAdditive() }
+  private isOp(pattern: RegExp): boolean {
+    const t = this.peek()
+    return t.type === 'OP' && pattern.test(t.value)
+  }
+
+  // Precedence, lowest to highest:
+  //   comparison → additive (+ - &) → multiplicative (* /) → unary (-, +) → power (^) → primary
+  private parseExpr(): ASTNode { return this.parseComparison() }
+
+  private parseComparison(): ASTNode {
+    let left = this.parseAdditive()
+    while (this.isOp(/^(>|<|>=|<=|=|<>|!=)$/)) {
+      const op = this.consume().value
+      const right = this.parseAdditive()
+      left = { type: 'binary', op, left, right }
+    }
+    return left
+  }
 
   private parseAdditive(): ASTNode {
     let left = this.parseMultiplicative()
-    while (this.peek().type === 'OP' && /^[+\-&]$/.test(this.peek().value)) {
+    while (this.isOp(/^[+\-&]$/)) {
       const op = this.consume().value
       const right = this.parseMultiplicative()
       left = { type: 'binary', op, left, right }
@@ -123,23 +142,32 @@ class Parser {
   }
 
   private parseMultiplicative(): ASTNode {
-    let left = this.parseComparison()
-    while (this.peek().type === 'OP' && /^[*/]$/.test(this.peek().value)) {
+    let left = this.parseUnary()
+    while (this.isOp(/^[*/]$/)) {
       const op = this.consume().value
-      const right = this.parseComparison()
+      const right = this.parseUnary()
       left = { type: 'binary', op, left, right }
     }
     return left
   }
 
-  private parseComparison(): ASTNode {
-    let left = this.parsePrimary()
-    while (this.peek().type === 'OP' && /^(>|<|>=|<=|=|<>|!=)$/.test(this.peek().value)) {
+  private parseUnary(): ASTNode {
+    if (this.isOp(/^[-+]$/)) {
       const op = this.consume().value
-      const right = this.parsePrimary()
-      left = { type: 'binary', op, left, right }
+      return { type: 'unary', op, operand: this.parseUnary() }
     }
-    return left
+    return this.parsePower()
+  }
+
+  private parsePower(): ASTNode {
+    const base = this.parsePrimary()
+    if (this.isOp(/^\^$/)) {
+      this.consume()
+      // Right-associative: 2^3^2 = 2^(3^2). The exponent may carry a sign (2^-1).
+      const exponent = this.parseUnary()
+      return { type: 'binary', op: '^', left: base, right: exponent }
+    }
+    return base
   }
 
   private parsePrimary(): ASTNode {
@@ -184,11 +212,6 @@ class Parser {
       const inner = this.parseExpr()
       this.expect('RPAREN')
       return inner
-    }
-
-    if (t.type === 'OP' && t.value === '-') {
-      this.consume()
-      return { type: 'unary', op: '-', operand: this.parsePrimary() }
     }
 
     throw new ParseError(`Unexpected token: ${t.type} (${t.value})`)

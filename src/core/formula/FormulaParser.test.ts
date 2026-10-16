@@ -58,3 +58,44 @@ describe('parseFormula', () => {
     expect(() => parseFormula('=SUM(')).toThrow()
   })
 })
+
+describe('parseFormula precedence and literals', () => {
+  it('gives comparison lower precedence than multiplication (2*3>5)', () => {
+    const ast = parseFormula('=2*3>5') as { type: string; op: string; left: { op: string } }
+    expect(ast.type).toBe('binary')
+    expect(ast.op).toBe('>')
+    expect(ast.left.op).toBe('*')
+  })
+
+  it('gives comparison lower precedence than addition (A1+1=B1)', () => {
+    const ast = parseFormula('=A1+1=B1') as { op: string }
+    expect(ast.op).toBe('=')
+  })
+
+  it('parses <> as a single operator', () => {
+    const ast = parseFormula('=A1<>B1') as { op: string }
+    expect(ast.op).toBe('<>')
+  })
+
+  it('parses numbers with a leading decimal point', () => {
+    expect(parseFormula('=.5')).toEqual({ type: 'number', value: 0.5 })
+  })
+
+  it('rejects malformed numbers', () => {
+    expect(() => parseFormula('=1.2.3')).toThrow()
+    expect(() => parseFormula('=.')).toThrow()
+  })
+
+  it('parses ^ with higher precedence than *', () => {
+    const ast = parseFormula('=2*3^2') as { op: string; right: { op: string } }
+    expect(ast.op).toBe('*')
+    expect(ast.right.op).toBe('^')
+  })
+
+  it('parses ^ as right-associative', () => {
+    const ast = parseFormula('=2^3^2') as { op: string; left: { type: string }; right: { op: string } }
+    expect(ast.op).toBe('^')
+    expect(ast.left.type).toBe('number')
+    expect(ast.right.op).toBe('^')
+  })
+})
