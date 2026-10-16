@@ -106,7 +106,16 @@ export function useDraggable(config: UseDraggableConfig): UseDraggableReturn {
 
         const handleUp = (upEvent: PointerEvent) => {
           cleanup()
-          if (started) dragManager.drop(upEvent)
+          if (!started) return
+          dragManager.drop(upEvent)
+          // The browser follows the release with a click on whatever is under
+          // the pointer; a finished drag shouldn't also select that item
+          const swallowClick = (clickEvent: MouseEvent) => {
+            clickEvent.stopPropagation()
+            clickEvent.preventDefault()
+          }
+          window.addEventListener('click', swallowClick, { capture: true, once: true })
+          setTimeout(() => window.removeEventListener('click', swallowClick, true), 0)
         }
 
         // The browser took over the pointer (e.g. a native text drag): no pointerup will follow
