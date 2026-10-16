@@ -185,6 +185,38 @@ describe('TreeGrid row drag', () => {
   })
 })
 
+describe('TreeGrid child drops', () => {
+  it('opens a collapsed parent that receives a row with dropBehaviour="child"', () => {
+    render(
+      <ThemeProvider>
+        <TreeGrid
+          columns={columns}
+          data={[
+            { id: 'x', name: 'Xavier' },
+            { id: 'p', name: 'Parent', $opened: false, items: [{ id: 'q', name: 'Hidden child' }] },
+          ]}
+          dragItem="row"
+          dropBehaviour="child"
+          dragExpand={false}
+          style={{ width: 300, height: 300 }}
+        />
+      </ThemeProvider>,
+    )
+    const x = screen.getByText('Xavier').closest('[data-rgs-id]') as HTMLElement
+    const p = screen.getByText('Parent').closest('[data-rgs-id]') as HTMLElement
+    const rect = (top: number) => ({ top, bottom: top + 40, left: 0, right: 200, width: 200, height: 40, x: 0, y: top, toJSON: () => '' })
+    vi.spyOn(x, 'getBoundingClientRect').mockReturnValue(rect(0))
+    vi.spyOn(p, 'getBoundingClientRect').mockReturnValue(rect(40))
+
+    fireEvent.pointerDown(x, { clientX: 10, clientY: 10 })
+    fireEvent.pointerMove(p, { clientX: 10, clientY: 75 })
+    fireEvent.pointerUp(p, { clientX: 10, clientY: 75 })
+
+    expect(screen.getByText('Hidden child')).toBeTruthy()
+    expect(screen.getByText('Xavier')).toBeTruthy()
+  })
+})
+
 describe('TreeGrid filtering', () => {
   it('opens collapsed parents of filter matches and closes them when the filter clears', async () => {
     vi.useFakeTimers()

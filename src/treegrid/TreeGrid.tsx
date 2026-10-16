@@ -336,6 +336,10 @@ export const TreeGrid = forwardRef<TreeGridRef, TreeGridProps<TreeGridRow>>(func
     if (dragData.target && dragData.position) {
       if (dropBehaviour === 'child') {
         store.move(dragData.start, -1, undefined, dragData.target)
+        // Open the new parent so the dropped row stays in view
+        if (!store.getItem(dragData.target)?.$opened) {
+          store.update(dragData.target, { $opened: true } as Partial<InternalTreeGridRow>)
+        }
       } else {
         // useRowDrag.applyDrop moved the row by flat index under the root, which
         // breaks the hierarchy; redo the move next to the target within its parent.
