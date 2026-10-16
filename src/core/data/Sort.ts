@@ -24,8 +24,42 @@ export function naturalCompare(a: string, b: string): number {
   return (a as unknown as number) - (b as unknown as number)
 }
 
+function isEmptyValue(v: unknown): boolean {
+  return (
+    v === null ||
+    v === undefined ||
+    v === '' ||
+    (typeof v === 'number' && Number.isNaN(v)) ||
+    (v instanceof Date && Number.isNaN(v.getTime()))
+  )
+}
+
+/**
+ * Compare two cell values in ascending order.
+ *
+ * Rules:
+ * - Empty values (null, undefined, '', NaN, invalid Date) sort AFTER every
+ *   non-empty value in ascending order. Descending order simply reverses the
+ *   ascending result, so empty values come first there.
+ * - Two numbers compare numerically.
+ * - Two Date objects compare chronologically (getTime()).
+ * - Anything else uses natural string comparison ("item2" < "item10").
+ */
+export function compareValues(a: unknown, b: unknown): number {
+  const ae = isEmptyValue(a)
+  const be = isEmptyValue(b)
+  if (ae || be) return ae === be ? 0 : ae ? 1 : -1
+  if (typeof a === 'number' && typeof b === 'number') return a - b
+  if (a instanceof Date && b instanceof Date) return a.getTime() - b.getTime()
+  return naturalCompare(String(a), String(b))
+}
+
 /**
  * Sort class supporting multi-column sorting with custom value accessors.
+ *
+ * The default comparison (when a rule has no custom `rule`) is
+ * {@link compareValues}: empty values last in asc / first in desc, numbers
+ * numerically, Dates chronologically, strings naturally. Sorting is stable.
  */
 export class Sort {
   /** Sort an array using one or more sort rules */
@@ -36,9 +70,9 @@ export class Sort {
   private _createSorter(by: SortRule): void {
     if (by && !by.rule) {
       by.rule = (a: DataItem, b: DataItem): number => {
-        const aa = this._checkVal(by.as, a[by.by]) ?? ''
-        const bb = this._checkVal(by.as, b[by.by]) ?? ''
-        return naturalCompare(String(aa), String(bb))
+        const aa = this._checkVal(by.as, a[by.by])
+        const bb = this._checkVal(by.as, b[by.by])
+        return compareValues(aa, bb)
       }
     }
   }
