@@ -573,6 +573,12 @@ function TreeRow(props: TreeRowProps) {
   }
 
   const stopDoubleClick = (event: React.MouseEvent) => event.stopPropagation()
+  // The toggle and checkbox must not take focus: keys act on the focused row,
+  // so clicking them focuses their row instead
+  const focusOwnRow = (event: React.MouseEvent) => {
+    event.preventDefault()
+    targetRef.current?.focus()
+  }
 
   return (
     <div
@@ -629,6 +635,7 @@ function TreeRow(props: TreeRowProps) {
             if (hasChildren) onToggle()
           }}
           onDoubleClick={stopDoubleClick}
+          onMouseDown={focusOwnRow}
           aria-label={hasChildren ? (expanded ? 'Collapse node' : 'Expand node') : undefined}
         >
           {hasChildren ? (expanded ? '▾' : '▸') : ''}
@@ -647,6 +654,7 @@ function TreeRow(props: TreeRowProps) {
             }}
             onClick={(e) => e.stopPropagation()}
             onDoubleClick={stopDoubleClick}
+            onMouseDown={focusOwnRow}
           />
         ) : null}
         {item.icon ? <span className={styles.icon}>{item.icon}</span> : null}
