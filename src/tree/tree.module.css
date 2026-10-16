@@ -37,6 +37,12 @@
   background: #e7eef8;
 }
 
+/* Dragging across labels must not select text, which would start a native text drag */
+.rowDraggable {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
 .rowDisabled {
   opacity: 0.5;
   cursor: default;

@@ -87,6 +87,7 @@ export function useDraggable(config: UseDraggableConfig): UseDraggableReturn {
         const cleanup = () => {
           window.removeEventListener('pointermove', handleMove)
           window.removeEventListener('pointerup', handleUp)
+          window.removeEventListener('pointercancel', handleCancel)
           window.removeEventListener('keydown', handleKey, true)
         }
 
@@ -108,6 +109,12 @@ export function useDraggable(config: UseDraggableConfig): UseDraggableReturn {
           if (started) dragManager.drop(upEvent)
         }
 
+        // The browser took over the pointer (e.g. a native text drag): no pointerup will follow
+        const handleCancel = () => {
+          cleanup()
+          if (started) dragManager.cancelDrop()
+        }
+
         const handleKey = (keyEvent: KeyboardEvent) => {
           if (keyEvent.key !== 'Escape') return
           if (started) {
@@ -120,6 +127,7 @@ export function useDraggable(config: UseDraggableConfig): UseDraggableReturn {
 
         window.addEventListener('pointermove', handleMove)
         window.addEventListener('pointerup', handleUp)
+        window.addEventListener('pointercancel', handleCancel)
         window.addEventListener('keydown', handleKey, true)
       },
     },

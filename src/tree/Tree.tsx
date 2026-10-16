@@ -610,6 +610,7 @@ function TreeRow(props: TreeRowProps) {
       <div
         className={[
           styles.row,
+          draggable ? styles.rowDraggable : '',
           selected ? styles.rowSelected : '',
           disabled ? styles.rowDisabled : '',
         ].filter(Boolean).join(' ')}
