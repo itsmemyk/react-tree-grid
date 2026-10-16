@@ -1299,6 +1299,7 @@ function GridInner<T extends GridRow>({
     virtual.scrollLeft,
   ])
 
+  const seenFilterValuesRef = useRef(new Map<string, Set<string>>())
   const renderHeaderCellContent = (
     column: NormalizedColumn<T>,
     cell: NormalizedHeaderCell,
@@ -1314,8 +1315,15 @@ function GridInner<T extends GridRow>({
     }
 
     const filterValue = gridFilter.values[column.id]
-    // Without a store, offer the column's declared options, else the loaded rows' values
-    const filterOptions = column.filterOptions ?? (store ? undefined : distinctValues(activeData, column.id))
+    // Without a store, offer the column's declared options, else every value seen
+    // so far: a filtered page alone would shrink the choices to the current pick
+    let filterOptions = column.filterOptions
+    if (!filterOptions && !store) {
+      const seen = seenFilterValuesRef.current.get(column.id) ?? new Set<string>()
+      for (const value of distinctValues(activeData, column.id)) seen.add(value)
+      seenFilterValuesRef.current.set(column.id, seen)
+      filterOptions = Array.from(seen).sort()
+    }
 
     switch (cell.content) {
       case 'selectFilter':

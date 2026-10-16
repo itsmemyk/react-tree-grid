@@ -2877,5 +2877,33 @@ describe('Grid', () => {
       vi.useRealTimers()
     }
   })
+
+  it('keeps every value seen in a remote select filter without filterOptions', async () => {
+    const fetchFn = async (url: string) => {
+      const team = /filter%5Bteam%5D=(\w+)|filter\[team\]=(\w+)/.exec(url)
+      const rows = [{ id: '1', team: 'A' }, { id: '2', team: 'B' }].filter((r) => !team || r.team === (team[1] ?? team[2]))
+      return { ok: true, json: async () => ({ data: rows, total: rows.length }) } as Response
+    }
+    render(
+      <ThemeProvider>
+        <Grid
+          columns={[{ id: 'team', header: [{ text: 'Team' }, { content: 'selectFilter' }], width: 120 }]}
+          data={[]}
+          dataProxy={{ url: 'https://api.test/rows', fetchFn }}
+          remoteFilter
+          style={{ width: 300, height: 200 }}
+        />
+      </ThemeProvider>,
+    )
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    const select = () => document.querySelector('[data-rgs-filter="select"]') as HTMLSelectElement
+    await act(async () => {
+      fireEvent.change(select(), { target: { value: 'B' } })
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    expect(Array.from(select().options).map((o) => o.value)).toEqual(['', 'A', 'B'])
+  })
 })
 
