@@ -63,6 +63,7 @@ export const TreeGrid = forwardRef<TreeGridRef, TreeGridProps<TreeGridRow>>(func
     groupBy,
     groupAggregate,
     onCellClick,
+    onAfterSelect,
     onDragRowIn,
     onDragRowOut,
     canRowDrop,
@@ -72,6 +73,8 @@ export const TreeGrid = forwardRef<TreeGridRef, TreeGridProps<TreeGridRow>>(func
   } = props
 
   const expandTimerRef = useRef<number | null>(null)
+  // The row selected last (click, Ctrl+click or keyboard); tree keys act on it
+  const lastSelectedRef = useRef<string | null>(null)
   const normalizedData = useMemo(() => {
     let rows = cloneRows(data as InternalTreeGridRow[])
     if (groupBy && !gridProps.dataProxy) {
@@ -271,8 +274,13 @@ export const TreeGrid = forwardRef<TreeGridRef, TreeGridProps<TreeGridRow>>(func
         if (cell.getAttribute('data-rgs-col-id') !== activeTreeColumnId) return
         rowId = cell.closest('[data-rgs-id]')?.getAttribute('data-rgs-id')
       } else {
-        // Row selection marks no cell, so act on the selected row
-        rowId = event.currentTarget.querySelector(`.${gridStyles.rowSelected}[data-rgs-id]`)?.getAttribute('data-rgs-id')
+        // Row selection marks no cell: act on the row selected last, if it still is
+        const root = event.currentTarget
+        const isSelected = (id: string | null) =>
+          !!id && !!root.querySelector(`.${gridStyles.rowSelected}[data-rgs-id="${CSS.escape(id)}"]`)
+        rowId = isSelected(lastSelectedRef.current)
+          ? lastSelectedRef.current
+          : root.querySelector(`.${gridStyles.rowSelected}[data-rgs-id]`)?.getAttribute('data-rgs-id')
       }
       if (rowId && setOpened(rowId, event.key === 'ArrowRight')) {
         event.preventDefault()
@@ -366,6 +374,10 @@ export const TreeGrid = forwardRef<TreeGridRef, TreeGridProps<TreeGridRow>>(func
         data={flatRows}
         store={store}
         onCellClick={handleCellClick}
+        onAfterSelect={(rowId, colId) => {
+          lastSelectedRef.current = rowId
+          onAfterSelect?.(rowId, colId)
+        }}
         onDragRowIn={handleDragRowIn}
         onDragRowOut={handleDragRowOut}
         canRowDrop={handleCanRowDrop}
