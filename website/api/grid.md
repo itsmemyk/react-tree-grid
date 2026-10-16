@@ -29,7 +29,7 @@ import { Grid } from '@itsmemyk/react-tree-grid/grid'
 | `headerRowHeight` | `number` | — | Header row height in px |
 | `footerRowHeight` | `number` | — | Footer row height in px |
 | `autoWidth` | `boolean` | `false` | Distribute remaining width across flexible columns |
-| `autoHeight` | `boolean` | `false` | Wrap rows to tallest cell height |
+| `autoHeight` | `boolean` | `false` | Grow each row to fit its wrapped cell content (re-measured after column resize) |
 | `headerAutoHeight` | `boolean` | `false` | Wrap header to tallest cell |
 | `adjust` | `boolean \| 'data' \| 'header' \| 'footer'` | — | Auto-fit column widths |
 
@@ -105,6 +105,7 @@ See the [Grouping guide](/guide/grouping) for usage examples.
 | `onBeforeRowDrag` | `(data, event) => boolean \| void` | |
 | `onDragRowStart` | `(data, event) => void` | |
 | `canRowDrop` | `(data, event) => boolean \| void` | Return `false` to reject drop target |
+| `getRowDropIndent` | `(rowId, position) => number` | Indent in px for the drop line (TreeGrid shows the landing level) |
 | `onBeforeRowDrop` | `(data, event) => boolean \| void` | |
 | `onAfterRowDrop` | `(data, event) => void` | |
 | `onAfterRowDrag` | `(data, event) => void` | |

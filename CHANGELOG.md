@@ -1,5 +1,94 @@
 # Changelog
 
+## [0.7.1] - 2026-10-16
+
+### Added
+
+- **Remote header filters without a store** — `inputFilter`, `selectFilter` and `comboFilter` headers now render on `dataProxy` + `remoteFilter` grids. New `filterOptions` column field gives select/combo filters their choices.
+- **Remote multi-column sort** — Ctrl+click sorts send every rule to the server as repeated `sortBy`/`sortDir` params (primary first). `LoadOptions` gains a `sort` field.
+- **`getRowDropIndent`** grid prop indents the row drop line; TreeGrid uses it to show the level a dropped row will land at.
+- **Keyboard**
+  - F2 starts editing.
+  - Space toggles `boolean`/`checkbox` cells in place.
+  - The first arrow key selects the first cell.
+  - The combo header filter supports arrows, Enter and Escape.
+  - TreeGrid opens/closes rows with ArrowRight/ArrowLeft.
+- **Tree**
+  - Full WAI-ARIA keyboard navigation (roving tabindex, arrows, Home/End, Enter, Space, F2).
+  - Tri-state checkboxes that cascade to enabled children.
+  - A `style` prop, `aria-level`/`posinset`/`setsize`/`checked`/`disabled`.
+  - Auto-expand on drag hover.
+- **TreeGrid**
+  - Filtering opens collapsed parents that hold matches (and closes them again when cleared).
+  - Group rows show `value (count)` at every level.
+  - Editing the tree column keeps the indent and arrow visible.
+
+### Changed
+
+- `onCheck` (Tree) reports cascaded ids: checking a node also checks its enabled descendants.
+- Tab only stays in the grid when it moves to another cell, so focus can leave at either end.
+- Column drops land before or after the target depending on which half the pointer is over.
+- Empty values sort last in ascending order; numbers compare numerically and Dates chronologically.
+- `onFreeze` reports the frozen column count actually applied (it is capped when the grid is too narrow).
+- CSV downloads start with a UTF-8 BOM and write dates in local time; Excel export keeps numeric-looking text as text and writes Dates as date cells.
+
+### Fixed
+
+- **Tree**
+  - Drops were undone at once.
+  - Drops landed one place too far.
+  - Expansion desynced after `data` changes.
+  - Drops into a node's own subtree were accepted.
+  - Dropping over an SVG icon cancelled the drop.
+  - The drop indicator showed without a drag.
+  - Disabled nodes could be selected, checked, edited or dragged.
+  - Escape saved edits.
+  - The click after a drag selected a node.
+  - Text selection could leave a stuck drag ghost.
+- **TreeGrid**
+  - Drops above an earlier sibling did nothing.
+  - Drops below an open parent landed after its subtree.
+  - Filtering reordered rows.
+  - Footer totals ignored filters.
+  - Nested group rows had no label.
+  - Toggle clicks changed the selection.
+  - Ctrl+Enter fired from editors and filters.
+  - `dropBehaviour="child"` hid the dropped row inside a closed parent.
+- **Editing**
+  - Shift+Tab in an editor moved forward.
+  - The focused cell didn't follow Tab.
+  - Number columns stored text.
+  - JSX templates showed `[object Object]` with formulas on.
+- **Sorting**
+  - Sorts applied in code weren't shown in headers and were dropped by Ctrl+click.
+  - The first header click after a column drag was ignored.
+  - The first group-sort click did nothing.
+  - Remote sorts were re-sorted on the client.
+- **Remote data**
+  - A slow old response could overwrite a newer one.
+  - Polling dropped sort/filter and wiped appended pages.
+  - Paging kept requesting past the last page.
+  - A sort clicked during a filter debounce was lost.
+  - Reloads didn't scroll to the top.
+- **Layout**
+  - Frozen panes were 1px off at the scroll end, with a 2px gap before right-frozen columns.
+  - `autoWidth` overflowed by the scrollbar width.
+  - Cell spans vanished when scrolled and weren't drawn in frozen columns.
+  - Frozen columns could hide the scrolling area and freeze handle.
+  - `autoHeight` rows didn't re-measure after a resize.
+  - The header could drift from the body.
+- **Tooltips** — squashed at the window edge, unthemed, wrong font, wrong text on span cells.
+- **Formulas**
+  - References to other formula cells failed.
+  - Indirect cycles weren't detected.
+  - Comparison operators bound tighter than `*`/`+`.
+  - Added `^`, `.5` literals, `AVERAGE`.
+  - MIN/MAX of an empty range returned Infinity.
+- **Row drag** — the drag ghost was unstyled, the drop line was clipped below the last row, and auto-scroll stopped when the pointer rested at the edge.
+- **Focus and listeners**
+  - Tab stopped on inner scroll areas.
+  - Header/filter/footer listeners leaked after unmount.
+
 ## [0.7.0] - 2026-10-08
 
 ### Added

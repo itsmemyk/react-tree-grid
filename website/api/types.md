@@ -20,7 +20,8 @@ import type { GridColumn } from '@itsmemyk/react-tree-grid/grid'
 | `sortable` | `boolean` | Enable sort on this column |
 | `resizable` | `boolean` | Enable resize handle |
 | `type` | `GridColumnType` | Value type for render and sort |
-| `editorType` | `GridEditorType` | Editor widget when `editable` is on |
+| `editorType` | `GridEditorType` | Makes the column editable; every value currently opens the built-in text input |
+| `filterOptions` | `string[]` | Choices for a select/combo header filter; set it for remote filtering |
 | `template` | `(value, row, col) => ReactNode` | Custom cell renderer |
 | `align` | `'left' \| 'center' \| 'right'` | Cell text alignment |
 | `adjust` | `boolean \| 'data' \| 'header' \| 'footer'` | Per-column auto-fit |

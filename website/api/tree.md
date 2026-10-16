@@ -22,13 +22,14 @@ import { Tree } from '@itsmemyk/react-tree-grid/tree'
 | `selected` | `string[]` | — | Controlled selected node IDs |
 | `checked` | `string[]` | — | Controlled checked node IDs |
 | `css` | `string` | — | Extra CSS class on root element |
+| `style` | `CSSProperties` | — | Inline style on root element |
 
 ## Events
 
 | Prop | Signature | Description |
 |---|---|---|
 | `onSelect` | `(id: string) => void` | Fires when a node is clicked |
-| `onCheck` | `(ids: string[]) => void` | Fires when a checkbox changes; receives full checked set |
+| `onCheck` | `(ids: string[]) => void` | Fires when a checkbox changes; receives full checked set. Checking a node also checks its enabled descendants |
 | `onExpand` | `(id: string) => void` | Fires when a node is expanded |
 | `onCollapse` | `(id: string) => void` | Fires when a node is collapsed |
 | `onEdit` | `(id: string, newValue: string) => void` | Fires after label edit confirmed |

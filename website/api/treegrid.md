@@ -18,8 +18,8 @@ TreeGrid accepts all [Grid props](/api/grid) plus these additional ones:
 | `treeColumnId` | `string` | — | Column ID that renders the expand toggle |
 | `collapsed` | `boolean` | `false` | Start all nodes collapsed |
 | `rootParent` | `string` | — | Root parent ID for partial tree rendering |
-| `dropBehaviour` | `'child' \| 'sibling' \| 'complex'` | `'complex'` | How dropped rows are inserted |
-| `dragExpand` | `boolean` | `false` | Auto-expand nodes when hovering during drag |
+| `dropBehaviour` | `'child' \| 'sibling' \| 'complex'` | `'sibling'` | How dropped rows are inserted: `'sibling'` before/after the target (first child below an open parent), `'child'` as the target's last child; `'complex'` currently behaves like `'sibling'` |
+| `dragExpand` | `boolean` | `true` | Auto-expand collapsed nodes held under the pointer during a drag |
 | `groupBy` | `string \| string[]` | — | Group flat rows by field value |
 | `groupAggregate` | `GroupAggregateConfig` | — | Aggregation config for grouped rows |
 
