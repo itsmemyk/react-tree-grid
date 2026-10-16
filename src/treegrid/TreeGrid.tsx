@@ -239,8 +239,14 @@ export const TreeGrid = forwardRef<TreeGridRef, TreeGridProps<TreeGridRow>>(func
     // On the tree column, Right/Left open and close a row before moving between cells
     if ((event.key === 'ArrowRight' || event.key === 'ArrowLeft') && !ctrl && !event.shiftKey) {
       const cell = event.currentTarget.querySelector(`.${gridStyles.cellSelected}[data-rgs-col-id]`) as HTMLElement | null
-      if (cell?.getAttribute('data-rgs-col-id') !== activeTreeColumnId) return
-      const rowId = cell.closest('[data-rgs-id]')?.getAttribute('data-rgs-id')
+      let rowId: string | null | undefined
+      if (cell) {
+        if (cell.getAttribute('data-rgs-col-id') !== activeTreeColumnId) return
+        rowId = cell.closest('[data-rgs-id]')?.getAttribute('data-rgs-id')
+      } else {
+        // Row selection marks no cell, so act on the selected row
+        rowId = event.currentTarget.querySelector(`.${gridStyles.rowSelected}[data-rgs-id]`)?.getAttribute('data-rgs-id')
+      }
       if (rowId && setOpened(rowId, event.key === 'ArrowRight')) {
         event.preventDefault()
         event.stopPropagation()
