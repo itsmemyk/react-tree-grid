@@ -1074,7 +1074,6 @@ function GridInner<T extends GridRow>({
     containerRef: bodyRef as React.RefObject<HTMLDivElement | null>,
     columnWidths: normalizedColumns.map((c) => c.$width),
     initialFreezeCol: leftSplit,
-    onFreeze: onFreeze ? (col) => onFreeze({ left: col, top: 0 }) : undefined,
   })
   const requestedLeftSplit = freezable ? freezeHook.freezeCol : leftSplit
   // Frozen columns wider than the body would hide the scrolling area and the
@@ -1092,6 +1091,15 @@ function GridInner<T extends GridRow>({
     }
     return split
   }, [displayColumns, bodyBox, viewportSize.width, requestedLeftSplit, rightSplit])
+
+  // Report the frozen count that is actually applied: after a handle drag, and
+  // whenever the width cap above changes it (e.g. the grid narrows or widens)
+  const reportedFreezeRef = useRef(effectiveLeftSplit)
+  useEffect(() => {
+    if (!freezable || freezeHook.isDragging || reportedFreezeRef.current === effectiveLeftSplit) return
+    reportedFreezeRef.current = effectiveLeftSplit
+    onFreeze?.({ left: effectiveLeftSplit, top: 0 })
+  }, [freezable, freezeHook.isDragging, effectiveLeftSplit, onFreeze])
 
   const fixedLeftColumns = displayColumns.slice(0, effectiveLeftSplit)
   const fixedRightColumns =

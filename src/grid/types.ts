@@ -279,6 +279,7 @@ export interface GridProps<T extends GridRow = GridRow> {
 
   // Freeze panes
   freezable?: boolean
+  /** Fires with the frozen column count actually applied: after a handle drag, and when the grid gets too narrow (or wide again) for the requested count */
   onFreeze?: (splits: { left: number; top: number }) => void
 
   // Formula engine
