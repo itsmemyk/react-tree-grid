@@ -2801,4 +2801,39 @@ describe('Grid', () => {
       expect(screen.getByText('Frozen span')).toBeTruthy()
     })
   })
+
+  it('renders header filters for remote filtering without a store and sends them to the server', async () => {
+    const urls: string[] = []
+    const fetchFn = async (url: string) => {
+      urls.push(url)
+      return { ok: true, json: async () => ({ data: [{ id: '1', name: 'Alice', team: 'A' }], total: 1 }) } as Response
+    }
+    render(
+      <ThemeProvider>
+        <Grid
+          columns={[
+            { id: 'name', header: [{ text: 'Name' }, { content: 'inputFilter' }], width: 120 },
+            { id: 'team', header: [{ text: 'Team' }, { content: 'selectFilter' }], width: 120, filterOptions: ['A', 'B'] },
+          ]}
+          data={[]}
+          dataProxy={{ url: 'https://api.test/rows', fetchFn }}
+          remoteFilter
+          style={{ width: 300, height: 200 }}
+        />
+      </ThemeProvider>,
+    )
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    const select = document.querySelector('[data-rgs-filter="select"]') as HTMLSelectElement
+    expect(select).toBeTruthy()
+    expect(Array.from(select.options).map((o) => o.value)).toEqual(['', 'A', 'B'])
+    expect(document.querySelector('[data-rgs-filter] input, input')).toBeTruthy()
+    await act(async () => {
+      fireEvent.change(select, { target: { value: 'B' } })
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    expect(decodeURIComponent(urls.at(-1) ?? '')).toContain('filter[team]=B')
+  })
 })
+

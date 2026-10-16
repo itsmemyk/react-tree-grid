@@ -5,7 +5,10 @@ import styles from './filters.module.css'
 
 interface SelectFilterProps<T extends GridRow> {
   column: GridColumn<T>
-  store: DataStore<T>
+  /** Source of the distinct values; optional when `options` is given */
+  store?: DataStore<T>
+  /** Fixed choices, used instead of scanning the store */
+  options?: string[]
   value: unknown
   onChange: (value: string | null) => void
 }
@@ -19,18 +22,22 @@ interface SelectFilterProps<T extends GridRow> {
 export function SelectFilter<T extends GridRow>({
   column,
   store,
+  options: fixedOptions,
   value,
   onChange,
 }: SelectFilterProps<T>) {
   const [filterVersion, setFilterVersion] = useState(0)
 
   useEffect(() => {
+    if (!store) return
     const ctx = {}
     store.events.on('filter', () => setFilterVersion((v) => v + 1), ctx)
     return () => store.events.detach('filter', ctx)
   }, [store])
 
   const options = useMemo(() => {
+    if (fixedOptions) return fixedOptions
+    if (!store) return []
     const seen = new Set<string>()
     const source = store._initFilterOrder ?? store._order
     for (const item of source) {
@@ -40,7 +47,7 @@ export function SelectFilter<T extends GridRow>({
       }
     }
     return Array.from(seen).sort()
-  }, [filterVersion, store, column.id])
+  }, [filterVersion, store, column.id, fixedOptions])
 
   const handleChange = (event: ChangeEvent<HTMLSelectElement>) => {
     const v = event.target.value

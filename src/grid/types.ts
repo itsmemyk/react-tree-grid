@@ -88,6 +88,11 @@ export interface GridColumn<T = Record<string, unknown>> {
   gravity?: number
   type?: GridColumnType
   editorType?: GridEditorType
+  /**
+   * Choices for a selectFilter/comboFilter header. Defaults to the column's
+   * distinct values; set it for remote filtering, where only one page is loaded.
+   */
+  filterOptions?: string[]
   /** Render a custom inline editor. Implies the column is editable. */
   editTemplate?: (
     value: unknown,

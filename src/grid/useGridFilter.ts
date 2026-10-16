@@ -31,7 +31,8 @@ export function useGridFilter<T extends GridRow>(
     (onStoreChange: () => void) => {
       if (!store) return () => {}
       const handler = () => onStoreChange()
-      store.events.on('filter', handler)
+      // The handler doubles as the context, which is what detach() matches on
+      store.events.on('filter', handler, handler)
       return () => store.events.detach('filter', handler)
     },
     [store],
@@ -98,13 +99,19 @@ export function useGridFilter<T extends GridRow>(
   )
 
   const clearFilters = useCallback(() => {
+    if (onRemoteFilter) {
+      filterValues.current = {}
+      onRemoteFilter({})
+      version.current++
+      return
+    }
     if (!store) return
     for (const columnId of Object.keys(filterValues.current)) {
       store.resetFilter({ id: `__hf_${columnId}` })
     }
     filterValues.current = {}
     version.current++
-  }, [store])
+  }, [store, onRemoteFilter])
 
   return {
     values: filterValues.current,

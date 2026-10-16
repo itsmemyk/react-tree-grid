@@ -16,7 +16,10 @@ import styles from './filters.module.css'
 
 interface ComboFilterProps<T extends GridRow> {
   column: GridColumn<T>
-  store: DataStore<T>
+  /** Source of the distinct values; optional when `options` is given */
+  store?: DataStore<T>
+  /** Fixed choices, used instead of scanning the store */
+  options?: string[]
   value: unknown
   onChange: (value: string | null) => void
 }
@@ -24,6 +27,7 @@ interface ComboFilterProps<T extends GridRow> {
 export function ComboFilter<T extends GridRow>({
   column,
   store,
+  options: fixedOptions,
   value,
   onChange,
 }: ComboFilterProps<T>) {
@@ -37,12 +41,15 @@ export function ComboFilter<T extends GridRow>({
   const dropdownRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
+    if (!store) return
     const ctx = {}
     store.events.on('filter', () => setFilterVersion((v) => v + 1), ctx)
     return () => store.events.detach('filter', ctx)
   }, [store])
 
   const allOptions = useMemo(() => {
+    if (fixedOptions) return fixedOptions
+    if (!store) return []
     const seen = new Set<string>()
     const source = store._initFilterOrder ?? store._order
     for (const item of source) {
@@ -52,7 +59,7 @@ export function ComboFilter<T extends GridRow>({
       }
     }
     return Array.from(seen).sort()
-  }, [filterVersion, store, column.id])
+  }, [filterVersion, store, column.id, fixedOptions])
 
   const filtered = useMemo(() => {
     if (!search) return allOptions

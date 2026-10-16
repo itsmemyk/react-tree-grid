@@ -112,6 +112,15 @@ function normalizeColumns<T extends GridRow>(
 /** Width of scrolling area kept visible when frozen columns would fill the body */
 const MIN_CENTER_WIDTH = 80
 
+function distinctValues(rows: GridRow[], columnId: string): string[] {
+  const seen = new Set<string>()
+  for (const row of rows) {
+    const value = row[columnId]
+    if (value !== null && value !== undefined && value !== '') seen.add(String(value))
+  }
+  return Array.from(seen).sort()
+}
+
 function getCellValue<T extends GridRow>(
   row: T,
   column: NormalizedColumn<T>,
@@ -1283,7 +1292,9 @@ function GridInner<T extends GridRow>({
     cell: NormalizedHeaderCell,
     rowIndex: number,
   ) => {
-    if (!cell.content || !store) {
+    // Remote filtering needs no store: the server applies the filter
+    const remoteFiltering = !!(remoteFilter && dataProxy)
+    if (!cell.content || (!store && !remoteFiltering)) {
       if (rowIndex === 0) {
         return cell.text ?? column.id
       }
@@ -1291,6 +1302,8 @@ function GridInner<T extends GridRow>({
     }
 
     const filterValue = gridFilter.values[column.id]
+    // Without a store, offer the column's declared options, else the loaded rows' values
+    const filterOptions = column.filterOptions ?? (store ? undefined : distinctValues(activeData, column.id))
 
     switch (cell.content) {
       case 'selectFilter':
@@ -1298,6 +1311,7 @@ function GridInner<T extends GridRow>({
           <SelectFilter
             column={column}
             store={store}
+            options={filterOptions}
             value={filterValue}
             onChange={(v) => gridFilter.setFilterValue(column.id, v)}
           />
@@ -1315,6 +1329,7 @@ function GridInner<T extends GridRow>({
           <ComboFilter
             column={column}
             store={store}
+            options={filterOptions}
             value={filterValue}
             onChange={(v) => gridFilter.setFilterValue(column.id, v)}
           />
