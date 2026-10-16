@@ -66,3 +66,67 @@ describe('useFormulas', () => {
     expect(result.current.getComputedValue('r2', 1)).toBe(40)
   })
 })
+
+describe('useFormulas cross-formula references', () => {
+  type R = { id: string; A: unknown; B: unknown; C: unknown; D: unknown }
+  const cols = ['A', 'B', 'C', 'D']
+
+  it('evaluates a formula that references another formula cell', () => {
+    const rows: R[] = [{ id: 'r1', A: 0, B: 10, C: '=B1*2', D: '=C1+1' }]
+    const { result } = renderHook(() => useFormulas(undefined, rows, cols, true))
+    expect(result.current.getComputedValue('r1', 2)).toBe(20)
+    expect(result.current.getComputedValue('r1', 3)).toBe(21)
+  })
+
+  it('resolves forward references regardless of evaluation order', () => {
+    const rows: R[] = [{ id: 'r1', A: '=B1+1', B: '=C1*2', C: 5, D: 0 }]
+    const { result } = renderHook(() => useFormulas(undefined, rows, cols, true))
+    expect(result.current.getComputedValue('r1', 0)).toBe(11)
+    expect(result.current.getComputedValue('r1', 1)).toBe(10)
+  })
+
+  it('sums a range of formula cells', () => {
+    const rows: R[] = [
+      { id: 'r1', A: 0, B: 10, C: '=B1*2', D: '=SUM(C1:C2)' },
+      { id: 'r2', A: 0, B: 3, C: '=B2*2', D: 0 },
+    ]
+    const { result } = renderHook(() => useFormulas(undefined, rows, cols, true))
+    expect(result.current.getComputedValue('r1', 3)).toBe(26)
+  })
+
+  it('marks every cell of a mutual reference cycle as #CIRC', () => {
+    const rows: R[] = [{ id: 'r1', A: 0, B: 0, C: '=D1+1', D: '=C1+1' }]
+    const { result } = renderHook(() => useFormulas(undefined, rows, cols, true))
+    expect(result.current.getComputedValue('r1', 2)).toBe('#CIRC')
+    expect(result.current.getComputedValue('r1', 3)).toBe('#CIRC')
+  })
+
+  it('marks every cell of a longer cycle as #CIRC', () => {
+    const rows: R[] = [{ id: 'r1', A: '=B1', B: '=C1', C: '=A1', D: '=A1+1' }]
+    const { result } = renderHook(() => useFormulas(undefined, rows, cols, true))
+    expect(result.current.getComputedValue('r1', 0)).toBe('#CIRC')
+    expect(result.current.getComputedValue('r1', 1)).toBe('#CIRC')
+    expect(result.current.getComputedValue('r1', 2)).toBe('#CIRC')
+    // D depends on the cycle, so it inherits the error
+    expect(result.current.getComputedValue('r1', 3)).toBe('#CIRC')
+  })
+
+  it('detects a cycle through a range', () => {
+    const rows: R[] = [{ id: 'r1', A: 1, B: '=SUM(A1:C1)', C: '=B1', D: 0 }]
+    const { result } = renderHook(() => useFormulas(undefined, rows, cols, true))
+    expect(result.current.getComputedValue('r1', 1)).toBe('#CIRC')
+    expect(result.current.getComputedValue('r1', 2)).toBe('#CIRC')
+  })
+
+  it('still detects self reference', () => {
+    const rows: R[] = [{ id: 'r1', A: '=A1+1', B: 0, C: 0, D: 0 }]
+    const { result } = renderHook(() => useFormulas(undefined, rows, cols, true))
+    expect(result.current.getComputedValue('r1', 0)).toBe('#CIRC')
+  })
+
+  it('propagates parse errors of referenced formula cells', () => {
+    const rows: R[] = [{ id: 'r1', A: '=NOPE(', B: '=A1+1', C: 0, D: 0 }]
+    const { result } = renderHook(() => useFormulas(undefined, rows, cols, true))
+    expect(result.current.getComputedValue('r1', 1)).toBe('#ERR')
+  })
+})

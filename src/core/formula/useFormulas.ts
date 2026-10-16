@@ -12,29 +12,47 @@ function buildComputed<T extends DataItem>(
 ): Map<string, Map<number, unknown>> {
   const result = new Map<string, Map<number, unknown>>()
 
+  // Evaluated formula values keyed by "col:row" (row is 1-based).
+  const memo = new Map<string, unknown>()
+  // Formula cells currently being evaluated. Reaching one of them again means
+  // the reference chain loops back, so every cell on that chain is circular.
+  const inProgress = new Set<string>()
+
+  const isFormula = (v: unknown): v is string => typeof v === 'string' && v.startsWith('=')
+
   const getCellValue = (col: number, row: number): unknown => {
     const item = rows[row - 1]
     if (!item) return undefined
-    return item[columnIds[col] as keyof T]
+    const raw = item[columnIds[col] as keyof T]
+    if (!isFormula(raw)) return raw
+
+    const key = `${col}:${row}`
+    if (memo.has(key)) return memo.get(key)
+    if (inProgress.has(key)) return '#CIRC'
+
+    inProgress.add(key)
+    let value: unknown
+    try {
+      value = evaluateFormula(parseFormula(raw), getCellValue, inProgress)
+    } catch {
+      value = '#ERR'
+    } finally {
+      inProgress.delete(key)
+    }
+    memo.set(key, value)
+    return value
   }
 
   for (let rowIdx = 0; rowIdx < rows.length; rowIdx++) {
     const item = rows[rowIdx]
-    const rowId = item.id
     if (!item) continue
+    const rowId = item.id
 
     for (let colIdx = 0; colIdx < columnIds.length; colIdx++) {
       const raw = item[columnIds[colIdx] as keyof T]
-      if (typeof raw !== 'string' || !raw.startsWith('=')) continue
+      if (!isFormula(raw)) continue
 
-      let computed: unknown
-      try {
-        const ast = parseFormula(raw)
-        const visiting = new Set<string>([`${colIdx}:${rowIdx + 1}`])
-        computed = evaluateFormula(ast, getCellValue, visiting)
-      } catch {
-        computed = '#ERR'
-      }
+      const computed = getCellValue(colIdx, rowIdx + 1)
 
       if (!result.has(rowId)) result.set(rowId, new Map())
       result.get(rowId)!.set(colIdx, computed)
