@@ -2716,4 +2716,23 @@ describe('Grid', () => {
       })
     })
   })
+
+  it('renders JSX templates and formats formula results through the template when formulas are on', () => {
+    render(
+      <ThemeProvider>
+        <Grid
+          columns={[
+            { id: 'a', header: [{ text: 'A' }], width: 80, template: (v) => <b data-testid={`a-${v}`}>{String(v)}</b> },
+            { id: 'b', header: [{ text: 'B' }], width: 80, template: (v) => `$${v}` },
+          ]}
+          data={[{ id: '1', a: 10, b: '=A1*2' }]}
+          formulas
+          style={{ width: 200, height: 120 }}
+        />
+      </ThemeProvider>,
+    )
+    expect(screen.getByTestId('a-10')).toBeTruthy()
+    expect(screen.getByText('$20')).toBeTruthy()
+    expect(screen.queryByText('[object Object]')).toBeNull()
+  })
 })

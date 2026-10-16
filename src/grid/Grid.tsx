@@ -109,8 +109,10 @@ function normalizeColumns<T extends GridRow>(
 function getCellValue<T extends GridRow>(
   row: T,
   column: NormalizedColumn<T>,
+  computed?: unknown,
 ): React.ReactNode {
-  const value = row[column.id]
+  // A formula result replaces the raw "=..." text but still goes through the template
+  const value = computed !== undefined ? computed : row[column.id]
   if (column.template) {
     return column.template(value, row, column)
   }
@@ -301,9 +303,7 @@ function renderRow<T extends GridRow>(
                 onBlur={interaction?.onEditorBlur}
               />
             ) : (
-              interaction?.getComputedValue != null
-                ? String(interaction.getComputedValue(row.id, column.id) ?? getCellValue(row, column))
-                : getCellValue(row, column)
+              getCellValue(row, column, interaction?.getComputedValue?.(row.id, column.id) ?? undefined)
             )}
           </div>
         )
