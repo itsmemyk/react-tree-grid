@@ -127,15 +127,22 @@ export const TreeGrid = forwardRef<TreeGridRef, TreeGridProps<TreeGridRow>>(func
         const opened = !!store.getItem(row.id)?.$opened
         return (
           <div className={styles.treeCell} style={{ paddingInlineStart: `${level * 18}px` }}>
-            <button
-              type="button"
-              className={styles.toggle}
-              data-rgs-tree-toggle={row.id}
-              aria-label={opened ? 'Collapse row' : 'Expand row'}
-              onDoubleClick={(e) => e.stopPropagation()}
-            >
-              {hasChildren ? (opened ? '▾' : '▸') : ''}
-            </button>
+            {hasChildren ? (
+              <button
+                type="button"
+                className={styles.toggle}
+                tabIndex={-1}
+                data-rgs-tree-toggle={row.id}
+                data-rgs-no-select=""
+                aria-label={opened ? 'Collapse row' : 'Expand row'}
+                aria-expanded={opened}
+                onDoubleClick={(e) => e.stopPropagation()}
+              >
+                {opened ? '▾' : '▸'}
+              </button>
+            ) : (
+              <span className={styles.toggle} aria-hidden="true" />
+            )}
             <span className={styles.cellValue}>
               {originalTemplate ? originalTemplate(value, row, col) : String(value ?? '')}
             </span>
@@ -178,15 +185,36 @@ export const TreeGrid = forwardRef<TreeGridRef, TreeGridProps<TreeGridRow>>(func
     onCellClick?.(rowId, colId, event)
   }
 
-  const handleKeyDown: React.KeyboardEventHandler<HTMLDivElement> = (event) => {
-    if (!(event.ctrlKey || event.metaKey) || event.key !== 'Enter') return
-    const selectedRow = event.currentTarget.querySelector(`.${gridStyles.rowSelected}[data-rgs-id]`) as HTMLElement | null
-    const rowId = selectedRow?.getAttribute('data-rgs-id')
-    if (!rowId) return
+  const setOpened = (rowId: string, opened: boolean): boolean => {
     const item = store.getItem(rowId)
-    if (item && store.haveItems(rowId)) {
-      store.update(rowId, { $opened: !item.$opened } as Partial<InternalTreeGridRow>)
-      event.preventDefault()
+    if (!item || !store.haveItems(rowId) || !!item.$opened === opened) return false
+    store.update(rowId, { $opened: opened } as Partial<InternalTreeGridRow>)
+    return true
+  }
+
+  // Runs in the capture phase so tree keys win over the grid's cell navigation
+  const handleKeyDownCapture: React.KeyboardEventHandler<HTMLDivElement> = (event) => {
+    // Keys typed into editors and header filters belong to those fields
+    if ((event.target as HTMLElement).closest('input, textarea, select, [contenteditable="true"]')) return
+    const ctrl = event.ctrlKey || event.metaKey
+
+    if (ctrl && event.key === 'Enter') {
+      const selectedRow = event.currentTarget.querySelector(`.${gridStyles.rowSelected}[data-rgs-id]`) as HTMLElement | null
+      const rowId = selectedRow?.getAttribute('data-rgs-id')
+      const item = rowId ? store.getItem(rowId) : null
+      if (rowId && item && setOpened(rowId, !item.$opened)) event.preventDefault()
+      return
+    }
+
+    // On the tree column, Right/Left open and close a row before moving between cells
+    if ((event.key === 'ArrowRight' || event.key === 'ArrowLeft') && !ctrl && !event.shiftKey) {
+      const cell = event.currentTarget.querySelector(`.${gridStyles.cellSelected}[data-rgs-col-id]`) as HTMLElement | null
+      if (cell?.getAttribute('data-rgs-col-id') !== activeTreeColumnId) return
+      const rowId = cell.closest('[data-rgs-id]')?.getAttribute('data-rgs-id')
+      if (rowId && setOpened(rowId, event.key === 'ArrowRight')) {
+        event.preventDefault()
+        event.stopPropagation()
+      }
     }
   }
 
@@ -238,20 +266,28 @@ export const TreeGrid = forwardRef<TreeGridRef, TreeGridProps<TreeGridRow>>(func
       if (dropBehaviour === 'child') {
         store.move(dragData.start, -1, undefined, dragData.target)
       } else {
-        // useRowDrag.applyDrop calls store.move(id, flatIndex) which defaults targetId to root,
-        // breaking tree hierarchy. Redo the move tree-aware: place next to target within its parent.
-        // getParent/getIndex reflect post-applyDrop state (target was never moved, only the dragged item).
-        const parentId = store.getParent(dragData.target) ?? rootId
-        const siblingIndex = store.getIndex(dragData.target)
-        const insertIndex = dragData.position === 'bottom' ? siblingIndex + 1 : siblingIndex
-        store.move(dragData.start, insertIndex, undefined, parentId)
+        // useRowDrag.applyDrop moved the row by flat index under the root, which
+        // breaks the hierarchy; redo the move next to the target within its parent.
+        const target = dragData.target
+        const targetItem = store.getItem(target)
+        if (dragData.position === 'bottom' && targetItem?.$opened && store.haveItems(target)) {
+          // The drop line sits between an open parent and its first child
+          store.move(dragData.start, 0, undefined, target)
+        } else {
+          const parentId = store.getParent(target) ?? rootId
+          // Index among the siblings without the dragged row, which leaves its slot first
+          const siblings = store.getItems(parentId).filter((item) => item.id !== dragData.start)
+          const siblingIndex = siblings.findIndex((item) => item.id === target)
+          const insertIndex = dragData.position === 'bottom' ? siblingIndex + 1 : siblingIndex
+          store.move(dragData.start, insertIndex, undefined, parentId)
+        }
       }
     }
     onAfterRowDrop?.(dragData, event)
   }
 
   return (
-    <div onKeyDown={handleKeyDown}>
+    <div onKeyDownCapture={handleKeyDownCapture}>
       <Grid<InternalTreeGridRow>
         {...gridProps}
         rootParent={rootId}

@@ -1347,7 +1347,10 @@ function GridInner<T extends GridRow>({
     rowDragEnabled: rowDrag.enabled,
     isRowDraggable: (rowId) => !pinnedIds.all.has(rowId),
     onCellClick: (rowId, colId, e) => {
-      gridSelection.handleClick(rowId, colId, e.ctrlKey || e.metaKey, e.shiftKey)
+      // Controls inside a cell (e.g. a tree toggle) can opt out of selecting it
+      if (!(e.target as HTMLElement).closest('[data-rgs-no-select]')) {
+        gridSelection.handleClick(rowId, colId, e.ctrlKey || e.metaKey, e.shiftKey)
+      }
       onCellClick?.(rowId, colId, e)
     },
     onCellDblClick: (rowId, colId, e) => {
