@@ -34,6 +34,16 @@ function moveColumn<T>(columns: T[], fromIndex: number, toIndex: number): T[] {
   return next
 }
 
+/** Which side of the target the column lands on: the half under the pointer. */
+function getDropPosition(event: ReactDragEvent, sourceIndex: number, targetIndex: number): GridColumnDropPosition {
+  const rect = (event.currentTarget as HTMLElement | null)?.getBoundingClientRect?.()
+  if (rect && rect.width > 0) {
+    return event.clientX < rect.left + rect.width / 2 ? 'before' : 'after'
+  }
+  // No layout to measure (e.g. jsdom): fall back to the drag direction
+  return sourceIndex > targetIndex ? 'before' : 'after'
+}
+
 function getZone(index: number, columnCount: number, leftSplit: number, rightSplit: number): 'left' | 'center' | 'right' {
   if (index < leftSplit) {
     return 'left'
@@ -130,8 +140,7 @@ export function useColumnReorder<T extends GridRow>(
         return false
       }
 
-      const position: GridColumnDropPosition =
-        sourceIndex > targetIndex ? 'before' : 'after'
+      const position = getDropPosition(event, sourceIndex, targetIndex)
 
       const data = createDragData(sourceColId, targetColId, position)
       if (events.canColumnDrop?.(data, event) === false) {
@@ -191,8 +200,7 @@ export function useColumnReorder<T extends GridRow>(
       event.dataTransfer.dropEffect = 'move'
       const sourceIndex = orderedColumns.findIndex((column) => column.id === sourceColId)
       const targetIndex = orderedColumns.findIndex((column) => column.id === targetColId)
-      const position: GridColumnDropPosition =
-        sourceIndex > targetIndex ? 'before' : 'after'
+      const position = getDropPosition(event, sourceIndex, targetIndex)
       const nextState = createDragData(sourceColId, targetColId, position)
 
       if (
@@ -234,8 +242,7 @@ export function useColumnReorder<T extends GridRow>(
       const currentColumns = orderedColumns
       const sourceIndex = currentColumns.findIndex((column) => column.id === sourceColId)
       const targetIndex = currentColumns.findIndex((column) => column.id === targetColId)
-      const position: GridColumnDropPosition =
-        sourceIndex > targetIndex ? 'before' : 'after'
+      const position = getDropPosition(event, sourceIndex, targetIndex)
 
       const data = createDragData(sourceColId, targetColId, position)
       if (events.onBeforeColumnDrop?.(data, event) === false) {
@@ -253,7 +260,13 @@ export function useColumnReorder<T extends GridRow>(
           return prev
         }
 
-        const nextIds = moveColumn(prev, sourceIndex, targetIndex)
+        // The source leaves its slot first, shifting later columns left
+        let toIndex = position === 'before' ? targetIndex : targetIndex + 1
+        if (sourceIndex < toIndex) toIndex -= 1
+        if (toIndex === sourceIndex) {
+          return prev
+        }
+        const nextIds = moveColumn(prev, sourceIndex, toIndex)
         events.onAfterColumnDrop?.(data, event)
         return nextIds
       })
