@@ -1031,12 +1031,20 @@ export const RemotePagination: StoryObj = {
   ),
 }
 
+const remoteFilterColumns: GridColumn<Employee>[] = [
+  { id: 'name',   header: [{ text: 'Name' }, { content: 'inputFilter' }], width: 160 },
+  { id: 'role',   header: [{ text: 'Role' }],   width: 140 },
+  // The server holds all rows, so the select gets its choices up front
+  { id: 'team',   header: [{ text: 'Team' }, { content: 'selectFilter' }], width: 120, filterOptions: [...TEAMS] },
+  { id: 'salary', header: [{ text: 'Salary' }, { text: '' }], width: 100 },
+]
+
 export const RemoteSortFilter: StoryObj = {
-  name: 'DataProxy — Remote Sort',
+  name: 'DataProxy — Remote Sort & Filter',
   render: () => (
     <ThemeProvider>
       <Grid
-        columns={proxyColumns}
+        columns={remoteFilterColumns}
         data={[]}
         dataProxy={{
           url: 'https://api.test/employees',
@@ -1045,6 +1053,7 @@ export const RemoteSortFilter: StoryObj = {
         }}
         paginationMode="append"
         remoteSort
+        remoteFilter
         sortable
         style={{ height: 400, width: '100%' }}
       />
