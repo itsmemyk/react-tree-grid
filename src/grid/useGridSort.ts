@@ -1,12 +1,19 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import type { DataStore } from '../core/data'
-import type { DataItem } from '../core/data/types'
+import type { DataItem, SortRule } from '../core/data/types'
+import { DataEvents } from '../core/data/types'
 import type { GridColumn, GridRow, SortOrder, SortState } from './types'
 
 interface GridSortEvents {
   onBeforeSort?: (states: SortState[]) => boolean | void
   onAfterSort?: (states: SortState[]) => void
   onRemoteSort?: (sortBy: string | null, sortDir: string | null) => void
+}
+
+function toSortStates(rules: SortRule[]): SortState[] {
+  return rules
+    .filter((rule) => typeof rule.by === 'string')
+    .map((rule) => ({ columnId: rule.by as string, order: (rule.dir ?? 'asc') as SortOrder }))
 }
 
 /**
@@ -23,7 +30,20 @@ export function useGridSort<T extends GridRow>(
   events: GridSortEvents,
   defaultSortStates?: SortState[],
 ) {
-  const [sortingStates, setSortingStates] = useState<SortState[]>(defaultSortStates ?? [])
+  const [sortingStates, setSortingStates] = useState<SortState[]>(() => {
+    const fromStore = store ? toSortStates(store.getSortingStates()) : []
+    return fromStore.length ? fromStore : defaultSortStates ?? []
+  })
+
+  // Sorts applied straight to the store (e.g. store.sort() in app code) show in the headers
+  useEffect(() => {
+    if (!store) return
+    const context = {}
+    store.events.on(DataEvents.change, (_id: unknown, status: unknown) => {
+      if (status === 'sort') setSortingStates(toSortStates(store.getSortingStates()))
+    }, context)
+    return () => store.events.detach(DataEvents.change, context)
+  }, [store])
 
   const cycleOrder = (current: SortOrder | undefined): SortOrder => {
     if (!current) return 'asc'

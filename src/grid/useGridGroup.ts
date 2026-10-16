@@ -134,7 +134,8 @@ export function useGridGroup<T extends GridRow>(
   const toggleGroupSort = useCallback((colId: string) => {
     setGroupSorts((prev) => ({
       ...prev,
-      [colId]: prev[colId] === 'asc' ? 'desc' : 'asc',
+      // Groups start ascending, so the first toggle flips to descending
+      [colId]: (prev[colId] ?? 'asc') === 'asc' ? 'desc' : 'asc',
     }))
   }, [])
 

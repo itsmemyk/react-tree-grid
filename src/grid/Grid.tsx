@@ -705,9 +705,10 @@ function GridInner<T extends GridRow>({
 
   const baseDataRows = useMemo(() => {
     const filtered = rowDrag.orderedRows.filter((row) => !row.hidden)
-    if (store || gridSort.sortingStates.length === 0) return filtered
+    // A remote sort arrives already ordered by the server
+    if (store || gridSort.sortingStates.length === 0 || (remoteSort && dataProxy)) return filtered
     return sortItems(filtered, gridSort.sortingStates)
-  }, [rowDrag.orderedRows, store, gridSort.sortingStates])
+  }, [rowDrag.orderedRows, store, gridSort.sortingStates, remoteSort, dataProxy])
 
   const visibleDataRows = gridGroup.active ? gridGroup.visibleRows : baseDataRows
 

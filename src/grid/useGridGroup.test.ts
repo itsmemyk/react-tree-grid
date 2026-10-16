@@ -90,11 +90,9 @@ describe('useGridGroup', () => {
     expect(result.current.collapsedGroups.size).toBe(0)
   })
 
-  it('toggleGroupSort defaults to asc on first toggle, then desc, then asc', () => {
+  it('toggleGroupSort flips the default asc order to desc on the first toggle', () => {
     const { result } = renderHook(() => useGridGroup(data, ['dept']))
     expect(result.current.groupSorts['dept']).toBeUndefined()
-    act(() => { result.current.toggleGroupSort('dept') })
-    expect(result.current.groupSorts['dept']).toBe('asc')
     act(() => { result.current.toggleGroupSort('dept') })
     expect(result.current.groupSorts['dept']).toBe('desc')
     act(() => { result.current.toggleGroupSort('dept') })
@@ -103,8 +101,7 @@ describe('useGridGroup', () => {
 
   it('desc sort reverses group order', () => {
     const { result } = renderHook(() => useGridGroup(data, ['dept']))
-    act(() => { result.current.toggleGroupSort('dept') }) // undefined → asc
-    act(() => { result.current.toggleGroupSort('dept') }) // asc → desc
+    act(() => { result.current.toggleGroupSort('dept') }) // default asc → desc
     // HR group first (desc), then its 2 children, then Eng group
     expect(result.current.visibleRows[0].$group).toBe(true)
     expect(result.current.visibleRows[0].dept).toBe('HR')

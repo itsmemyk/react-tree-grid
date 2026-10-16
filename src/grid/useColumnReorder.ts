@@ -279,6 +279,9 @@ export function useColumnReorder<T extends GridRow>(
     dragStateRef.current = null
     setDragState(null)
     setDropIndicator(null)
+    // A native drag never fires a click after the drop, so the guard set on
+    // drop must not survive to swallow the next real header click
+    suppressClickRef.current = false
   }, [events])
 
   const shouldPreventHeaderClick = useCallback(() => {
