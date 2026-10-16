@@ -15,8 +15,14 @@ export interface CsvExportConfig {
   columnDelimiter?: string
 }
 
+function formatValue(value: unknown): string {
+  if (value === null || value === undefined) return ''
+  if (value instanceof Date) return isNaN(value.getTime()) ? '' : value.toISOString()
+  return String(value)
+}
+
 function escapeCsv(value: unknown, delimiter: string): string {
-  const str = value === null || value === undefined ? '' : String(value)
+  const str = formatValue(value)
   if (
     str.includes(delimiter) ||
     str.includes('"') ||
@@ -29,7 +35,8 @@ function escapeCsv(value: unknown, delimiter: string): string {
 }
 
 /**
- * Export grid data to CSV string.
+ * Export grid data to CSV string (no BOM; `downloadGridAsCsv` adds one).
+ * Date values are written as ISO 8601 strings.
  */
 export function exportGridToCsv<T extends DataItem>(
   store: DataStore<T>,
@@ -78,7 +85,8 @@ export function downloadGridAsCsv<T extends DataItem>(
   config?: CsvExportConfig,
 ): void {
   const csv = exportGridToCsv(store, columns, config)
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+  // UTF-8 BOM so Excel detects the encoding and shows non-ASCII text correctly
+  const blob = new Blob(['\uFEFF', csv], { type: 'text/csv;charset=utf-8;' })
   downloadBlob(blob, filename)
 }
 
