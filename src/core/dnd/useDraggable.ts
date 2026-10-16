@@ -9,6 +9,8 @@ export interface UseDraggableReturn {
   }
 }
 
+const DRAG_THRESHOLD = 4
+
 export function useDraggable(config: UseDraggableConfig): UseDraggableReturn {
   const configRef = useRef(config)
   const eventContextRef = useRef({})
@@ -50,46 +52,75 @@ export function useDraggable(config: UseDraggableConfig): UseDraggableReturn {
   return {
     draggableProps: {
       onPointerDown: (event) => {
-        if (configRef.current.disabled) {
+        if (configRef.current.disabled || event.button !== 0) {
           return
         }
 
-        const ghost =
-          typeof configRef.current.ghost === 'function'
-            ? configRef.current.ghost()
-            : configRef.current.ghost ?? null
+        const downEvent = event.nativeEvent
         const offset = configRef.current.getInitialOffset?.(event) ?? {
           x: 0,
           y: 0,
         }
+        let started = false
 
-        const transfer = dragManager.dragStart(event.nativeEvent, {
-          id: configRef.current.id,
-          source: configRef.current.source,
-          type: configRef.current.type,
-          ghost,
-          initXOffset: offset.x,
-          initYOffset: offset.y,
-        }, {
-          componentId: configRef.current.componentId,
-        })
+        // Plain clicks must not start a drag, so wait until the pointer
+        // has travelled a few pixels before creating the ghost.
+        const begin = () => {
+          const ghost =
+            typeof configRef.current.ghost === 'function'
+              ? configRef.current.ghost()
+              : configRef.current.ghost ?? null
+          const transfer = dragManager.dragStart(downEvent, {
+            id: configRef.current.id,
+            source: configRef.current.source,
+            type: configRef.current.type,
+            ghost,
+            initXOffset: offset.x,
+            initYOffset: offset.y,
+          }, {
+            componentId: configRef.current.componentId,
+          })
+          started = transfer !== null
+          return started
+        }
 
-        if (!transfer) {
-          return
+        const cleanup = () => {
+          window.removeEventListener('pointermove', handleMove)
+          window.removeEventListener('pointerup', handleUp)
+          window.removeEventListener('keydown', handleKey, true)
         }
 
         const handleMove = (moveEvent: PointerEvent) => {
+          if (!started) {
+            const dx = moveEvent.clientX - downEvent.clientX
+            const dy = moveEvent.clientY - downEvent.clientY
+            if (dx * dx + dy * dy < DRAG_THRESHOLD * DRAG_THRESHOLD) return
+            if (!begin()) {
+              cleanup()
+              return
+            }
+          }
           dragManager.drag(moveEvent)
         }
 
         const handleUp = (upEvent: PointerEvent) => {
-          window.removeEventListener('pointermove', handleMove)
-          window.removeEventListener('pointerup', handleUp)
-          dragManager.drop(upEvent)
+          cleanup()
+          if (started) dragManager.drop(upEvent)
+        }
+
+        const handleKey = (keyEvent: KeyboardEvent) => {
+          if (keyEvent.key !== 'Escape') return
+          if (started) {
+            keyEvent.preventDefault()
+            keyEvent.stopPropagation()
+            dragManager.cancelDrop()
+          }
+          cleanup()
         }
 
         window.addEventListener('pointermove', handleMove)
-        window.addEventListener('pointerup', handleUp, { once: true })
+        window.addEventListener('pointerup', handleUp)
+        window.addEventListener('keydown', handleKey, true)
       },
     },
   }

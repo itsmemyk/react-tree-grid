@@ -266,7 +266,7 @@ export class DragManager {
   }
 
   private _findScrollContainer(target: EventTarget | null): HTMLElement | null {
-    let node = target instanceof HTMLElement ? target : null
+    let node = closestHTMLElement(target)
     while (node) {
       const style = window.getComputedStyle(node)
       const overflowY = style.overflowY
@@ -293,11 +293,7 @@ export class DragManager {
         ? document.elementFromPoint(event.clientX, event.clientY)
         : null
 
-    if (hovered instanceof HTMLElement) {
-      return hovered
-    }
-
-    return event.target instanceof HTMLElement ? event.target : null
+    return closestHTMLElement(hovered) ?? closestHTMLElement(event.target)
   }
 
   toDragData(transfer: TransferData): DragData {
@@ -309,6 +305,16 @@ export class DragManager {
       dragItem: transfer.type,
     }
   }
+}
+
+// Icons are often SVG, so the element under the pointer may be an SVGElement;
+// walk up to the nearest HTML ancestor so drop targets still resolve.
+function closestHTMLElement(target: EventTarget | null): HTMLElement | null {
+  let node = target instanceof Element ? target : null
+  while (node && !(node instanceof HTMLElement)) {
+    node = node.parentElement
+  }
+  return node
 }
 
 export const dragManager = new DragManager()
