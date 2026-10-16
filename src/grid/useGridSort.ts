@@ -7,7 +7,8 @@ import type { GridColumn, GridRow, SortOrder, SortState } from './types'
 interface GridSortEvents {
   onBeforeSort?: (states: SortState[]) => boolean | void
   onAfterSort?: (states: SortState[]) => void
-  onRemoteSort?: (sortBy: string | null, sortDir: string | null) => void
+  /** Receives every sort rule, primary first */
+  onRemoteSort?: (states: SortState[]) => void
 }
 
 function toSortStates(rules: SortRule[]): SortState[] {
@@ -84,10 +85,7 @@ export function useGridSort<T extends GridRow>(
 
       // Apply sort — remote or local
       if (events.onRemoteSort) {
-        events.onRemoteSort(
-          next.length > 0 ? next[0].columnId : null,
-          next.length > 0 ? next[0].order : null,
-        )
+        events.onRemoteSort(next)
       } else if (store) {
         if (next.length === 0) {
           store.sort(null)

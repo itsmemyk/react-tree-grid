@@ -575,11 +575,12 @@ function GridInner<T extends GridRow>({
       onBeforeSort,
       onAfterSort,
       onRemoteSort: (remoteSort && dataProxy)
-        ? (sortBy, sortDir) => {
+        ? (states) => {
             const newOpts: LoadOptions = {
               ...proxyOpts,
-              sortBy: sortBy ?? undefined,
-              sortDir: sortDir ?? undefined,
+              sort: states.map((state) => ({ by: state.columnId, dir: state.order })),
+              sortBy: undefined,
+              sortDir: undefined,
             }
             setProxyOpts(newOpts)
             dataProxyHook.load(1, newOpts)
@@ -1037,7 +1038,7 @@ function GridInner<T extends GridRow>({
     onScroll?.(next)
 
     // DataProxy: trigger next page load when scrolled near the bottom
-    if (dataProxy && paginationMode === 'append' && !dataProxyHook.loading) {
+    if (dataProxy && paginationMode === 'append' && !dataProxyHook.loading && dataProxyHook.hasMore) {
       const { scrollTop, scrollHeight, clientHeight } = event.currentTarget
       if (scrollHeight - scrollTop - clientHeight < 50) {
         dataProxyHook.loadNextPage(proxyOpts)
