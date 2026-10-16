@@ -349,6 +349,14 @@ export const TreeGrid = forwardRef<TreeGridRef, TreeGridProps<TreeGridRow>>(func
     onAfterRowDrop?.(dragData, event)
   }
 
+  // The drop line starts where the dropped row's tree level will be indented
+  const getRowDropIndent: GridProps<InternalTreeGridRow>['getRowDropIndent'] = (rowId, position) => {
+    if (!store.exists(rowId)) return 0
+    const level = getLevel(store, rowId)
+    const intoOpenParent = position === 'bottom' && !!store.getItem(rowId)?.$opened && store.haveItems(rowId)
+    return (dropBehaviour === 'child' || intoOpenParent ? level + 1 : level) * 18
+  }
+
   return (
     <div onKeyDownCapture={handleKeyDownCapture}>
       <Grid<InternalTreeGridRow>
@@ -361,6 +369,7 @@ export const TreeGrid = forwardRef<TreeGridRef, TreeGridProps<TreeGridRow>>(func
         onDragRowIn={handleDragRowIn}
         onDragRowOut={handleDragRowOut}
         canRowDrop={handleCanRowDrop}
+        getRowDropIndent={getRowDropIndent}
         onAfterRowDrag={handleAfterRowDrag}
         onAfterRowDrop={handleAfterRowDrop}
       />

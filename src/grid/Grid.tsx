@@ -559,6 +559,7 @@ function GridInner<T extends GridRow>({
   onDragRowIn,
   onDragRowOut,
   canRowDrop,
+  getRowDropIndent,
   onCancelRowDrop,
   onBeforeRowDrop,
   onAfterRowDrop,
@@ -1804,7 +1805,12 @@ function GridInner<T extends GridRow>({
         {rowDrag.dropIndicator ? (
           <div
             className={styles.rowDropLine}
-            style={{ top: rowDrag.dropIndicator.top }}
+            style={{
+              top: rowDrag.dropIndicator.top,
+              left: getRowDropIndent
+                ? `calc(var(--react-tree-grid-spacing-sm, 8px) + ${getRowDropIndent(rowDrag.dropIndicator.rowId, rowDrag.dropIndicator.position)}px)`
+                : undefined,
+            }}
           />
         ) : null}
         <div ref={bodyRef} className={styles.body} onScroll={handleScroll} data-testid="grid-body" tabIndex={-1}>

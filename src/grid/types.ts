@@ -263,6 +263,11 @@ export interface GridProps<T extends GridRow = GridRow> {
   onDragRowIn?: (data: GridRowDragData, event: PointerEvent) => void
   onDragRowOut?: (data: GridRowDragData, event: PointerEvent) => void
   canRowDrop?: (data: GridRowDragData, event: PointerEvent) => boolean | void
+  /**
+   * Indent in px, from the start of the first column's content, for the row
+   * drop line, e.g. to show the tree level a dropped row will land at
+   */
+  getRowDropIndent?: (rowId: string, position: GridRowDropPosition) => number
   onCancelRowDrop?: (data: GridRowDragData, event: PointerEvent) => void
   onBeforeRowDrop?: (data: GridRowDragData, event: PointerEvent) => boolean | void
   onAfterRowDrop?: (data: GridRowDragData, event: PointerEvent) => void
