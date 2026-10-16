@@ -39,6 +39,10 @@ export function applyGroupBy(
       $editable: false,
       $selectable: false,
       [currentKey]: val,
+      // Kept apart from the field so any column can label the group
+      $groupKey: currentKey,
+      $groupValue: val,
+      $groupCount: children.length,
       items: nestedChildren,
     }
 

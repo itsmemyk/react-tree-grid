@@ -144,7 +144,9 @@ export const TreeGrid = forwardRef<TreeGridRef, TreeGridProps<TreeGridRow>>(func
               <span className={styles.toggle} aria-hidden="true" />
             )}
             <span className={styles.cellValue}>
-              {originalTemplate ? originalTemplate(value, row, col) : String(value ?? '')}
+              {row.$group && row.$groupValue !== undefined
+                ? `${String(row.$groupValue)} (${String(row.$groupCount ?? 0)})`
+                : originalTemplate ? originalTemplate(value, row, col) : String(value ?? '')}
             </span>
           </div>
         )

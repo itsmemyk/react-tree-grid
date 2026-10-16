@@ -107,8 +107,23 @@ describe('TreeGrid groupBy', () => {
         <TreeGrid data={flatData} columns={groupCols} groupBy="dept" />
       </ThemeProvider>,
     )
-    expect(screen.getByText('Eng')).toBeTruthy()
-    expect(screen.getByText('HR')).toBeTruthy()
+    expect(screen.getByText('Eng (2)')).toBeTruthy()
+    expect(screen.getByText('HR (1)')).toBeTruthy()
+  })
+
+  it('labels nested group rows in the tree column', () => {
+    render(
+      <ThemeProvider>
+        <TreeGrid
+          data={flatData.map((row, i) => ({ ...row, status: i === 0 ? 'active' : 'inactive' }))}
+          columns={groupCols}
+          groupBy={['dept', 'status']}
+        />
+      </ThemeProvider>,
+    )
+    const engToggle = document.querySelector('[data-rgs-tree-toggle="__group__dept__Eng"]') as HTMLElement
+    if (engToggle?.getAttribute('aria-expanded') === 'false') fireEvent.click(engToggle)
+    expect(screen.getByText('active (1)')).toBeTruthy()
   })
 })
 
