@@ -37,6 +37,7 @@ import { useGridEditor } from './useGridEditor'
 import { useGridKeyboard } from './useGridKeyboard'
 import { useColumnReorder } from './useColumnReorder'
 import { useColumnAdjust } from './useColumnAdjust'
+import { isFormulaError } from '../core/formula/FormulaEvaluator'
 import { useGridTooltip } from './useGridTooltip'
 import type { TooltipState } from './useGridTooltip'
 import { useGridCss } from './useGridCss'
@@ -116,7 +117,9 @@ function getCellValue<T extends GridRow>(
   column: NormalizedColumn<T>,
   computed?: unknown,
 ): React.ReactNode {
-  // A formula result replaces the raw "=..." text but still goes through the template
+  // A formula result replaces the raw "=..." text but still goes through the
+  // template; error codes (#CIRC, #ERR…) are shown as they are
+  if (isFormulaError(computed)) return computed
   const value = computed !== undefined ? computed : row[column.id]
   if (column.template) {
     return column.template(value, row, column)
@@ -672,6 +675,13 @@ function GridInner<T extends GridRow>({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dataProxy?.url])
 
+  // A new remote sort or filter restarts at page 1, so show it from the top
+  // rather than leaving the old scroll offset (which would also page ahead)
+  const reloadFromFirstPage = (opts: LoadOptions) => {
+    if (bodyRef.current) bodyRef.current.scrollTop = 0
+    dataProxyHook.load(1, opts)
+  }
+
   // ─── Sorting ──────────────────────────────────────────────────────
   const gridSort = useGridSort(
     store as unknown as import('../core/data').DataStore<T & DataItem> | undefined,
@@ -688,7 +698,7 @@ function GridInner<T extends GridRow>({
               sortDir: undefined,
             }
             setProxyOpts(newOpts)
-            dataProxyHook.load(1, newOpts)
+            reloadFromFirstPage(newOpts)
           }
         : undefined,
     },
@@ -786,7 +796,7 @@ function GridInner<T extends GridRow>({
       ? (filters) => {
           const newOpts: LoadOptions = { ...proxyOpts, filters }
           setProxyOpts(newOpts)
-          dataProxyHook.load(1, newOpts)
+          reloadFromFirstPage(newOpts)
         }
       : undefined,
   )
