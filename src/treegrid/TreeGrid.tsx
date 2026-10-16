@@ -147,8 +147,35 @@ export const TreeGrid = forwardRef<TreeGridRef, TreeGridProps<TreeGridRow>>(func
     if (column.id !== activeTreeColumnId) return column
 
     const originalTemplate = column.template
+    const originalEditTemplate = column.editTemplate
+    const editable = Boolean(column.editorType || column.editTemplate)
     const next: GridColumn<InternalTreeGridRow> = {
       ...column,
+      // Keep the indent and arrow visible while the tree cell is being edited
+      editTemplate: editable
+        ? (value, row, col, api) => {
+            const level = getLevel(store, row.id)
+            const hasChildren = store.haveItems(row.id)
+            const opened = !!store.getItem(row.id)?.$opened
+            return (
+              <div className={styles.treeCell} style={{ paddingInlineStart: `${level * 18}px` }}>
+                <span className={styles.toggle} aria-hidden="true">
+                  {hasChildren ? (opened ? '▾' : '▸') : ''}
+                </span>
+                <div className={styles.treeEditor}>
+                  {originalEditTemplate ? originalEditTemplate(value, row, col, api) : (
+                    <input
+                      ref={api.ref as never}
+                      className={gridStyles.cellEditor}
+                      value={value === null || value === undefined ? '' : String(value)}
+                      onChange={(e) => api.onChange(e.target.value)}
+                    />
+                  )}
+                </div>
+              </div>
+            )
+          }
+        : undefined,
       template: (value, row, col) => {
         const level = getLevel(store, row.id)
         const hasChildren = store.haveItems(row.id)

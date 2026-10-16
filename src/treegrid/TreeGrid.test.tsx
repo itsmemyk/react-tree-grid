@@ -220,3 +220,28 @@ describe('TreeGrid filtering', () => {
   })
 })
 
+describe('TreeGrid editing', () => {
+  it('keeps the indent and arrow beside the editor in the tree column', () => {
+    const onAfterEditEnd = vi.fn()
+    render(
+      <ThemeProvider>
+        <TreeGrid
+          columns={[{ id: 'name', header: [{ text: 'Name' }], width: 200, editorType: 'input' }]}
+          data={[{ id: 'p', name: 'Parent', $opened: true, items: [{ id: 'c', name: 'Child' }] }]}
+          editable
+          onAfterEditEnd={onAfterEditEnd}
+          style={{ width: 300, height: 200 }}
+        />
+      </ThemeProvider>,
+    )
+    fireEvent.doubleClick(screen.getByText('Parent'))
+    const cell = document.querySelector('[data-rgs-id="p"] [data-rgs-col-id="name"]') as HTMLElement
+    const input = cell.querySelector('input') as HTMLInputElement
+    expect(input).toBeTruthy()
+    expect(cell.textContent).toContain('▾')
+    fireEvent.change(input, { target: { value: 'Renamed' } })
+    fireEvent.keyDown(input, { key: 'Enter' })
+    expect(onAfterEditEnd).toHaveBeenCalledWith('p', 'name', 'Renamed')
+  })
+})
+

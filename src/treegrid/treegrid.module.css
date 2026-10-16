@@ -23,3 +23,17 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+.treeEditor {
+  align-self: stretch;
+  display: flex;
+  flex: 1;
+  min-width: 0;
+}
+
+.toggle:is(span) {
+  cursor: default;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
