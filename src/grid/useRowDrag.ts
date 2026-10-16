@@ -38,6 +38,39 @@ interface GridRegistryEntry<T extends GridRow> {
 
 const gridRegistry = new Map<string, GridRegistryEntry<any>>()
 const BODY_NO_SELECT_CLASS = 'rgs-no-select-drag'
+const DROP_LINE_HEIGHT = 2
+
+/**
+ * Clone a row for the drag ghost. The ghost lives on <body>, outside the grid
+ * and theme roots, so the column-width variables and theme font no longer
+ * apply; freeze the measured sizes and typography onto the clone instead.
+ */
+function createRowGhost(sourceNode: HTMLElement): HTMLElement {
+  const ghost = sourceNode.cloneNode(true) as HTMLElement
+  const rowRect = sourceNode.getBoundingClientRect()
+  const rowStyle = window.getComputedStyle(sourceNode)
+  ghost.style.width = `${rowRect.width}px`
+  ghost.style.height = `${rowRect.height}px`
+  ghost.style.boxSizing = 'border-box'
+  ghost.style.font = rowStyle.font
+  ghost.style.color = rowStyle.color
+  ghost.style.background = rowStyle.backgroundColor !== 'rgba(0, 0, 0, 0)' ? rowStyle.backgroundColor : '#fff'
+  ghost.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.18)'
+  ghost.style.overflow = 'hidden'
+
+  const sourceCells = sourceNode.querySelectorAll<HTMLElement>('[data-rgs-col-id]')
+  const ghostCells = ghost.querySelectorAll<HTMLElement>('[data-rgs-col-id]')
+  sourceCells.forEach((cell, index) => {
+    const target = ghostCells[index]
+    if (!target) return
+    const cellRect = cell.getBoundingClientRect()
+    const cellStyle = window.getComputedStyle(cell)
+    target.style.width = `${cellRect.width}px`
+    target.style.flex = 'none'
+    target.style.borderColor = cellStyle.borderRightColor
+  })
+  return ghost
+}
 
 function createRowDragData(
   start: string,
@@ -236,6 +269,8 @@ export function useRowDrag<T extends GridRow>(
       const rowRect = rowNode.getBoundingClientRect()
       const viewportRect = viewportNode.getBoundingClientRect()
       top = (position === 'bottom' ? rowRect.bottom : rowRect.top) - viewportRect.top
+      // Keep the line inside the viewport for partly scrolled first/last rows
+      top = Math.min(Math.max(top, 0), Math.max(viewportRect.height - DROP_LINE_HEIGHT, 0))
     }
 
     return {
@@ -298,7 +333,7 @@ export function useRowDrag<T extends GridRow>(
     document.body.classList.add(BODY_NO_SELECT_CLASS)
 
     const sourceNode = event.currentTarget
-    const ghost = sourceNode.cloneNode(true) as HTMLElement
+    const ghost = createRowGhost(sourceNode)
     dragStartRef.current = rowId
     const startPayload = createRowDragData(rowId, null, null)
     if (events.onBeforeRowDrag?.(startPayload, event.nativeEvent) === false) {
