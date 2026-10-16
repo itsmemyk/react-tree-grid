@@ -971,15 +971,30 @@ function makeMockFetch(allData: Employee[]) {
     const params = new URLSearchParams(url.split('?')[1])
     const page = Number(params.get('page') ?? 1)
     const size = Number(params.get('size') ?? 50)
-    const sortBy = params.get('sortBy')
-    const sortDir = params.get('sortDir')
+    // Multi-column sorts arrive as repeated sortBy/sortDir pairs, primary first
+    const sortBy = params.getAll('sortBy')
+    const sortDir = params.getAll('sortDir')
 
     let items = [...allData]
-    if (sortBy) {
+    // Header filters arrive as filter[column]=text
+    for (const [key, value] of params) {
+      const match = /^filter\[(.+)\]$/.exec(key)
+      if (!match || !value) continue
+      const needle = value.toLowerCase()
+      items = items.filter((row) =>
+        String((row as Record<string, unknown>)[match[1]] ?? '').toLowerCase().includes(needle))
+    }
+    if (sortBy.length) {
       items.sort((a, b) => {
-        const av = String((a as Record<string, unknown>)[sortBy] ?? '')
-        const bv = String((b as Record<string, unknown>)[sortBy] ?? '')
-        return sortDir === 'desc' ? bv.localeCompare(av) : av.localeCompare(bv)
+        for (let i = 0; i < sortBy.length; i++) {
+          const av = (a as Record<string, unknown>)[sortBy[i]]
+          const bv = (b as Record<string, unknown>)[sortBy[i]]
+          const diff = typeof av === 'number' && typeof bv === 'number'
+            ? av - bv
+            : String(av ?? '').localeCompare(String(bv ?? ''))
+          if (diff !== 0) return sortDir[i] === 'desc' ? -diff : diff
+        }
+        return 0
       })
     }
     const start = (page - 1) * size
@@ -1028,6 +1043,7 @@ export const RemoteSortFilter: StoryObj = {
           pageSize: 50,
           fetchFn: makeMockFetch(ALL_EMPLOYEES),
         }}
+        paginationMode="append"
         remoteSort
         sortable
         style={{ height: 400, width: '100%' }}
