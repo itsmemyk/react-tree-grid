@@ -110,6 +110,34 @@ export const TreeGrid = forwardRef<TreeGridRef, TreeGridProps<TreeGridRow>>(func
     }
   }, [normalizedData, store])
 
+  // While a filter is active, open the collapsed parents it kept so matches
+  // inside them show; close the ones it opened again once the filter clears
+  useEffect(() => {
+    const context = {}
+    const autoOpened = new Set<string>()
+    store.events.on('filter', () => {
+      if (store._initChilds) {
+        const walk = (id: string) => {
+          for (const child of store._childs[id] ?? []) {
+            if (!store._childs[child.id]?.length) continue
+            if (!child.$opened) {
+              store.update(child.id, { $opened: true } as Partial<InternalTreeGridRow>, true)
+              autoOpened.add(child.id)
+            }
+            walk(child.id)
+          }
+        }
+        walk(store.getRoot())
+      } else {
+        for (const id of autoOpened) {
+          if (store.exists(id)) store.update(id, { $opened: false } as Partial<InternalTreeGridRow>, true)
+        }
+        autoOpened.clear()
+      }
+    }, context)
+    return () => store.events.detach('filter', context)
+  }, [store])
+
   const flatRows = useMemo(
     () => store.flatten(store.getItems(rootId)),
     [items, rootId, store],

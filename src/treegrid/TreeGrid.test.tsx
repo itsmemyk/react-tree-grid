@@ -184,3 +184,39 @@ describe('TreeGrid row drag', () => {
     expect([...new Set(order)]).toEqual(['root-1', 'child-1', 'root-2'])
   })
 })
+
+describe('TreeGrid filtering', () => {
+  it('opens collapsed parents of filter matches and closes them when the filter clears', async () => {
+    vi.useFakeTimers()
+    try {
+      render(
+        <ThemeProvider>
+          <TreeGrid
+            columns={[{ id: 'name', header: [{ text: 'Name' }, { content: 'inputFilter' }], width: 200 }]}
+            data={[
+              { id: 'p', name: 'Parent', $opened: false, items: [{ id: 'c', name: 'Needle' }] },
+              { id: 'o', name: 'Other' },
+            ]}
+            style={{ width: 300, height: 300 }}
+          />
+        </ThemeProvider>,
+      )
+      const input = document.querySelector('[data-rgs-filter] input, input') as HTMLInputElement
+      expect(screen.queryByText('Needle')).toBeNull()
+      await act(async () => {
+        fireEvent.change(input, { target: { value: 'needle' } })
+        vi.advanceTimersByTime(1000)
+      })
+      expect(screen.getByText('Needle')).toBeTruthy()
+      await act(async () => {
+        fireEvent.change(input, { target: { value: '' } })
+        vi.advanceTimersByTime(1000)
+      })
+      expect(screen.queryByText('Needle')).toBeNull()
+      expect(screen.getByText('Other')).toBeTruthy()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+})
+
