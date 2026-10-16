@@ -628,10 +628,13 @@ function KitchenSinkDemo() {
     { id: 'role', header: [{ text: 'Role' }, { content: 'selectFilter' }], width: 140, sortable: true, resizable: true, editorType: 'input' },
     { id: 'team', header: [{ text: 'Team' }, { content: 'selectFilter' }], width: 120, sortable: true, resizable: true },
     { id: 'region', header: [{ text: 'Region' }, { content: 'comboFilter' }], width: 130, sortable: true, resizable: true },
-    { id: 'salary', header: [{ text: 'Salary' }], footer: [{ content: 'sum' }, { content: 'avg' }], width: 130, sortable: true, resizable: true, align: 'right', editorType: 'input',
+    { id: 'salary', header: [{ text: 'Salary' }], footer: [{ content: 'sum' }, { content: 'avg' }], width: 130, sortable: true, resizable: true, align: 'right', editorType: 'input', type: 'number',
       template: (v) => `$${Number(v).toLocaleString()}`,
     },
-    { id: 'age', header: [{ text: 'Age' }], footer: [{ content: 'min' }, { content: 'max' }], width: 80, sortable: true, align: 'center', editorType: 'input' },
+    { id: 'age', header: [{ text: 'Age' }], footer: [{ content: 'min' }, { content: 'max' }], width: 80, sortable: true, align: 'center', editorType: 'input', type: 'number' },
+    { id: 'active', header: [{ text: 'Active' }], width: 90, align: 'center', type: 'boolean', editorType: 'checkbox',
+      template: (v) => (v ? '✓' : '—'),
+    },
   ]
 
   const { items, store } = useDataStore<Employee>({ data: data200 })
@@ -639,7 +642,7 @@ function KitchenSinkDemo() {
   return (
     <div>
       <p style={{ margin: '0 0 12px', color: '#666', fontSize: 13 }}>
-        All features active: sorting, filters, footers, resize, editing (dbl-click), selection (Ctrl/Shift+click), column drag reorder, 200 rows virtual scroll.
+        All features active: sorting, filters, footers, resize, editing (dbl-click, Enter or F2; Salary and Age only accept numbers), Space toggles Active, keyboard navigation, selection (Ctrl/Shift+click), column drag reorder, 200 rows virtual scroll.
       </p>
       <Grid<Employee>
         columns={kitchenColumns}
@@ -651,6 +654,7 @@ function KitchenSinkDemo() {
         multiselection
         dragItem="column"
         leftSplit={1}
+        keyNavigation
         style={{ width: '100%', height: GRID_HEIGHT }}
         onAfterSort={(states) => console.log('Sort:', states)}
         onAfterEditEnd={(r, c, v) => console.log(`Edit [${r}][${c}]:`, v)}
