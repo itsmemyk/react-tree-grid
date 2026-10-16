@@ -2905,5 +2905,18 @@ describe('Grid', () => {
     })
     expect(Array.from(select().options).map((o) => o.value)).toEqual(['', 'A', 'B'])
   })
+
+  it('scrolls the body to follow a header scrolled by the browser', () => {
+    const { container } = render(
+      <ThemeProvider>
+        <Grid columns={columns} data={data} style={{ width: 200, height: 200 }} />
+      </ThemeProvider>,
+    )
+    const header = container.querySelector('[class*="headerScroller"]') as HTMLElement
+    const body = screen.getByTestId('grid-body')
+    header.scrollLeft = 60
+    fireEvent.scroll(header)
+    expect(body.scrollLeft).toBe(60)
+  })
 })
 

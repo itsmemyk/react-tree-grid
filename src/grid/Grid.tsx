@@ -697,6 +697,15 @@ function GridInner<T extends GridRow>({
     if (event.target === event.currentTarget && keyNavigation) rootRef.current?.focus({ preventScroll: true })
   }
 
+  // The body drives horizontal scroll. If the browser scrolls the header or
+  // footer by itself (focusing a filter, find-in-page), follow it in the body,
+  // whose scroll handler then realigns every panel
+  const followScrollerInBody = (event: UIEvent<HTMLDivElement>) => {
+    const body = bodyRef.current
+    const left = event.currentTarget.scrollLeft
+    if (body && Math.abs(body.scrollLeft - left) > 0.5) body.scrollLeft = left
+  }
+
   // A new remote sort or filter restarts at page 1, so show it from the top
   // rather than leaving the old scroll offset (which would also page ahead)
   const reloadFromFirstPage = (opts: LoadOptions) => {
@@ -1787,6 +1796,7 @@ function GridInner<T extends GridRow>({
           // Tab order. Focus isn't moved from here: doing so mid-mousedown would stop
           // native header drags (reorder, drag-to-group) from starting
           tabIndex={-1}
+          onScroll={followScrollerInBody}
           style={{
             marginLeft: fixedLeftWidth,
             marginRight: fixedRightWidth + verticalScrollbarWidth,
@@ -2088,6 +2098,7 @@ function GridInner<T extends GridRow>({
             ref={footerScrollRef}
             className={styles.headerScroller}
             tabIndex={-1}
+            onScroll={followScrollerInBody}
             style={{
               marginLeft: fixedLeftWidth,
               marginRight: fixedRightWidth + verticalScrollbarWidth,
