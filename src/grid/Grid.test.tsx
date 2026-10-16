@@ -1377,6 +1377,31 @@ describe('Grid', () => {
       expect(event.defaultPrevented).toBe(false)
     })
 
+    it('toggles a boolean cell in place with Space', () => {
+      const onAfterEditEnd = vi.fn()
+      const { container } = render(
+        <ThemeProvider>
+          <Grid
+            columns={[
+              { id: 'name', header: [{ text: 'Name' }], width: 120 },
+              { id: 'active', header: [{ text: 'Active' }], width: 80, type: 'boolean', editorType: 'checkbox' },
+            ]}
+            data={[{ id: '1', name: 'Alice', active: true }]}
+            selection="cell"
+            editable
+            keyNavigation
+            onAfterEditEnd={onAfterEditEnd}
+            style={{ width: 300, height: 120 }}
+          />
+        </ThemeProvider>,
+      )
+      const grid = container.querySelector('[data-rgs-key-navigation="true"]') as HTMLDivElement
+      fireEvent.click(screen.getByText('true'))
+      fireEvent.keyDown(grid, { key: ' ' })
+      expect(onAfterEditEnd).toHaveBeenCalledWith('1', 'active', false)
+      expect(container.querySelector('input')).toBeNull()
+    })
+
     it('selects the first cell on the first arrow key', () => {
       const { grid, onAfterSelect } = renderEditable()
       fireEvent.keyDown(grid, { key: 'ArrowDown' })

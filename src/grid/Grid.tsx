@@ -1664,6 +1664,13 @@ function GridInner<T extends GridRow>({
     onStartEdit: (rowId, colId) => {
       gridEditor.startEdit(rowId, colId)
     },
+    onToggle: (rowId, colId) => {
+      const row = displayData.find((r) => r.id === rowId)
+      if (!row) return
+      // Runs through the editor so the edit events and store write still happen
+      gridEditor.startEdit(rowId, colId)
+      gridEditor.endEdit(true, !row[colId])
+    },
     onEndEdit: (save) => {
       gridEditor.endEdit(save)
     },

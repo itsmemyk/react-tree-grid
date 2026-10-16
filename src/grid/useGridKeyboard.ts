@@ -10,6 +10,8 @@ interface GridKeyboardConfig {
   isEditing: boolean
   onNavigate: (rowId: string, colId: string, shiftKey: boolean) => void
   onStartEdit: (rowId: string, colId: string) => void
+  /** Flips a boolean cell in place (Space on a boolean/checkbox column) */
+  onToggle?: (rowId: string, colId: string) => void
   onEndEdit: (save: boolean) => void
   onScrollTo: (rowIndex: number, colIndex: number) => void
   onPageScroll: (direction: 'up' | 'down' | 'home' | 'end') => void
@@ -39,6 +41,7 @@ export function useGridKeyboard(config: GridKeyboardConfig) {
     isEditing,
     onNavigate,
     onStartEdit,
+    onToggle,
     onEndEdit,
     onScrollTo,
     onPageScroll,
@@ -211,9 +214,10 @@ export function useGridKeyboard(config: GridKeyboardConfig) {
           // Space: toggle boolean columns
           if (!selectedCell) break
           const col = columns.find((c) => c.id === selectedCell.colId)
-          if (col?.type === 'boolean' || col?.editorType === 'checkbox') {
+          if (editable && (col?.type === 'boolean' || col?.editorType === 'checkbox')) {
             e.preventDefault()
-            onStartEdit(selectedCell.rowId, selectedCell.colId)
+            if (onToggle) onToggle(selectedCell.rowId, selectedCell.colId)
+            else onStartEdit(selectedCell.rowId, selectedCell.colId)
           }
           break
         }
@@ -254,6 +258,7 @@ export function useGridKeyboard(config: GridKeyboardConfig) {
       getVisibleColumns,
       navigateTo,
       onStartEdit,
+      onToggle,
       onEndEdit,
       onPageScroll,
     ],
