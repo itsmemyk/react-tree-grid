@@ -1725,6 +1725,8 @@ function GridInner<T extends GridRow>({
         <div
           ref={headerScrollRef}
           className={styles.headerScroller}
+          // Scroll containers are keyboard-focusable in Chrome; the grid root owns focus
+          tabIndex={-1}
           style={{
             marginLeft: fixedLeftWidth,
             marginRight: fixedRightWidth + verticalScrollbarWidth,
@@ -1783,7 +1785,7 @@ function GridInner<T extends GridRow>({
             style={{ top: rowDrag.dropIndicator.top }}
           />
         ) : null}
-        <div ref={bodyRef} className={styles.body} onScroll={handleScroll} data-testid="grid-body">
+        <div ref={bodyRef} className={styles.body} onScroll={handleScroll} data-testid="grid-body" tabIndex={-1}>
           {/* Spacer establishes scroll dimensions */}
           <div
             className={styles.bodyInner}
@@ -2016,6 +2018,7 @@ function GridInner<T extends GridRow>({
           <div
             ref={footerScrollRef}
             className={styles.headerScroller}
+            tabIndex={-1}
             style={{
               marginLeft: fixedLeftWidth,
               marginRight: fixedRightWidth + verticalScrollbarWidth,
