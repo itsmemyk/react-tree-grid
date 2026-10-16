@@ -251,11 +251,15 @@ All theme values are exposed as CSS custom properties prefixed with `--react-tre
 | `pinnedBottomRows` | `string[]` | — | Pin rows by ID to the bottom |
 | `dragItem` | `'item' \| 'both'` | — | Enable row drag-and-drop |
 | `adjust` | `boolean \| 'data' \| 'header' \| 'footer'` | — | Auto-fit column widths |
-| `autoHeight` | `boolean` | `false` | Grow grid height to fit all rows |
+| `autoHeight` | `boolean` | `false` | Grow each row's height to fit its wrapped cell content |
 | `groupable` | `boolean` | `false` | Enable drag-panel grouping UI |
 | `group` | `{ order: string[] }` | — | Initial grouping column order |
 | `style` | `CSSProperties` | — | Width/height (required for virtual scroll) |
 | `className` | `string` | — | Root element class name |
+| `freezable` | `boolean` | `false` | Show a handle to drag the left frozen-column boundary |
+| `getRowDropIndent` | `(rowId: string, position: 'top' \| 'bottom' \| 'in') => number` | — | Indent in px for the row drop line (TreeGrid uses it to show the landing level) |
+
+Keyboard (with `keyNavigation`): arrows move the focused cell (Ctrl+arrow jumps to the edge, Shift+arrow extends the selection); Tab/Shift+Tab move across cells and leave the grid at either end; Enter or F2 starts editing, Enter commits, Escape cancels, and Tab/Shift+Tab in an editor move it to the next/previous editable cell; Space toggles a `boolean`/`checkbox` cell.
 
 ### Grid Callbacks
 
@@ -282,6 +286,7 @@ Callbacks whose name starts with `onBefore` can return `false` to cancel the act
 | `onAfterColumnDrop` | `(data: GridColumnDragData, event: DragEvent) => void` | Fires after a column is reordered |
 | `onResize` | `(colId: string, width: number) => void` | Fires while a column is being resized |
 | `onAfterResizeEnd` | `(colId: string, width: number) => void` | Fires after column resize ends |
+| `onFreeze` | `(splits: { left: number; top: number }) => void` | Fires with the frozen column count actually applied: after a handle drag, and when the grid becomes too narrow (or wide again) for the requested count |
 | `onBeforeGroupChange` | `(order: string[]) => boolean \| void` | Return `false` to cancel grouping change |
 | `onGroupChange` | `(order: string[]) => void` | Fires after grouping order changes |
 
@@ -298,8 +303,10 @@ Callbacks whose name starts with `onBefore` can return `false` to cancel the act
 | `hidden` | `boolean` | Hide the column |
 | `sortable` | `boolean` | Override grid-level `sortable` for this column |
 | `resizable` | `boolean` | Allow the user to resize this column |
-| `type` | `'string' \| 'number' \| 'date' \| 'boolean' \| 'checkbox'` | Column data type |
-| `editorType` | `'input' \| 'select' \| 'combo' \| 'checkbox' \| 'datePicker' \| 'multiselect'` | Editor shown when the cell is in edit mode |
+| `type` | `'string' \| 'number' \| 'date' \| 'boolean' \| 'checkbox'` | Column data type; `'number'` columns store edited text as numbers and reject unparsable input |
+| `editorType` | `'input' \| 'select' \| 'combo' \| 'checkbox' \| 'datePicker' \| 'multiselect'` | Makes the column editable. Every value currently opens the built-in text input; use `editTemplate` for other editors |
+| `editTemplate` | `(value, row, column, api) => ReactNode` | Custom inline editor; `api` has `onChange`, `onCommit`, `onCancel` and a focus `ref` |
+| `filterOptions` | `string[]` | Choices for a `selectFilter`/`comboFilter` header; defaults to the column's distinct values. Set it for remote filtering |
 | `align` | `'left' \| 'center' \| 'right'` | Cell content alignment |
 | `template` | `(value, row, column) => ReactNode` | Custom cell renderer |
 | `tooltipTemplate` | `(value, row, column) => string` | Custom tooltip content |
@@ -344,13 +351,17 @@ interface GridFooterCell {
 | `defaultExpanded` | `string[]` | — | Initially expanded node IDs (uncontrolled) |
 | `selected` | `string[]` | — | Controlled selected node IDs |
 | `checked` | `string[]` | — | Controlled checked node IDs |
+| `css` | `string` | — | Root element class name |
+| `style` | `CSSProperties` | — | Root element style |
+
+Keyboard: the tree is a single tab stop; arrows move between nodes (Right opens or enters a node, Left closes it or goes to its parent), Home/End jump to the first/last node, Enter selects, Space checks (or selects without checkboxes), and F2 edits. Disabled nodes can't be selected, checked, edited or dragged.
 
 ### Tree Callbacks
 
 | Callback | Signature | Description |
 |---|---|---|
 | `onSelect` | `(id: string) => void` | Fires when a node is selected |
-| `onCheck` | `(ids: string[]) => void` | Fires when checkbox state changes; receives all checked IDs |
+| `onCheck` | `(ids: string[]) => void` | Fires when checkbox state changes; receives all checked IDs. Checking a node also checks its enabled descendants, and a parent shows as partly checked when only some are |
 | `onExpand` | `(id: string) => void` | Fires when a node is expanded |
 | `onCollapse` | `(id: string) => void` | Fires when a node is collapsed |
 | `onEdit` | `(id: string, newValue: string) => void` | Fires after an inline label edit |
@@ -367,12 +378,14 @@ Extends all [Grid Props](#grid-props) and adds:
 | `collapsed` | `boolean` | `false` | Start all nodes collapsed |
 | `groupBy` | `string \| string[]` | — | Group rows by one or more fields |
 | `groupAggregate` | `GroupAggregateConfig` | — | Aggregate values on group header rows |
-| `dropBehaviour` | `'child' \| 'sibling' \| 'complex'` | `'complex'` | How a dropped row is placed in the tree |
-| `dragExpand` | `boolean` | `false` | Auto-expand a node when a row is dragged over it |
+| `dropBehaviour` | `'child' \| 'sibling' \| 'complex'` | `'sibling'` | How a dropped row is placed: `'sibling'` puts it before/after the target (below an open parent it becomes the first child); `'child'` makes it the target's last child. `'complex'` currently behaves like `'sibling'` |
+| `dragExpand` | `boolean` | `true` | Auto-expand a collapsed node when a row is held over it during a drag |
 
 ### TreeGrid Callbacks
 
-TreeGrid inherits all [Grid Callbacks](#grid-callbacks). Row drop events carry additional context describing the tree position (parent, index) of the dropped row.
+TreeGrid inherits all [Grid Callbacks](#grid-callbacks). Row drag callbacks receive the same `GridRowDragData` as the Grid (`start`, `target`, `position`); read the new parent and index from the tree after `onAfterRowDrop`.
+
+Keyboard: on the tree column (or the selected row in row selection mode), ArrowRight opens a row and ArrowLeft closes it; Ctrl/Cmd+Enter toggles the selected row. While a header filter is active, collapsed parents that hold matches open, and close again when the filter clears.
 
 ## Types
 
