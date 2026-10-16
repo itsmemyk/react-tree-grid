@@ -98,7 +98,14 @@ export const Tree = forwardRef<TreeRef, TreeProps>(function Tree(props, ref) {
   )
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set(selected ?? []))
   const [checkedIds, setCheckedIds] = useState<Set<string>>(() => new Set(checked ?? []))
-  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editingId, setEditingIdState] = useState<string | null>(null)
+  // Mirrors editingId synchronously: a cancel moves focus to the row, and the
+  // editor's blur that follows must see the edit already closed, not commit it
+  const editingRef = useRef<string | null>(null)
+  const setEditingId = useCallback((id: string | null) => {
+    editingRef.current = id
+    setEditingIdState(id)
+  }, [])
   const [draftValue, setDraftValue] = useState('')
   const [dropIndicator, setDropIndicator] = useState<DropIndicator>(null)
   const [focusedId, setFocusedId] = useState<string | null>(null)
@@ -254,18 +261,19 @@ export const Tree = forwardRef<TreeRef, TreeProps>(function Tree(props, ref) {
     if (!editable || !item || item.disabled) return
     setEditingId(id)
     setDraftValue(String(item.value ?? ''))
-  }, [editable, store])
+  }, [editable, setEditingId, store])
 
   const commitEdit = useCallback(() => {
-    if (!editingId) return
+    const id = editingRef.current
+    if (!id) return
     const value = draftValue.trim()
     // An empty label is never a useful rename, so treat it as a cancel
-    if (value && value !== store.getItem(editingId)?.value) {
-      store.update(editingId, { value } as Partial<InternalTreeNode>)
-      onEdit?.(editingId, value)
+    if (value && value !== store.getItem(id)?.value) {
+      store.update(id, { value } as Partial<InternalTreeNode>)
+      onEdit?.(id, value)
     }
     setEditingId(null)
-  }, [draftValue, editingId, onEdit, store])
+  }, [draftValue, onEdit, setEditingId, store])
 
   const canDropOn = useCallback((transfer: TransferData | null, targetId: string) => {
     if (!transfer || transfer.componentId !== componentId) return false
@@ -654,7 +662,11 @@ function TreeRow(props: TreeRowProps) {
             onDoubleClick={stopDoubleClick}
             onKeyDown={(e) => {
               e.stopPropagation()
-              if (e.key === 'Enter') onCommitEdit(true)
+              if (e.key === 'Enter' || e.key === 'Tab') {
+                // Tab would otherwise drop focus on <body> once the editor unmounts
+                e.preventDefault()
+                onCommitEdit(true)
+              }
               if (e.key === 'Escape') onCancelEdit()
             }}
           />

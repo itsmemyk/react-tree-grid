@@ -173,4 +173,20 @@ describe('Tree', () => {
     render(<Tree data={data} style={{ width: 280 }} />)
     expect((document.querySelector('[role="tree"]') as HTMLElement).style.width).toBe('280px')
   })
+
+  it('cancels an edit on Escape without saving the draft', async () => {
+    const onEdit = vi.fn()
+    render(<Tree data={data} editable onEdit={onEdit} />)
+    await act(async () => {
+      fireEvent.doubleClick(screen.getByText('Inbox'))
+    })
+    const input = document.querySelector('[data-rgs-tree-id="inbox"] input') as HTMLInputElement
+    await act(async () => {
+      fireEvent.change(input, { target: { value: 'XX' } })
+      fireEvent.keyDown(input, { key: 'Escape' })
+      fireEvent.blur(input)
+    })
+    expect(onEdit).not.toHaveBeenCalled()
+    expect(screen.getByText('Inbox')).toBeTruthy()
+  })
 })
