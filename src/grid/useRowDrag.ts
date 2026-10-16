@@ -70,7 +70,11 @@ function createRowGhost(sourceNode: HTMLElement): HTMLElement {
     const cellStyle = window.getComputedStyle(cell)
     target.style.width = `${cellRect.width}px`
     target.style.flex = 'none'
-    target.style.borderColor = cellStyle.borderRightColor
+    target.style.boxSizing = 'border-box'
+    // Spacing and borders come from theme variables that don't reach <body>
+    target.style.padding = cellStyle.padding
+    target.style.borderRight = cellStyle.borderRight
+    target.style.borderBottom = cellStyle.borderBottom
   })
   return ghost
 }
