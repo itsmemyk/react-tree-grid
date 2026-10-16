@@ -122,18 +122,48 @@ export const CollapsedStart: Story = {
   name: 'Collapsed by Default',
   args: {
     columns: baseColumns,
-    data: cloneData().map((row) => ({ ...row, $opened: false })),
+    data: cloneData(),
+    collapsed: true,
     selection: 'row',
     style: { width: '100%', height: GRID_HEIGHT },
   },
 }
 
+const DEEP_OWNERS = ['Nina', 'Kai', 'Mira', 'Rae', 'Jules', 'Noah', 'Lina']
+const DEEP_STATUSES = ['Active', 'Done', 'Queued', 'Planned']
+
+/** Program › stream › epic › task › subtask, 471 rows across five levels */
+function buildDeepData(): TreeGridRow[] {
+  let seq = 0
+  const node = (name: string, depth: number, path: string, children: TreeGridRow[] = []): TreeGridRow => {
+    seq += 1
+    const hours = children.length
+      ? children.reduce((sum, child) => sum + Number(child.hours), 0)
+      : 2 + ((seq * 7) % 14)
+    return {
+      id: path,
+      name,
+      owner: DEEP_OWNERS[seq % DEEP_OWNERS.length],
+      status: DEEP_STATUSES[(seq + depth) % DEEP_STATUSES.length],
+      hours,
+      ...(children.length ? { items: children, $opened: depth < 2 } : {}),
+    }
+  }
+  const level = (depth: number, path: string, labels: string[], counts: number[]): TreeGridRow[] =>
+    Array.from({ length: counts[depth] }, (_, i) => {
+      const id = `${path}-${i + 1}`
+      const children = depth + 1 < counts.length ? level(depth + 1, id, labels, counts) : []
+      return node(`${labels[depth]} ${id.split('-').slice(1).join('.')}`, depth, id, children)
+    })
+  return level(0, 'n', ['Program', 'Stream', 'Epic', 'Task', 'Subtask'], [3, 3, 3, 4, 3])
+}
+
 export const DeepHierarchy: Story = {
   name: 'Deep Hierarchy',
   render: () => {
-    const data = useMemo(() => cloneData(), [])
+    const data = useMemo(() => buildDeepData(), [])
     return (
-      <StoryFrame note="Expanded multi-level hierarchy with nested tasks in the first column.">
+      <StoryFrame note="Five levels (program › stream › epic › task › subtask), 471 rows. The first two levels start open; parent hours sum their children.">
         <TreeGrid
           columns={baseColumns}
           data={data}
@@ -544,20 +574,13 @@ const showcaseColumns = [
 ] satisfies NonNullable<Story['args']>['columns']
 
 function DHtmlxShowcaseGrid({ dragDrop }: { dragDrop: boolean }) {
-  const [data, setData] = useState<ShowcaseRow[]>(() => buildShowcaseData())
+  // Keep `data` stable: a new array reloads the tree and would drop in-grid
+  // edits and drag moves, so the Paid toggles live in their own state
+  const [data] = useState<ShowcaseRow[]>(() => buildShowcaseData())
+  const [paidOverrides, setPaidOverrides] = useState<Record<string, boolean>>({})
 
-  const togglePaid = useCallback((rowId: string) => {
-    setData((prev) =>
-      prev.map((user) => {
-        if (user.id === rowId) return { ...user, paid: !user.paid }
-        const items = user.items as ShowcaseRow[] | undefined
-        if (!items) return user
-        const updated = items.map((child) =>
-          child.id === rowId ? { ...child, paid: !child.paid } : child,
-        )
-        return updated === items ? user : { ...user, items: updated }
-      }),
-    )
+  const togglePaid = useCallback((rowId: string, current: boolean) => {
+    setPaidOverrides((prev) => ({ ...prev, [rowId]: !current }))
   }, [])
 
   const columns = useMemo(
@@ -566,18 +589,21 @@ function DHtmlxShowcaseGrid({ dragDrop }: { dragDrop: boolean }) {
         col.id === 'paid'
           ? {
               ...col,
-              template: (value: unknown, row: ShowcaseRow) => (
+              template: (value: unknown, row: ShowcaseRow) => {
+                const paid = paidOverrides[row.id] ?? Boolean(value)
+                return (
                 <input
                   type="checkbox"
-                  checked={Boolean(value)}
-                  onChange={() => togglePaid(row.id)}
+                  checked={paid}
+                  onChange={() => togglePaid(row.id, paid)}
                   style={{ width: 16, height: 16, accentColor: '#1d9bf0', cursor: 'pointer' }}
                 />
-              ),
+                )
+              },
             }
           : col,
       ),
-    [togglePaid],
+    [paidOverrides, togglePaid],
   )
 
   return (

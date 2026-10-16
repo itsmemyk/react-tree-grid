@@ -195,7 +195,7 @@ function SortingDemo() {
   return (
     <div>
       <p style={{ margin: '0 0 12px', color: '#666', fontSize: 13 }}>
-        Click a header to sort. Ctrl+click for multi-column sort. Click again to cycle: asc → desc → none.
+        Click a header to sort. Click again to toggle asc ↔ desc. Ctrl+click adds a column to a multi-column sort.
       </p>
       <Grid<Employee>
         columns={baseColumns}
@@ -487,15 +487,21 @@ export const HeaderFilters: Story = {
 function FooterSummariesDemo() {
   const footerColumns: GridColumn<Employee>[] = [
     { id: 'id', header: [{ text: '#' }], footer: [{ content: 'count' }], width: 60 },
-    { id: 'name', header: [{ text: 'Name' }], footer: [{ text: 'Totals' }], width: 160 },
+    { id: 'name', header: [{ text: 'Name' }], footer: [{ text: 'Rows / totals' }, { text: 'Averages / range' }], width: 160 },
     { id: 'role', header: [{ text: 'Role' }], width: 140 },
     { id: 'team', header: [{ text: 'Team' }], width: 120 },
     { id: 'salary', header: [{ text: 'Salary' }], width: 140, align: 'right',
-      footer: [{ content: 'sum' }, { content: 'avg' }],
+      footer: [
+        { content: 'sum', template: (v) => `Sum $${Number(v).toLocaleString()}` },
+        { content: 'avg', template: (v) => `Avg $${Math.round(Number(v)).toLocaleString()}` },
+      ],
       template: (v) => `$${Number(v).toLocaleString()}`,
     },
-    { id: 'age', header: [{ text: 'Age' }], width: 80, align: 'center',
-      footer: [{ content: 'min' }, { content: 'max' }],
+    { id: 'age', header: [{ text: 'Age' }], width: 100, align: 'center',
+      footer: [
+        { content: 'min', template: (v) => `Min ${v}` },
+        { content: 'max', template: (v) => `Max ${v}` },
+      ],
     },
   ]
 
@@ -891,12 +897,12 @@ export const RowDrag: Story = {
 
 function CssApiAndMarksDemo() {
   const gridRef = useRef<GridApi<Employee>>(null)
-  const [cityVisible, setCityVisible] = useState(true)
+  const [regionVisible, setRegionVisible] = useState(true)
 
   const cols = useMemo<GridColumn<Employee>[]>(() => [
     { id: 'id', header: [{ text: '#' }], width: 60 },
     { id: 'name', header: [{ text: 'Name' }], width: 160 },
-    { id: 'city', header: [{ text: 'City' }], width: 120 },
+    { id: 'region', header: [{ text: 'Region' }], width: 120 },
     { id: 'salary', header: [{ text: 'Salary' }], width: 120, align: 'right',
       template: (v) => `$${Number(v).toLocaleString()}`,
       mark: { min: 'gridStoryMarkMin', max: 'gridStoryMarkMax' },
@@ -920,8 +926,8 @@ function CssApiAndMarksDemo() {
         <button type="button" onClick={() => { gridRef.current?.removeRowCss('1', 'gridStoryRowAccent'); gridRef.current?.removeCellCss('1', 'salary', 'gridStoryCellAccent') }}>
           Clear highlight
         </button>
-        <button type="button" onClick={() => { if (cityVisible) { gridRef.current?.hideColumn('city') } else { gridRef.current?.showColumn('city') }; setCityVisible((prev) => !prev) }}>
-          {cityVisible ? 'Hide' : 'Show'} city column
+        <button type="button" onClick={() => { if (regionVisible) { gridRef.current?.hideColumn('region') } else { gridRef.current?.showColumn('region') }; setRegionVisible((prev) => !prev) }}>
+          {regionVisible ? 'Hide' : 'Show'} region column
         </button>
       </div>
       <style>{`
@@ -1349,7 +1355,10 @@ function CustomEditorsDemo() {
           ref={api.ref as never}
           style={{ width: '100%', height: '100%', border: 'none', background: 'transparent' }}
           value={String(value)}
-          onChange={(e) => api.onCommit(e.target.value)}
+          // Stage the pick: arrow keys change a select's value too, and
+          // committing on every change would leave Escape nothing to cancel
+          onChange={(e) => api.onChange(e.target.value)}
+          onBlur={() => api.onCommit()}
         >
           {ROLES.map((role) => (
             <option key={role} value={role}>
@@ -1386,9 +1395,9 @@ function CustomEditorsDemo() {
   return (
     <div>
       <p style={{ margin: '0 0 12px', color: '#666', fontSize: 13 }}>
-        Double-click a cell. <strong>Role</strong> commits as soon as you pick an
-        option. <strong>Notes</strong> keeps Enter for newlines — click outside to
-        commit. Escape cancels either.
+        Double-click a cell. <strong>Role</strong>: pick an option, then press Enter
+        or click outside to commit. <strong>Notes</strong> keeps Enter for newlines —
+        click outside to commit. Escape cancels either.
       </p>
       <Grid<Employee>
         columns={columns}
