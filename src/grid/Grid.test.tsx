@@ -2835,5 +2835,47 @@ describe('Grid', () => {
     })
     expect(decodeURIComponent(urls.at(-1) ?? '')).toContain('filter[team]=B')
   })
+
+  it('keeps a remote sort clicked while a header filter is still debouncing', async () => {
+    vi.useFakeTimers()
+    try {
+      const urls: string[] = []
+      const fetchFn = async (url: string) => {
+        urls.push(decodeURIComponent(url))
+        return { ok: true, json: async () => ({ data: [{ id: '1', name: 'Alice' }], total: 1 }) } as Response
+      }
+      render(
+        <ThemeProvider>
+          <Grid
+            columns={[{ id: 'name', header: [{ text: 'Name' }, { content: 'inputFilter' }], width: 160 }]}
+            data={[]}
+            dataProxy={{ url: 'https://api.test/rows', fetchFn }}
+            remoteFilter
+            remoteSort
+            sortable
+            style={{ width: 300, height: 200 }}
+          />
+        </ThemeProvider>,
+      )
+      await act(async () => {
+        await vi.runOnlyPendingTimersAsync()
+      })
+      const input = document.querySelector('[data-rgs-filter] input, input') as HTMLInputElement
+      await act(async () => {
+        fireEvent.change(input, { target: { value: 'o' } })
+      })
+      await act(async () => {
+        fireEvent.click(screen.getByText('Name'))
+      })
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1000)
+      })
+      const last = urls.at(-1) ?? ''
+      expect(last).toContain('filter[name]=o')
+      expect(last).toContain('sortBy=name')
+    } finally {
+      vi.useRealTimers()
+    }
+  })
 })
 

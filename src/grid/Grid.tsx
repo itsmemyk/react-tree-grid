@@ -669,7 +669,13 @@ function GridInner<T extends GridRow>({
   }, rootRef)
 
   // ─── DataProxy ────────────────────────────────────────────────────
-  const [proxyOpts, setProxyOpts] = useState<LoadOptions>({})
+  // Latest remote sort/filter options. A ref, not state: the filter input calls
+  // back from a debounce timer holding an old render's closure, and building on
+  // stale options would drop a sort clicked meanwhile
+  const proxyOptsRef = useRef<LoadOptions>({})
+  const setProxyOpts = (next: LoadOptions) => {
+    proxyOptsRef.current = next
+  }
   const dataProxyHook = useDataProxy(
     dataProxy as DataProxyConfig | undefined,
     { paginationMode, onLoadStart, onLoadEnd, onLoadError },
@@ -680,7 +686,7 @@ function GridInner<T extends GridRow>({
 
   useEffect(() => {
     if (dataProxy) {
-      dataProxyHook.load(1, proxyOpts)
+      dataProxyHook.load(1, proxyOptsRef.current)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dataProxy?.url])
@@ -708,7 +714,7 @@ function GridInner<T extends GridRow>({
       onRemoteSort: (remoteSort && dataProxy)
         ? (states) => {
             const newOpts: LoadOptions = {
-              ...proxyOpts,
+              ...proxyOptsRef.current,
               sort: states.map((state) => ({ by: state.columnId, dir: state.order })),
               sortBy: undefined,
               sortDir: undefined,
@@ -810,7 +816,7 @@ function GridInner<T extends GridRow>({
     columnReorder.orderedColumns,
     (remoteFilter && dataProxy)
       ? (filters) => {
-          const newOpts: LoadOptions = { ...proxyOpts, filters }
+          const newOpts: LoadOptions = { ...proxyOptsRef.current, filters }
           setProxyOpts(newOpts)
           reloadFromFirstPage(newOpts)
         }
@@ -1247,7 +1253,7 @@ function GridInner<T extends GridRow>({
     if (dataProxy && paginationMode === 'append' && !dataProxyHook.loading && dataProxyHook.hasMore) {
       const { scrollTop, scrollHeight, clientHeight } = event.currentTarget
       if (scrollHeight - scrollTop - clientHeight < 50) {
-        dataProxyHook.loadNextPage(proxyOpts)
+        dataProxyHook.loadNextPage(proxyOptsRef.current)
       }
     }
   }
