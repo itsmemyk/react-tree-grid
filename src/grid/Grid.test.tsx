@@ -2735,4 +2735,45 @@ describe('Grid', () => {
     expect(screen.getByText('$20')).toBeTruthy()
     expect(screen.queryByText('[object Object]')).toBeNull()
   })
+
+  describe('span virtualization', () => {
+    const many = Array.from({ length: 200 }, (_, i) => ({ id: `${i + 1}`, name: `N${i + 1}`, team: `T${i + 1}` }))
+    const spanColumns = [
+      { id: 'name', header: [{ text: 'Name' }], width: 120 },
+      { id: 'team', header: [{ text: 'Team' }], width: 120 },
+    ]
+
+    it('keeps a rowspan painted after its origin row scrolls out of the rendered window', () => {
+      render(
+        <ThemeProvider>
+          <Grid
+            columns={spanColumns}
+            data={many}
+            spans={[{ row: '3', column: 'team', rowspan: 40, text: 'Big span' }]}
+            style={{ width: 260, height: 200 }}
+          />
+        </ThemeProvider>,
+      )
+      const body = screen.getByTestId('grid-body')
+      Object.defineProperty(body, 'scrollTop', { configurable: true, writable: true, value: 600 })
+      fireEvent.scroll(body)
+      expect(screen.queryByText('N3')).toBeNull()
+      expect(screen.getByText('Big span')).toBeTruthy()
+    })
+
+    it('paints spans that start in a frozen column', () => {
+      render(
+        <ThemeProvider>
+          <Grid
+            columns={spanColumns}
+            data={many.slice(0, 5)}
+            leftSplit={1}
+            spans={[{ row: '2', column: 'name', rowspan: 2, text: 'Frozen span' }]}
+            style={{ width: 260, height: 200 }}
+          />
+        </ThemeProvider>,
+      )
+      expect(screen.getByText('Frozen span')).toBeTruthy()
+    })
+  })
 })

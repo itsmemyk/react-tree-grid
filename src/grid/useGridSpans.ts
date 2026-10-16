@@ -15,6 +15,8 @@ export interface SpanInfo {
 }
 
 export interface GridSpansResult {
+  /** Every resolved span origin */
+  origins: SpanInfo[]
   /** Get span info if this cell is the span origin */
   getSpan: (rowId: string, colId: string) => SpanInfo | undefined
   /** Check if this cell is covered (hidden) by another span */
@@ -54,6 +56,7 @@ export function useGridSpans<T extends GridRow>(
 
     if (!spans || spans.length === 0) {
       return {
+        origins: [],
         getSpan: () => undefined,
         isCovered: () => false,
         extendRange: (yStart, yEnd, xStart, xEnd) => ({
@@ -160,6 +163,6 @@ export function useGridSpans<T extends GridRow>(
       return { yStart: ys, yEnd: ye, xStart: xs, xEnd: xe }
     }
 
-    return { getSpan, isCovered, extendRange }
+    return { origins: [...origins.values()], getSpan, isCovered, extendRange }
   }, [spans, columns, rowIds, colWidths, rowHeights, regionStarts])
 }

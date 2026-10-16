@@ -29,6 +29,7 @@ import type {
 import { useGridFilter } from './useGridFilter'
 import { useGridFooter, type FooterValues } from './useGridFooter'
 import { useGridSpans } from './useGridSpans'
+import type { GridSpansResult, SpanInfo } from './useGridSpans'
 import { useColumnResize } from './useColumnResize'
 import { useGridSort } from './useGridSort'
 import { useGridSelection } from './useGridSelection'
@@ -319,6 +320,68 @@ function renderRow<T extends GridRow>(
   )
 }
 
+interface SpanPlacement<T extends GridRow> {
+  row: RowWithHeight<T>
+  column: NormalizedColumn<T>
+  info: SpanInfo
+  top: number
+  left: number
+  width: number
+  /** The span reaches the panel's last column */
+  touchesEnd: boolean
+}
+
+interface SpanPanel<T extends GridRow> {
+  /** All rows of the panel's region, in display order */
+  rows: RowWithHeight<T>[]
+  /** Rendered row window [first, last] within `rows`; the overlay's top edge is rows[first] */
+  rowWindow: [number, number]
+  /** All columns of the panel, in display order */
+  columns: NormalizedColumn<T>[]
+  /** Rendered column window [first, last] within `columns`; the overlay's left edge is columns[first] */
+  colWindow: [number, number]
+}
+
+/**
+ * Find the spans to paint in one panel. A span is placed whenever any part of
+ * it overlaps the rendered window, even when its origin cell has been
+ * virtualized away, and its width is clipped to the panel it starts in.
+ */
+function placeSpans<T extends GridRow>(
+  panel: SpanPanel<T>,
+  gridSpans: GridSpansResult,
+  defaultRowHeight: number,
+): SpanPlacement<T>[] {
+  const { rows, rowWindow, columns, colWindow } = panel
+  if (!rows.length || !columns.length || rowWindow[1] < rowWindow[0] || colWindow[1] < colWindow[0]) return []
+  const placements: SpanPlacement<T>[] = []
+  const rowIndex = new Map(rows.map((row, index) => [row.id, index]))
+  const colIndex = new Map(columns.map((column, index) => [column.id, index]))
+  const rowTops: number[] = [0]
+  for (const row of rows) rowTops.push(rowTops[rowTops.length - 1] + getRowHeight(row, defaultRowHeight))
+  const colLefts: number[] = [0]
+  for (const column of columns) colLefts.push(colLefts[colLefts.length - 1] + column.$width)
+
+  for (const origin of gridSpans.origins) {
+    const r = rowIndex.get(origin.span.row)
+    const c = colIndex.get(origin.span.column)
+    if (r === undefined || c === undefined) continue
+    const rEnd = Math.min(r + origin.rowspan, rows.length) - 1
+    const cEnd = Math.min(c + origin.colspan, columns.length) - 1
+    if (r > rowWindow[1] || rEnd < rowWindow[0] || c > colWindow[1] || cEnd < colWindow[0]) continue
+    placements.push({
+      row: rows[r],
+      column: columns[c],
+      info: origin,
+      top: rowTops[r] - rowTops[rowWindow[0]],
+      left: colLefts[c] - colLefts[colWindow[0]],
+      width: colLefts[cEnd + 1] - colLefts[c],
+      touchesEnd: cEnd === columns.length - 1,
+    })
+  }
+  return placements
+}
+
 /**
  * Render span cells as a separate overlay layer.
  *
@@ -327,80 +390,60 @@ function renderRow<T extends GridRow>(
  * span paints over them with an opaque background.
  */
 function renderSpansOverlay<T extends GridRow>(
-  rows: RowWithHeight<T>[],
-  columns: NormalizedColumn<T>[],
+  placements: SpanPlacement<T>[],
   stylesMap: typeof styles,
-  gridSpans: {
-    getSpan: (rowId: string, colId: string) => {
-      span: { text?: React.ReactNode; css?: string; tooltip?: string }
-      width: number
-      height: number
-    } | undefined
-  },
   interaction?: RowInteraction,
-  defaultRowHeight = 40,
   omitTrailingBorder = false,
 ): React.ReactNode[] {
   const cells: React.ReactNode[] = []
-  let top = 0
-  for (let r = 0; r < rows.length; r++) {
-    const row = rows[r]
-    const rowH = getRowHeight(row, defaultRowHeight)
-    let left = 0
-    for (let c = 0; c < columns.length; c++) {
-      const column = columns[c]
-      const spanInfo = gridSpans.getSpan(row.id, column.id)
-      const editing = interaction?.isEditing?.(row.id, column.id)
-      // Skip the span while its cell is being edited — the underlying real cell
-      // renders the editor, and painting the span over it would both hide the
-      // editor and mount a second one that steals focus and commits instantly.
-      if (spanInfo && !editing) {
-        const cellSelected = interaction?.isCellSelected?.(row.id, column.id)
-        cells.push(
-          <div
-            key={`span-${row.id}-${column.id}`}
-            className={[
-              stylesMap.cell,
-              stylesMap.spanCell,
-              column.align === 'center'
-                ? stylesMap.alignCenter
-                : column.align === 'right'
-                  ? stylesMap.alignRight
-                  : stylesMap.alignLeft,
-              spanInfo.span.css ?? '',
-              interaction?.getCellClassName?.(row.id, column.id) ?? '',
-              cellSelected ? stylesMap.cellSelected : '',
-            ]
-              .filter(Boolean)
-              .join(' ')}
-            style={{
-              position: 'absolute',
-              top,
-              left,
-              width: spanInfo.width,
-              height: spanInfo.height,
-              borderRight: omitTrailingBorder && c === columns.length - 1 ? 'none' : undefined,
-            }}
-            data-rgs-id={row.id}
-            data-rgs-col-id={column.id}
-            title={interaction?.tooltipEnabled ? undefined : spanInfo.span.tooltip}
-            onClick={(e) => interaction?.onCellClick?.(row.id, column.id, e)}
-            onDoubleClick={(e) => interaction?.onCellDblClick?.(row.id, column.id, e)}
-            onMouseEnter={(e) => interaction?.onCellMouseEnter?.(
-              e,
-              row.id,
-              column.id,
-              spanInfo.span.tooltip ?? (typeof spanInfo.span.text === 'string' ? spanInfo.span.text : undefined),
-            )}
-            onMouseLeave={interaction?.onCellMouseLeave}
-          >
-            {spanInfo.span.text ?? getCellValue(row, column)}
-          </div>,
-        )
-      }
-      left += column.$width
-    }
-    top += rowH
+  for (const { row, column, info: spanInfo, top, left, width, touchesEnd } of placements) {
+    const editing = interaction?.isEditing?.(row.id, column.id)
+    // Skip the span while its cell is being edited — the underlying real cell
+    // renders the editor, and painting the span over it would both hide the
+    // editor and mount a second one that steals focus and commits instantly.
+    if (editing) continue
+    const cellSelected = interaction?.isCellSelected?.(row.id, column.id)
+    cells.push(
+      <div
+        key={`span-${row.id}-${column.id}`}
+        className={[
+          stylesMap.cell,
+          stylesMap.spanCell,
+          column.align === 'center'
+            ? stylesMap.alignCenter
+            : column.align === 'right'
+              ? stylesMap.alignRight
+              : stylesMap.alignLeft,
+          spanInfo.span.css ?? '',
+          interaction?.getCellClassName?.(row.id, column.id) ?? '',
+          cellSelected ? stylesMap.cellSelected : '',
+        ]
+          .filter(Boolean)
+          .join(' ')}
+        style={{
+          position: 'absolute',
+          top,
+          left,
+          width,
+          height: spanInfo.height,
+          borderRight: omitTrailingBorder && touchesEnd ? 'none' : undefined,
+        }}
+        data-rgs-id={row.id}
+        data-rgs-col-id={column.id}
+        title={interaction?.tooltipEnabled ? undefined : spanInfo.span.tooltip}
+        onClick={(e) => interaction?.onCellClick?.(row.id, column.id, e)}
+        onDoubleClick={(e) => interaction?.onCellDblClick?.(row.id, column.id, e)}
+        onMouseEnter={(e) => interaction?.onCellMouseEnter?.(
+          e,
+          row.id,
+          column.id,
+          spanInfo.span.tooltip ?? (typeof spanInfo.span.text === 'string' ? spanInfo.span.text : undefined),
+        )}
+        onMouseLeave={interaction?.onCellMouseLeave}
+      >
+        {spanInfo.span.text ?? getCellValue(row, column)}
+      </div>,
+    )
   }
   return cells
 }
@@ -1113,6 +1156,29 @@ function GridInner<T extends GridRow>({
   })
   const visibleColumns = displayColumns.slice(virtual.xStart, virtual.xEnd + 1)
   const visibleRows = displayData.slice(virtual.yStart, virtual.yEnd + 1)
+  // Rows between the frozen top and bottom panels: the scrolling region
+  const scrollRegionRows = useMemo(
+    () => displayData.slice(effectiveTopSplit, displayData.length - effectiveBottomSplit),
+    [displayData, effectiveTopSplit, effectiveBottomSplit],
+  )
+
+  /** Spans for one panel; `rendered*` are the rows/columns the panel actually draws */
+  const spanLayer = (
+    panelRows: RowWithHeight<T>[],
+    renderedRows: RowWithHeight<T>[],
+    panelColumns: NormalizedColumn<T>[],
+    renderedColumns: NormalizedColumn<T>[],
+    omitTrailingBorder = false,
+  ) => {
+    if (!gridSpans.origins.length || !renderedRows.length || !renderedColumns.length) return null
+    const rowAt = (row: RowWithHeight<T> | undefined) => panelRows.findIndex((r) => r.id === row?.id)
+    const colAt = (column: NormalizedColumn<T> | undefined) => panelColumns.findIndex((c) => c.id === column?.id)
+    const rowWindow: [number, number] = [rowAt(renderedRows[0]), rowAt(renderedRows[renderedRows.length - 1])]
+    const colWindow: [number, number] = [colAt(renderedColumns[0]), colAt(renderedColumns[renderedColumns.length - 1])]
+    if (rowWindow.includes(-1) || colWindow.includes(-1)) return null
+    const placements = placeSpans({ rows: panelRows, rowWindow, columns: panelColumns, colWindow }, gridSpans, rowHeight)
+    return renderSpansOverlay(placements, styles, rowInteraction, omitTrailingBorder)
+  }
   const syncedScrollLeft = bodyRef.current?.scrollLeft ?? scrollSyncRef.current.left ?? virtual.scrollLeft
   // Frozen side panels follow the browser's real scroll offset, not the virtualizer's clamp
   const syncedScrollTop = bodyRef.current?.scrollTop ?? virtual.scrollTop
@@ -1725,7 +1791,7 @@ function GridInner<T extends GridRow>({
             >
                 {visibleRows.map((row) => renderRow(row, visibleColumns, styles, rowInteraction, fixedRightColumns.length > 0))}
               {/* Span overlay — absolutely-positioned cells over the rows */}
-              {renderSpansOverlay(visibleRows, visibleColumns, styles, gridSpans, rowInteraction, rowHeight, fixedRightColumns.length > 0)}
+              {spanLayer(scrollRegionRows, visibleRows, centerColumns, visibleColumns, fixedRightColumns.length > 0)}
             </div>
           </div>
         </div>
@@ -1760,7 +1826,7 @@ function GridInner<T extends GridRow>({
                 }}
               >
                 {topRows.map((row) => renderRow(row, centerColumns, styles, rowInteraction, fixedRightColumns.length > 0))}
-                {renderSpansOverlay(topRows, centerColumns, styles, gridSpans, rowInteraction, rowHeight, fixedRightColumns.length > 0)}
+                {spanLayer(topRows, topRows, centerColumns, centerColumns, fixedRightColumns.length > 0)}
               </div>
             </div>
 
@@ -1777,6 +1843,7 @@ function GridInner<T extends GridRow>({
                 }}
               >
                 {topRows.map((row) => renderRow(row, fixedLeftColumns, styles, rowInteraction))}
+                {spanLayer(topRows, topRows, fixedLeftColumns, fixedLeftColumns)}
               </div>
             ) : null}
 
@@ -1793,6 +1860,7 @@ function GridInner<T extends GridRow>({
                 }}
               >
                 {topRows.map((row) => renderRow(row, fixedRightColumns, styles, rowInteraction, false, true))}
+                {spanLayer(topRows, topRows, fixedRightColumns, fixedRightColumns, true)}
               </div>
             ) : null}
           </div>
@@ -1829,7 +1897,7 @@ function GridInner<T extends GridRow>({
                 }}
               >
                 {bottomRows.map((row) => renderRow(row, centerColumns, styles, rowInteraction, fixedRightColumns.length > 0))}
-                {renderSpansOverlay(bottomRows, centerColumns, styles, gridSpans, rowInteraction, rowHeight, fixedRightColumns.length > 0)}
+                {spanLayer(bottomRows, bottomRows, centerColumns, centerColumns, fixedRightColumns.length > 0)}
               </div>
             </div>
 
@@ -1846,6 +1914,7 @@ function GridInner<T extends GridRow>({
                 }}
               >
                 {bottomRows.map((row) => renderRow(row, fixedLeftColumns, styles, rowInteraction))}
+                {spanLayer(bottomRows, bottomRows, fixedLeftColumns, fixedLeftColumns)}
               </div>
             ) : null}
 
@@ -1862,6 +1931,7 @@ function GridInner<T extends GridRow>({
                 }}
               >
                 {bottomRows.map((row) => renderRow(row, fixedRightColumns, styles, rowInteraction, false, true))}
+                {spanLayer(bottomRows, bottomRows, fixedRightColumns, fixedRightColumns, true)}
               </div>
             ) : null}
           </div>
@@ -1894,6 +1964,7 @@ function GridInner<T extends GridRow>({
                 }}
               >
                 {visibleRows.map((row) => renderRow(row, fixedLeftColumns, styles, rowInteraction))}
+                {spanLayer(scrollRegionRows, visibleRows, fixedLeftColumns, fixedLeftColumns)}
               </div>
             </div>
           </div>
@@ -1926,6 +1997,7 @@ function GridInner<T extends GridRow>({
                 }}
               >
                 {visibleRows.map((row) => renderRow(row, fixedRightColumns, styles, rowInteraction, false, true))}
+                {spanLayer(scrollRegionRows, visibleRows, fixedRightColumns, fixedRightColumns, true)}
               </div>
             </div>
           </div>
