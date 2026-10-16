@@ -1829,8 +1829,12 @@ function GridInner<T extends GridRow>({
             className={styles.rowDropLine}
             style={{
               top: rowDrag.dropIndicator.top,
+              // The indent is measured in the first column, which scrolls away unless frozen
               left: getRowDropIndent
-                ? `calc(var(--react-tree-grid-spacing-sm, 8px) + ${getRowDropIndent(rowDrag.dropIndicator.rowId, rowDrag.dropIndicator.position)}px)`
+                ? `max(0px, calc(var(--react-tree-grid-spacing-sm, 8px) + ${
+                  getRowDropIndent(rowDrag.dropIndicator.rowId, rowDrag.dropIndicator.position)
+                  - (effectiveLeftSplit > 0 ? 0 : bodyRef.current?.scrollLeft ?? 0)
+                }px))`
                 : undefined,
             }}
           />
