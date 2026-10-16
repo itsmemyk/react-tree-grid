@@ -50,11 +50,14 @@ declare interface ColumnResizeEvents {
     shouldCommitLiveResize?: (colId: string) => boolean;
 }
 
-export declare function ComboFilter<T extends GridRow>({ column, store, value, onChange, }: ComboFilterProps<T>): JSX.Element;
+export declare function ComboFilter<T extends GridRow>({ column, store, options: fixedOptions, value, onChange, }: ComboFilterProps<T>): JSX.Element;
 
 declare interface ComboFilterProps<T extends GridRow> {
     column: GridColumn<T>;
-    store: DataStore<T>;
+    /** Source of the distinct values; optional when `options` is given */
+    store?: DataStore<T>;
+    /** Fixed choices, used instead of scanning the store */
+    options?: string[];
     value: unknown;
     onChange: (value: string | null) => void;
 }
@@ -293,7 +296,8 @@ export declare interface ExcelExportConfig {
 }
 
 /**
- * Export grid data to CSV string.
+ * Export grid data to CSV string (no BOM; `downloadGridAsCsv` adds one).
+ * Date values are written in local time (see formatDate).
  */
 export declare function exportGridToCsv<T extends DataItem>(store: DataStore<T>, columns: GridColumn<T>[], config?: CsvExportConfig): string;
 
@@ -385,6 +389,11 @@ export declare interface GridColumn<T = Record<string, unknown>> {
     gravity?: number;
     type?: GridColumnType;
     editorType?: GridEditorType;
+    /**
+     * Choices for a selectFilter/comboFilter header. Defaults to the column's
+     * distinct values; set it for remote filtering, where only one page is loaded.
+     */
+    filterOptions?: string[];
     /** Render a custom inline editor. Implies the column is editable. */
     editTemplate?: (value: unknown, row: T, column: GridColumn<T>, api: GridCellEditorApi) => ReactNode;
     template?: (value: unknown, row: T, column: GridColumn<T>) => ReactNode;
@@ -424,6 +433,13 @@ declare interface GridEditorEvents {
     onAfterEditStart?: (rowId: string, colId: string) => void;
     onBeforeEditEnd?: (rowId: string, colId: string, newValue: unknown, oldValue: unknown) => boolean | void;
     onAfterEditEnd?: (rowId: string, colId: string, newValue: unknown) => void;
+}
+
+declare interface GridEditorOptions<T extends GridRow> {
+    /** Rows in on-screen order, used to wrap Tab across rows */
+    getDisplayRows?: () => T[];
+    /** Moves the grid's focused cell when Tab carries the edit to another cell */
+    onMove?: (rowId: string, colId: string) => void;
 }
 
 export declare type GridEditorType = 'input' | 'select' | 'combo' | 'checkbox' | 'datePicker' | 'multiselect';
@@ -543,6 +559,11 @@ export declare interface GridProps<T extends GridRow = GridRow> {
     onDragRowIn?: (data: GridRowDragData, event: PointerEvent) => void;
     onDragRowOut?: (data: GridRowDragData, event: PointerEvent) => void;
     canRowDrop?: (data: GridRowDragData, event: PointerEvent) => boolean | void;
+    /**
+     * Indent in px, from the start of the first column's content, for the row
+     * drop line, e.g. to show the tree level a dropped row will land at
+     */
+    getRowDropIndent?: (rowId: string, position: GridRowDropPosition) => number;
     onCancelRowDrop?: (data: GridRowDragData, event: PointerEvent) => void;
     onBeforeRowDrop?: (data: GridRowDragData, event: PointerEvent) => boolean | void;
     onAfterRowDrop?: (data: GridRowDragData, event: PointerEvent) => void;
@@ -555,6 +576,7 @@ export declare interface GridProps<T extends GridRow = GridRow> {
     onLoadEnd?: () => void;
     onLoadError?: (error: Error) => void;
     freezable?: boolean;
+    /** Fires with the frozen column count actually applied: after a handle drag, and when the grid gets too narrow (or wide again) for the requested count */
     onFreeze?: (splits: {
         left: number;
         top: number;
@@ -606,7 +628,8 @@ declare interface GridSelectionEvents {
 declare interface GridSortEvents {
     onBeforeSort?: (states: SortState[]) => boolean | void;
     onAfterSort?: (states: SortState[]) => void;
-    onRemoteSort?: (sortBy: string | null, sortDir: string | null) => void;
+    /** Receives every sort rule, primary first */
+    onRemoteSort?: (states: SortState[]) => void;
 }
 
 export declare interface GridSpan {
@@ -620,6 +643,8 @@ export declare interface GridSpan {
 }
 
 declare interface GridSpansResult {
+    /** Every resolved span origin */
+    origins: SpanInfo[];
     /** Get span info if this cell is the span origin */
     getSpan: (rowId: string, colId: string) => SpanInfo | undefined;
     /** Check if this cell is covered (hidden) by another span */
@@ -670,11 +695,14 @@ declare interface RowDragEvents {
  * Scans the DataStore's full (unfiltered) data for unique values in the column
  * and renders a native <select>. Empty selection = "All" (clears filter).
  */
-export declare function SelectFilter<T extends GridRow>({ column, store, value, onChange, }: SelectFilterProps<T>): JSX.Element;
+export declare function SelectFilter<T extends GridRow>({ column, store, options: fixedOptions, value, onChange, }: SelectFilterProps<T>): JSX.Element;
 
 declare interface SelectFilterProps<T extends GridRow> {
     column: GridColumn<T>;
-    store: DataStore<T>;
+    /** Source of the distinct values; optional when `options` is given */
+    store?: DataStore<T>;
+    /** Fixed choices, used instead of scanning the store */
+    options?: string[];
     value: unknown;
     onChange: (value: string | null) => void;
 }
@@ -842,7 +870,7 @@ export declare interface TreeProps {
     data: TreeNode[];
     checkbox?: boolean;
     editable?: boolean;
-    /** 'item' = item is drag source; 'both' = item is source and drop target */
+    /** 'item' = item is drag source only; 'both' = item is source and drop target */
     dragItem?: 'item' | 'both';
     virtual?: boolean;
     expanded?: string[];
@@ -850,7 +878,9 @@ export declare interface TreeProps {
     selected?: string[];
     checked?: string[];
     css?: string;
+    style?: CSSProperties;
     onSelect?: (id: string) => void;
+    /** Fires with every checked id; checking a node also checks its enabled descendants */
     onCheck?: (ids: string[]) => void;
     onExpand?: (id: string) => void;
     onCollapse?: (id: string) => void;
@@ -930,12 +960,12 @@ export declare function useGridCss<T extends GridRow>(rows: T[], columns: GridCo
  *
  * Behavior:
  * - Double-click cell (or single-click checkbox) → open editor
- * - Enter/Tab → commit and move to next cell
+ * - Enter → commit; Tab / Shift+Tab → commit and edit the next / previous editable cell
  * - Escape → cancel
  * - Click outside → commit
  * - Updates DataStore on commit
  */
-export declare function useGridEditor<T extends GridRow>(store: DataStore<T & DataItem> | undefined, data: T[], columns: GridColumn<T>[], events: GridEditorEvents): {
+export declare function useGridEditor<T extends GridRow>(store: DataStore<T & DataItem> | undefined, data: T[], columns: GridColumn<T>[], events: GridEditorEvents, options?: GridEditorOptions<T>): {
     editingCell: EditingCell | null;
     editorRef: RefObject<HTMLInputElement | null>;
     startEdit: (rowId: string, colId: string) => void;
