@@ -90,4 +90,87 @@ describe('Tree', () => {
     })
     expect(screen.queryByText('A1')).toBeNull()
   })
+
+  it('navigates and toggles with the keyboard', async () => {
+    const onSelect = vi.fn()
+    render(<Tree data={data} onSelect={onSelect} />)
+    const mail = document.querySelector('[data-rgs-tree-id="mail"]') as HTMLElement
+    expect(mail.tabIndex).toBe(0)
+    await act(async () => {
+      mail.focus()
+      fireEvent.keyDown(mail, { key: 'ArrowDown' })
+    })
+    expect(document.activeElement?.getAttribute('data-rgs-tree-id')).toBe('inbox')
+    await act(async () => {
+      fireEvent.keyDown(document.activeElement as HTMLElement, { key: 'Enter' })
+    })
+    expect(onSelect).toHaveBeenCalledWith('inbox')
+    await act(async () => {
+      fireEvent.keyDown(document.activeElement as HTMLElement, { key: 'ArrowLeft' })
+    })
+    expect(document.activeElement?.getAttribute('data-rgs-tree-id')).toBe('mail')
+    await act(async () => {
+      fireEvent.keyDown(document.activeElement as HTMLElement, { key: 'ArrowLeft' })
+    })
+    expect(screen.queryByText('Inbox')).toBeNull()
+    await act(async () => {
+      fireEvent.keyDown(document.activeElement as HTMLElement, { key: 'ArrowRight' })
+    })
+    expect(screen.getByText('Inbox')).toBeTruthy()
+  })
+
+  it('cascades checks to children and marks partial parents', async () => {
+    const onCheck = vi.fn()
+    render(<Tree data={data} checkbox onCheck={onCheck} />)
+    const box = (id: string) => document.querySelector(`[data-rgs-tree-id="${id}"] input[type="checkbox"]`) as HTMLInputElement
+    await act(async () => {
+      fireEvent.click(box('mail'))
+    })
+    expect(new Set(onCheck.mock.calls.at(-1)?.[0])).toEqual(new Set(['mail', 'inbox', 'sent']))
+    expect(box('inbox').checked).toBe(true)
+    await act(async () => {
+      fireEvent.click(box('sent'))
+    })
+    expect(box('mail').checked).toBe(false)
+    expect(box('mail').indeterminate).toBe(true)
+    expect(document.querySelector('[data-rgs-tree-id="mail"]')?.getAttribute('aria-checked')).toBe('mixed')
+  })
+
+  it('ignores interaction with disabled nodes', async () => {
+    const onSelect = vi.fn()
+    render(<Tree data={[{ id: 'x', value: 'X', disabled: true }]} editable onSelect={onSelect} />)
+    await act(async () => {
+      fireEvent.click(screen.getByText('X'))
+      fireEvent.doubleClick(screen.getByText('X'))
+    })
+    expect(onSelect).not.toHaveBeenCalled()
+    expect(document.querySelector('[data-rgs-tree-id="x"] input')).toBeNull()
+  })
+
+  it('treats an empty edit as a cancel', async () => {
+    const onEdit = vi.fn()
+    render(<Tree data={data} editable onEdit={onEdit} />)
+    await act(async () => {
+      fireEvent.doubleClick(screen.getByText('Inbox'))
+    })
+    const input = document.querySelector('[data-rgs-tree-id="inbox"] input') as HTMLInputElement
+    await act(async () => {
+      fireEvent.change(input, { target: { value: '   ' } })
+      fireEvent.keyDown(input, { key: 'Enter' })
+    })
+    expect(onEdit).not.toHaveBeenCalled()
+    expect(screen.getByText('Inbox')).toBeTruthy()
+  })
+
+  it('keeps expansion when the data prop changes', async () => {
+    const { rerender } = render(<Tree data={data} />)
+    expect(screen.getByText('Inbox')).toBeTruthy()
+    rerender(<Tree data={data.map((node) => ({ ...node, $opened: false }))} />)
+    expect(screen.getByText('Inbox')).toBeTruthy()
+  })
+
+  it('applies the style prop to the root', () => {
+    render(<Tree data={data} style={{ width: 280 }} />)
+    expect((document.querySelector('[role="tree"]') as HTMLElement).style.width).toBe('280px')
+  })
 })

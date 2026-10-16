@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import type { CSSProperties, ReactNode } from 'react'
 
 export interface TreeNode {
   id: string
@@ -22,7 +22,7 @@ export interface TreeProps {
   data: TreeNode[]
   checkbox?: boolean
   editable?: boolean
-  /** 'item' = item is drag source; 'both' = item is source and drop target */
+  /** 'item' = item is drag source only; 'both' = item is source and drop target */
   dragItem?: 'item' | 'both'
   virtual?: boolean
   expanded?: string[]
@@ -30,7 +30,9 @@ export interface TreeProps {
   selected?: string[]
   checked?: string[]
   css?: string
+  style?: CSSProperties
   onSelect?: (id: string) => void
+  /** Fires with every checked id; checking a node also checks its enabled descendants */
   onCheck?: (ids: string[]) => void
   onExpand?: (id: string) => void
   onCollapse?: (id: string) => void

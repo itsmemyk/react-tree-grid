@@ -109,7 +109,7 @@ export const Default: Story = {
   args: {
     data: mailData,
     style: { width: 280, minHeight: 300 },
-  } as Story['args'] & { style?: React.CSSProperties },
+  },
   parameters: {
     docs: { description: { story: 'Basic tree with icons, nested items, and one disabled leaf.' } },
   },
@@ -121,7 +121,7 @@ export const WithCheckboxes: Story = {
     data: mailData,
     checkbox: true,
     style: { width: 280 },
-  } as Story['args'] & { style?: React.CSSProperties },
+  },
 }
 
 export const Editable: Story = {
@@ -131,7 +131,7 @@ export const Editable: Story = {
     editable: true,
     checkbox: true,
     style: { width: 280 },
-  } as Story['args'] & { style?: React.CSSProperties },
+  },
   parameters: {
     docs: { description: { story: 'Double-click a label to edit it inline. Press Enter to commit, Escape to cancel.' } },
   },
@@ -141,7 +141,8 @@ export const Draggable: Story = {
   name: 'Draggable',
   render: () => {
     const [log, setLog] = useState<string[]>([])
-    const data = cloneData()
+    // Keep one copy: a new array each render would reload the tree and undo the drop
+    const [data] = useState(cloneData)
     return (
       <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start' }}>
         <Tree
