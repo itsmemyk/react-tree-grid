@@ -667,6 +667,10 @@ function GridInner<T extends GridRow>({
     rowDrag.orderedRows,
     columnReorder.orderedColumns,
     { onBeforeEditStart, onAfterEditStart, onBeforeEditEnd, onAfterEditEnd },
+    {
+      getDisplayRows: () => displayOrderRef.current as T[],
+      onMove: (rowId, colId) => moveFocusRef.current(rowId, colId),
+    },
   )
 
   const gridFilter = useGridFilter(
@@ -1425,6 +1429,16 @@ function GridInner<T extends GridRow>({
     [normalizedColumns, rowHeight, bodyClientHeight, bodyClientWidth, fixedLeftWidth, fixedRightWidth, effectiveLeftSplit, rightSplit,
       effectiveTopSplit, effectiveBottomSplit, displayData, fixedTopHeight, fixedBottomHeight, virtual.getRowTop],
   )
+
+  // Lets the editor's Tab move the focused cell (declared before scrollToCell exists)
+  const moveFocusRef = useRef<(rowId: string, colId: string) => void>(() => {})
+  moveFocusRef.current = (rowId, colId) => {
+    gridSelection.handleClick(rowId, colId, false, false)
+    scrollToCell(
+      displayData.findIndex((r) => r.id === rowId),
+      normalizedColumns.findIndex((c) => c.id === colId),
+    )
+  }
 
   const pageScroll = useCallback(
     (direction: 'up' | 'down' | 'home' | 'end') => {

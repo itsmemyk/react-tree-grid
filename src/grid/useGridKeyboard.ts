@@ -22,8 +22,8 @@ interface GridKeyboardConfig {
  * - Arrow keys: navigate ±1 cell, update selection
  * - Ctrl+Arrow Up/Down: jump to first/last row
  * - Ctrl+Arrow Left/Right: jump to first/last column
- * - Tab / Shift+Tab: forward/backward cell navigation, wraps rows
- * - Enter: start or commit edit
+ * - Tab / Shift+Tab: forward/backward cell navigation, wraps rows; leaves the grid at either end
+ * - Enter / F2: start edit (Enter also commits)
  * - Escape: cancel edit
  * - Space: toggle boolean column
  * - PageUp/Down: scroll viewport (don't move selection)
@@ -125,7 +125,10 @@ export function useGridKeyboard(config: GridKeyboardConfig) {
       switch (key) {
         case 'ArrowUp': {
           e.preventDefault()
-          if (!focus) break
+          if (!focus) {
+            navigateTo(0, 0, false)
+            break
+          }
           if (ctrl) {
             navigateTo(0, focus.colIdx, shift)
           } else {
@@ -135,7 +138,10 @@ export function useGridKeyboard(config: GridKeyboardConfig) {
         }
         case 'ArrowDown': {
           e.preventDefault()
-          if (!focus) break
+          if (!focus) {
+            navigateTo(0, 0, false)
+            break
+          }
           if (ctrl) {
             navigateTo(getVisibleData().length - 1, focus.colIdx, shift)
           } else {
@@ -145,7 +151,10 @@ export function useGridKeyboard(config: GridKeyboardConfig) {
         }
         case 'ArrowLeft': {
           e.preventDefault()
-          if (!focus) break
+          if (!focus) {
+            navigateTo(0, 0, false)
+            break
+          }
           if (ctrl) {
             navigateTo(focus.rowIdx, 0, shift)
           } else {
@@ -155,7 +164,10 @@ export function useGridKeyboard(config: GridKeyboardConfig) {
         }
         case 'ArrowRight': {
           e.preventDefault()
-          if (!focus) break
+          if (!focus) {
+            navigateTo(0, 0, false)
+            break
+          }
           if (ctrl) {
             navigateTo(focus.rowIdx, getVisibleColumns().length - 1, shift)
           } else {
@@ -165,32 +177,30 @@ export function useGridKeyboard(config: GridKeyboardConfig) {
         }
 
         case 'Tab': {
-          e.preventDefault()
+          // Without a focused cell, or at either end, Tab leaves the grid as usual
           if (!focus) break
           const visibleCols = getVisibleColumns()
           const visibleData = getVisibleData()
+          let target: [number, number] | null = null
 
           if (shift) {
-            // Shift+Tab: move backward
-            if (focus.colIdx > 0) {
-              navigateTo(focus.rowIdx, focus.colIdx - 1, false)
-            } else if (focus.rowIdx > 0) {
-              // Wrap to last column of previous row
-              navigateTo(focus.rowIdx - 1, visibleCols.length - 1, false)
-            }
+            if (focus.colIdx > 0) target = [focus.rowIdx, focus.colIdx - 1]
+            else if (focus.rowIdx > 0) target = [focus.rowIdx - 1, visibleCols.length - 1]
           } else {
-            // Tab: move forward
-            if (focus.colIdx < visibleCols.length - 1) {
-              navigateTo(focus.rowIdx, focus.colIdx + 1, false)
-            } else if (focus.rowIdx < visibleData.length - 1) {
-              // Wrap to first column of next row
-              navigateTo(focus.rowIdx + 1, 0, false)
-            }
+            if (focus.colIdx < visibleCols.length - 1) target = [focus.rowIdx, focus.colIdx + 1]
+            else if (focus.rowIdx < visibleData.length - 1) target = [focus.rowIdx + 1, 0]
+          }
+          if (target) {
+            e.preventDefault()
+            navigateTo(target[0], target[1], false)
           }
           break
         }
 
-        case 'Enter': {
+        case 'Enter':
+        case 'F2': {
+          // Ctrl/Cmd+Enter is left to the host (TreeGrid uses it to toggle rows)
+          if (ctrl) break
           e.preventDefault()
           if (!selectedCell || !editable) break
           onStartEdit(selectedCell.rowId, selectedCell.colId)

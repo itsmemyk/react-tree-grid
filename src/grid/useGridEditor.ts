@@ -15,6 +15,25 @@ interface EditingCell {
   originalValue: unknown
 }
 
+interface GridEditorOptions<T extends GridRow> {
+  /** Rows in on-screen order, used to wrap Tab across rows */
+  getDisplayRows?: () => T[]
+  /** Moves the grid's focused cell when Tab carries the edit to another cell */
+  onMove?: (rowId: string, colId: string) => void
+}
+
+/**
+ * Number columns store numbers: a numeric string is converted, an empty one
+ * clears the cell, anything else is rejected (undefined).
+ */
+function coerceValue<T extends GridRow>(col: GridColumn<T> | undefined, value: unknown): unknown {
+  if (col?.type !== 'number' || typeof value !== 'string') return value
+  const text = value.trim()
+  if (text === '') return null
+  const parsed = Number(text)
+  return Number.isFinite(parsed) ? parsed : undefined
+}
+
 interface GridEditorEvents {
   onBeforeEditStart?: (rowId: string, colId: string) => boolean | void
   onAfterEditStart?: (rowId: string, colId: string) => void
@@ -27,7 +46,7 @@ interface GridEditorEvents {
  *
  * Behavior:
  * - Double-click cell (or single-click checkbox) → open editor
- * - Enter/Tab → commit and move to next cell
+ * - Enter → commit; Tab / Shift+Tab → commit and edit the next / previous editable cell
  * - Escape → cancel
  * - Click outside → commit
  * - Updates DataStore on commit
@@ -37,6 +56,7 @@ export function useGridEditor<T extends GridRow>(
   data: T[],
   columns: GridColumn<T>[],
   events: GridEditorEvents,
+  options: GridEditorOptions<T> = {},
 ) {
   const [editingCell, setEditingCellState] = useState<EditingCell | null>(null)
   // Mirrors editingCell synchronously, so a second endEdit in the same event
@@ -47,6 +67,8 @@ export function useGridEditor<T extends GridRow>(
     setEditingCellState(next)
   }, [])
   const editorRef = useRef<HTMLInputElement | null>(null)
+  const optionsRef = useRef(options)
+  optionsRef.current = options
 
   const startEdit = useCallback(
     (rowId: string, colId: string) => {
@@ -81,7 +103,11 @@ export function useGridEditor<T extends GridRow>(
       if (!current) return
 
       const { rowId, colId, originalValue } = current
-      const value = explicitValue !== undefined ? explicitValue : current.value
+      const rawValue = explicitValue !== undefined ? explicitValue : current.value
+      const value = coerceValue(columns.find((c) => c.id === colId), rawValue)
+
+      // An unparsable value for a typed column is dropped, like a cancel
+      if (save && value === undefined && rawValue !== undefined) save = false
 
       if (save) {
         if (events.onBeforeEditEnd) {
@@ -89,8 +115,8 @@ export function useGridEditor<T extends GridRow>(
           if (result === false) return
         }
 
-        // Update store
-        if (store) {
+        // Skip the store write when nothing changed, so it fires no change events
+        if (store && !Object.is(value, originalValue)) {
           store.update(rowId, { [colId]: value } as Partial<T & DataItem>)
         }
 
@@ -99,7 +125,7 @@ export function useGridEditor<T extends GridRow>(
 
       setEditingCell(null)
     },
-    [setEditingCell, store, events],
+    [setEditingCell, store, events, columns],
   )
 
   const setEditorValue = useCallback(
@@ -108,6 +134,27 @@ export function useGridEditor<T extends GridRow>(
       if (current) setEditingCell({ ...current, value })
     },
     [setEditingCell],
+  )
+
+  /** The next (or previous) editable cell in display order, wrapping across rows. */
+  const findNextEditable = useCallback(
+    (rowId: string, colId: string, backward: boolean): { rowId: string; colId: string } | null => {
+      const editableCols = columns.filter((c) => !c.hidden && isColumnEditable(c))
+      if (!editableCols.length) return null
+      const rows = optionsRef.current.getDisplayRows?.() ?? data
+      const rowIdx = rows.findIndex((r) => r.id === rowId)
+      const colIdx = editableCols.findIndex((c) => c.id === colId)
+      if (rowIdx < 0 || colIdx < 0) return null
+      const step = backward ? -1 : 1
+      const nextCol = colIdx + step
+      if (nextCol >= 0 && nextCol < editableCols.length) {
+        return { rowId, colId: editableCols[nextCol].id }
+      }
+      const nextRow = rows[rowIdx + step]
+      if (!nextRow) return null
+      return { rowId: nextRow.id, colId: editableCols[backward ? editableCols.length - 1 : 0].id }
+    },
+    [columns, data],
   )
 
   const handleEditorKeyDown = useCallback(
@@ -126,19 +173,18 @@ export function useGridEditor<T extends GridRow>(
       } else if (e.key === 'Tab') {
         e.preventDefault()
         e.stopPropagation()
+        const current = editingRef.current
         endEdit(true)
-        // Move to next editable cell
-        if (editingCell) {
-          const colIdx = columns.findIndex((c) => c.id === editingCell.colId)
-          const nextCol = columns.slice(colIdx + 1).find(isColumnEditable)
-          if (nextCol) {
-            // Start editing next cell in same row (defer to avoid state conflict)
-            setTimeout(() => startEdit(editingCell.rowId, nextCol.id), 0)
-          }
+        if (!current) return
+        const next = findNextEditable(current.rowId, current.colId, e.shiftKey)
+        if (next) {
+          optionsRef.current.onMove?.(next.rowId, next.colId)
+          // Defer so the closing edit's state settles before the next one opens
+          setTimeout(() => startEdit(next.rowId, next.colId), 0)
         }
       }
     },
-    [endEdit, editingCell, columns, startEdit],
+    [endEdit, findNextEditable, startEdit],
   )
 
   const isEditing = useCallback(

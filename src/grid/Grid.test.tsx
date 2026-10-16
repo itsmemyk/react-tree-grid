@@ -1289,6 +1289,101 @@ describe('Grid', () => {
     expect(screen.getByTestId('role-editor')).toBeTruthy()
   })
 
+  describe('editor keyboard', () => {
+    const renderEditable = (props: Record<string, unknown> = {}) => {
+      const onAfterSelect = vi.fn()
+      const onAfterEditStart = vi.fn()
+      const onAfterEditEnd = vi.fn()
+      const utils = render(
+        <ThemeProvider>
+          <Grid
+            columns={[
+              { id: 'name', header: [{ text: 'Name' }], width: 120, editorType: 'input' },
+              { id: 'role', header: [{ text: 'Role' }], width: 120, editorType: 'input' },
+              { id: 'age', header: [{ text: 'Age' }], width: 80, editorType: 'input', type: 'number' },
+            ]}
+            data={[
+              { id: '1', name: 'Alice', role: 'Dev', age: 30 },
+              { id: '2', name: 'Bob', role: 'QA', age: 40 },
+            ]}
+            selection="cell"
+            editable
+            keyNavigation
+            onAfterSelect={onAfterSelect}
+            onAfterEditStart={onAfterEditStart}
+            onAfterEditEnd={onAfterEditEnd}
+            style={{ width: 400, height: 180 }}
+            {...props}
+          />
+        </ThemeProvider>,
+      )
+      const grid = utils.container.querySelector('[data-rgs-key-navigation="true"]') as HTMLDivElement
+      return { ...utils, grid, onAfterSelect, onAfterEditStart, onAfterEditEnd }
+    }
+    const flush = () => act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+
+    it('moves the editor and the focused cell backwards with Shift+Tab', async () => {
+      const { onAfterSelect, onAfterEditStart } = renderEditable()
+      fireEvent.doubleClick(screen.getByText('Dev'))
+      onAfterEditStart.mockClear()
+      fireEvent.keyDown(document.querySelector('input') as HTMLInputElement, { key: 'Tab', shiftKey: true })
+      await flush()
+      expect(onAfterEditStart).toHaveBeenCalledWith('1', 'name')
+      expect(onAfterSelect).toHaveBeenLastCalledWith('1', 'name')
+    })
+
+    it('wraps the editor to the next row after the last editable column', async () => {
+      const { onAfterEditStart } = renderEditable()
+      fireEvent.doubleClick(screen.getByText('30'))
+      onAfterEditStart.mockClear()
+      fireEvent.keyDown(document.querySelector('input') as HTMLInputElement, { key: 'Tab' })
+      await flush()
+      expect(onAfterEditStart).toHaveBeenCalledWith('2', 'name')
+    })
+
+    it('stores numbers for number columns and rejects text', () => {
+      const { onAfterEditEnd } = renderEditable()
+      fireEvent.doubleClick(screen.getByText('30'))
+      let editor = document.querySelector('input') as HTMLInputElement
+      fireEvent.change(editor, { target: { value: ' 31 ' } })
+      fireEvent.keyDown(editor, { key: 'Enter' })
+      expect(onAfterEditEnd).toHaveBeenCalledWith('1', 'age', 31)
+
+      onAfterEditEnd.mockClear()
+      fireEvent.doubleClick(screen.getByText('40'))
+      editor = document.querySelector('input') as HTMLInputElement
+      fireEvent.change(editor, { target: { value: 'abc' } })
+      fireEvent.keyDown(editor, { key: 'Enter' })
+      expect(onAfterEditEnd).not.toHaveBeenCalled()
+      expect(screen.getByText('40')).toBeTruthy()
+    })
+
+    it('starts editing with F2 but not with Ctrl+Enter', () => {
+      const { grid, onAfterEditStart } = renderEditable()
+      fireEvent.click(screen.getByText('Alice'))
+      fireEvent.keyDown(grid, { key: 'Enter', ctrlKey: true })
+      expect(onAfterEditStart).not.toHaveBeenCalled()
+      fireEvent.keyDown(grid, { key: 'F2' })
+      expect(onAfterEditStart).toHaveBeenCalledWith('1', 'name')
+    })
+
+    it('lets Tab leave the grid from the last cell', () => {
+      const { grid } = renderEditable()
+      fireEvent.click(screen.getByText('40'))
+      const event = createEvent.keyDown(grid, { key: 'Tab' })
+      fireEvent(grid, event)
+      expect(event.defaultPrevented).toBe(false)
+    })
+
+    it('selects the first cell on the first arrow key', () => {
+      const { grid, onAfterSelect } = renderEditable()
+      fireEvent.keyDown(grid, { key: 'ArrowDown' })
+      expect(onAfterSelect).toHaveBeenCalledWith('1', 'name')
+    })
+  })
+
   it('commits exactly once when Enter is pressed in the built-in editor', () => {
     const onAfterEditEnd = vi.fn()
 
