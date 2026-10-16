@@ -1769,9 +1769,10 @@ function GridInner<T extends GridRow>({
         <div
           ref={headerScrollRef}
           className={styles.headerScroller}
-          // Scroll containers are keyboard-focusable in Chrome; the grid root owns focus
+          // Scroll containers are keyboard-focusable in Chrome; keep them out of the
+          // Tab order. Focus isn't moved from here: doing so mid-mousedown would stop
+          // native header drags (reorder, drag-to-group) from starting
           tabIndex={-1}
-          onFocus={returnFocusToRoot}
           style={{
             marginLeft: fixedLeftWidth,
             marginRight: fixedRightWidth + verticalScrollbarWidth,
@@ -2073,7 +2074,6 @@ function GridInner<T extends GridRow>({
             ref={footerScrollRef}
             className={styles.headerScroller}
             tabIndex={-1}
-            onFocus={returnFocusToRoot}
             style={{
               marginLeft: fixedLeftWidth,
               marginRight: fixedRightWidth + verticalScrollbarWidth,
