@@ -782,6 +782,18 @@ export class TreeStore<T extends TreeDataItem = TreeDataItem> extends DataStore<
       }
     })
 
+    // Parents kept only for a matching descendant were appended above; restore
+    // every list to the order of the (pre-filter) source lists.
+    for (const key in newChilds) {
+      const source = this._childs[key]
+      if (!source || newChilds[key].length < 2) continue
+      const position = new Map<string, number>()
+      source.forEach((item, i) => position.set(item.id, i))
+      newChilds[key].sort(
+        (a, b) => (position.get(a.id) ?? Infinity) - (position.get(b.id) ?? Infinity),
+      )
+    }
+
     this._childs = newChilds
   }
 
