@@ -1,9 +1,33 @@
-import { useCallback, useSyncExternalStore } from 'react'
+import { useCallback, useRef, useSyncExternalStore } from 'react'
 import type { DataStore } from '../core/data'
 import { computeAggregate } from '../core/data/aggregate'
 import type { GridColumn, GridRow } from './types'
 
 export type FooterValues = Record<string, Record<number, string | number>>
+
+interface TreeLike<T> {
+  getRoot(): string
+  _childs: Record<string, T[]>
+}
+
+/**
+ * Rows the footer aggregates over. A tree store filters its child lists and
+ * leaves `_order` untouched, so walk the filtered tree instead.
+ */
+function visibleStoreRows<T extends GridRow>(store: DataStore<T>): T[] {
+  const tree = store as unknown as Partial<TreeLike<T>>
+  if (typeof tree.getRoot !== 'function' || !tree._childs) return store._order
+  const childs = tree._childs
+  const rows: T[] = []
+  const walk = (id: string) => {
+    for (const child of childs[id] ?? []) {
+      rows.push(child)
+      walk(child.id)
+    }
+  }
+  walk(tree.getRoot())
+  return rows
+}
 
 /**
  * useGridFooter — computes footer aggregate values from DataStore.
@@ -18,14 +42,19 @@ export function useGridFooter<T extends GridRow>(
   columns: GridColumn<T>[],
   data: T[],
 ): FooterValues {
-  // Subscribe to store changes so we recompute when data changes
+  // Bumped on every store event, so edits that keep the row count still recompute
+  const versionRef = useRef(0)
   const subscribe = useCallback(
     (onStoreChange: () => void) => {
       if (!store) return () => {}
-      const handler = () => onStoreChange()
-      store.events.on('change', handler)
-      store.events.on('filter', handler)
-      store.events.on('sort', handler)
+      const handler = () => {
+        versionRef.current += 1
+        onStoreChange()
+      }
+      // The handler doubles as the context, which is what detach() matches on
+      store.events.on('change', handler, handler)
+      store.events.on('filter', handler, handler)
+      store.events.on('sort', handler, handler)
       return () => {
         store.events.detach('change', handler)
         store.events.detach('filter', handler)
@@ -35,13 +64,11 @@ export function useGridFooter<T extends GridRow>(
     [store],
   )
 
-  const getSnapshot = useCallback(() => {
-    return store ? store._order.length : data.length
-  }, [store, data.length])
+  const getSnapshot = useCallback(() => versionRef.current, [])
 
   useSyncExternalStore(subscribe, getSnapshot)
 
-  const source = store ? store._order : data
+  const source = store ? visibleStoreRows(store) : data
   const result: FooterValues = {}
 
   for (const column of columns) {
