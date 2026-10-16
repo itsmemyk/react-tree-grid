@@ -1,6 +1,12 @@
 export { DataStore } from './DataStore'
-export { DataProxy } from './DataProxy'
-export type { DataProxyConfig, LoadOptions, LoadResult } from './DataProxy'
+export { DataProxy, DataProxyError, isAbortError, normalizeSortRules } from './DataProxy'
+export type {
+  DataProxyConfig,
+  LoadOptions,
+  LoadResult,
+  RemoteSortRule,
+  DataProxyRequestOptions,
+} from './DataProxy'
 export { useDataProxy } from './useDataProxy'
 export type { UseDataProxyOptions, UseDataProxyReturn } from './useDataProxy'
 export { applyGroupBy } from './GroupBy'
