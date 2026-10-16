@@ -106,6 +106,9 @@ function normalizeColumns<T extends GridRow>(
     })
 }
 
+/** Width of scrolling area kept visible when frozen columns would fill the body */
+const MIN_CENTER_WIDTH = 80
+
 function getCellValue<T extends GridRow>(
   row: T,
   column: NormalizedColumn<T>,
@@ -962,7 +965,22 @@ function GridInner<T extends GridRow>({
     initialFreezeCol: leftSplit,
     onFreeze: onFreeze ? (col) => onFreeze({ left: col, top: 0 }) : undefined,
   })
-  const effectiveLeftSplit = freezable ? freezeHook.freezeCol : leftSplit
+  const requestedLeftSplit = freezable ? freezeHook.freezeCol : leftSplit
+  // Frozen columns wider than the body would hide the scrolling area and the
+  // freeze handle, so unfreeze from the right until some center area remains
+  const effectiveLeftSplit = useMemo(() => {
+    const widths = displayColumns.map((column) => column.$width)
+    const available = (bodyBox?.width ?? viewportSize.width) - getScrollbarWidth()
+    if (widths.reduce((sum, width) => sum + width, 0) <= available) return requestedLeftSplit
+    const rightWidth = rightSplit > 0 ? widths.slice(-rightSplit).reduce((sum, width) => sum + width, 0) : 0
+    let split = Math.min(requestedLeftSplit, widths.length)
+    let leftWidth = widths.slice(0, split).reduce((sum, width) => sum + width, 0)
+    while (split > 0 && leftWidth + rightWidth > available - MIN_CENTER_WIDTH) {
+      split -= 1
+      leftWidth -= widths[split]
+    }
+    return split
+  }, [displayColumns, bodyBox, viewportSize.width, requestedLeftSplit, rightSplit])
 
   const fixedLeftColumns = displayColumns.slice(0, effectiveLeftSplit)
   const fixedRightColumns =
