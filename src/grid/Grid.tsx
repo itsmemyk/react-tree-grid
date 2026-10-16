@@ -747,6 +747,7 @@ function GridInner<T extends GridRow>({
     footerRowHeight,
     visibleRows: baseDataRows,
     footerValues,
+    resizedWidths: columnResize.widthOverrides,
   })
 
   const normalizedColumns = useMemo(() => {

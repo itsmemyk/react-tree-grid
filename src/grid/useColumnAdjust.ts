@@ -46,6 +46,8 @@ interface AdjustOptions<T extends GridRow> {
   visibleRows: T[]
   /** Footer aggregate values keyed by columnId. */
   footerValues?: Record<string, Record<number, string | number>>
+  /** Widths set by dragging column edges; they win over adjusted widths when measuring heights. */
+  resizedWidths?: Record<string, number>
 }
 
 export interface ColumnAdjustResult {
@@ -268,6 +270,7 @@ export function useColumnAdjust<T extends GridRow>(options: AdjustOptions<T>): C
     footerRowHeight,
     visibleRows,
     footerValues,
+    resizedWidths,
   } = options
 
   return useMemo<ColumnAdjustResult>(() => {
@@ -340,13 +343,12 @@ export function useColumnAdjust<T extends GridRow>(options: AdjustOptions<T>): C
 
     if (!ctx) return result
 
+    // Heights are measured at the width a column is actually rendered at
+    const widthFor = (col: GridColumn<T>): number =>
+      resizedWidths?.[col.id] ?? result.widthOverrides[col.id] ?? col.width ?? col.minWidth ?? 100
+
     // ── 3. Auto row heights ──────────────────────────────────────────
     if (autoHeight) {
-      const widthFor = (col: GridColumn<T>): number => {
-        const override = result.widthOverrides[col.id]
-        if (override !== undefined) return override
-        return col.width ?? col.minWidth ?? 100
-      }
       for (const row of visibleRows) {
         let maxLines = 1
         for (const col of visibleCols) {
@@ -371,12 +373,7 @@ export function useColumnAdjust<T extends GridRow>(options: AdjustOptions<T>): C
       for (let rowIdx = 0; rowIdx < headerRowCount; rowIdx += 1) {
         let maxLines = 1
         for (const col of visibleCols) {
-          const colWidth =
-            result.widthOverrides[col.id] ??
-            col.width ??
-            col.minWidth ??
-            100
-          const innerWidth = colWidth - ROW_HEIGHT_HORIZONTAL_OFFSET
+          const innerWidth = widthFor(col) - ROW_HEIGHT_HORIZONTAL_OFFSET
           const cell = col.header?.[rowIdx]
           const lines = countWrappedLines(ctx, headerText(cell), innerWidth)
           if (lines > maxLines) maxLines = lines
@@ -395,12 +392,7 @@ export function useColumnAdjust<T extends GridRow>(options: AdjustOptions<T>): C
       for (let rowIdx = 0; rowIdx < footerRowCount; rowIdx += 1) {
         let maxLines = 1
         for (const col of visibleCols) {
-          const colWidth =
-            result.widthOverrides[col.id] ??
-            col.width ??
-            col.minWidth ??
-            100
-          const innerWidth = colWidth - ROW_HEIGHT_HORIZONTAL_OFFSET
+          const innerWidth = widthFor(col) - ROW_HEIGHT_HORIZONTAL_OFFSET
           const cell = col.footer?.[rowIdx]
           const lines = countWrappedLines(
             ctx,
@@ -430,5 +422,6 @@ export function useColumnAdjust<T extends GridRow>(options: AdjustOptions<T>): C
     footerRowHeight,
     visibleRows,
     footerValues,
+    resizedWidths,
   ])
 }
