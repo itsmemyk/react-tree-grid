@@ -29,12 +29,14 @@ describe('exportGridToCsv', () => {
     expect(csv).toBe('"a,""b""\nc",')
   })
 
-  it('formats Date values as ISO strings', () => {
-    const d = new Date(Date.UTC(2024, 0, 15, 10, 30, 0))
-    const csv = exportGridToCsv(makeStore([{ id: '1', name: 'a', when: d }]), cols, {
-      includeHeader: false,
-    })
-    expect(csv).toBe('a,2024-01-15T10:30:00.000Z')
+  it('formats Date values in local time, like the Excel export', () => {
+    const withTime = new Date(2024, 0, 15, 10, 30, 5)
+    const midnight = new Date(2024, 0, 15)
+    const csv = exportGridToCsv(makeStore([
+      { id: '1', name: 'a', when: withTime },
+      { id: '2', name: 'b', when: midnight },
+    ]), cols, { includeHeader: false })
+    expect(csv).toBe('a,2024-01-15 10:30:05\nb,2024-01-15')
   })
 
   it('exports invalid dates as empty cells', () => {

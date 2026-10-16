@@ -15,9 +15,22 @@ export interface CsvExportConfig {
   columnDelimiter?: string
 }
 
+const pad = (n: number, width = 2) => String(n).padStart(width, '0')
+
+/**
+ * Dates are written in local time, matching what the grid shows and the Excel
+ * export's date cells: `YYYY-MM-DD` at midnight, otherwise `YYYY-MM-DD HH:mm:ss`.
+ */
+function formatDate(d: Date): string {
+  if (isNaN(d.getTime())) return ''
+  const date = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+  if (!d.getHours() && !d.getMinutes() && !d.getSeconds() && !d.getMilliseconds()) return date
+  return `${date} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
+}
+
 function formatValue(value: unknown): string {
   if (value === null || value === undefined) return ''
-  if (value instanceof Date) return isNaN(value.getTime()) ? '' : value.toISOString()
+  if (value instanceof Date) return formatDate(value)
   return String(value)
 }
 
@@ -36,7 +49,7 @@ function escapeCsv(value: unknown, delimiter: string): string {
 
 /**
  * Export grid data to CSV string (no BOM; `downloadGridAsCsv` adds one).
- * Date values are written as ISO 8601 strings.
+ * Date values are written in local time (see formatDate).
  */
 export function exportGridToCsv<T extends DataItem>(
   store: DataStore<T>,
