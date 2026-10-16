@@ -416,6 +416,7 @@
   max-width: 300px;
   opacity: 0;
   padding: 6px 12px;
+  width: max-content;
   pointer-events: none;
   position: fixed;
   transition: opacity 0.01s ease;

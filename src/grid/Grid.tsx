@@ -37,6 +37,7 @@ import { useGridKeyboard } from './useGridKeyboard'
 import { useColumnReorder } from './useColumnReorder'
 import { useColumnAdjust } from './useColumnAdjust'
 import { useGridTooltip } from './useGridTooltip'
+import type { TooltipState } from './useGridTooltip'
 import { useGridCss } from './useGridCss'
 import { useRowDrag } from './useRowDrag'
 import { useDataProxy } from '../core/data/useDataProxy'
@@ -148,7 +149,10 @@ interface RowInteraction {
   isRowDraggable?: (rowId: string) => boolean
   onCellClick?: (rowId: string, colId: string, e: React.MouseEvent) => void
   onCellDblClick?: (rowId: string, colId: string, e: React.MouseEvent) => void
-  onCellMouseEnter?: (e: React.MouseEvent, rowId: string, colId: string) => void
+  /** `content` overrides the tooltip text (span cells show their own text) */
+  onCellMouseEnter?: (e: React.MouseEvent, rowId: string, colId: string, content?: string) => void
+  /** The grid's own tooltip is on, so native title tooltips would double up */
+  tooltipEnabled?: boolean
   onCellMouseLeave?: () => void
   isEditing?: (rowId: string, colId: string) => boolean
   editingValue?: unknown
@@ -379,10 +383,15 @@ function renderSpansOverlay<T extends GridRow>(
             }}
             data-rgs-id={row.id}
             data-rgs-col-id={column.id}
-            title={spanInfo.span.tooltip}
+            title={interaction?.tooltipEnabled ? undefined : spanInfo.span.tooltip}
             onClick={(e) => interaction?.onCellClick?.(row.id, column.id, e)}
             onDoubleClick={(e) => interaction?.onCellDblClick?.(row.id, column.id, e)}
-            onMouseEnter={(e) => interaction?.onCellMouseEnter?.(e, row.id, column.id)}
+            onMouseEnter={(e) => interaction?.onCellMouseEnter?.(
+              e,
+              row.id,
+              column.id,
+              spanInfo.span.tooltip ?? (typeof spanInfo.span.text === 'string' ? spanInfo.span.text : undefined),
+            )}
             onMouseLeave={interaction?.onCellMouseLeave}
           >
             {spanInfo.span.text ?? getCellValue(row, column)}
@@ -394,6 +403,50 @@ function renderSpansOverlay<T extends GridRow>(
     top += rowH
   }
   return cells
+}
+
+const TOOLTIP_OFFSET_X = 12
+const TOOLTIP_OFFSET_Y = 16
+const TOOLTIP_EDGE_GAP = 8
+
+/**
+ * Cell tooltip, portaled to <body>. It measures itself to stay inside the
+ * window (flipping above the pointer near the bottom) and copies the theme's
+ * text colour, which doesn't reach <body> from the themed grid root.
+ */
+function GridTooltip({ state, themeSource }: { state: TooltipState; themeSource: HTMLElement | null }) {
+  const ref = useRef<HTMLDivElement | null>(null)
+  const [position, setPosition] = useState({ left: state.x + TOOLTIP_OFFSET_X, top: state.y + TOOLTIP_OFFSET_Y })
+  const background = useMemo(
+    () => (themeSource ? getComputedStyle(themeSource).getPropertyValue('--react-tree-grid-color-text').trim() : ''),
+    [themeSource],
+  )
+
+  useLayoutEffect(() => {
+    const node = ref.current
+    if (!node) return
+    const { width, height } = node.getBoundingClientRect()
+    let left = state.x + TOOLTIP_OFFSET_X
+    let top = state.y + TOOLTIP_OFFSET_Y
+    if (left + width > window.innerWidth - TOOLTIP_EDGE_GAP) {
+      left = Math.max(TOOLTIP_EDGE_GAP, window.innerWidth - width - TOOLTIP_EDGE_GAP)
+    }
+    if (top + height > window.innerHeight - TOOLTIP_EDGE_GAP) {
+      top = Math.max(TOOLTIP_EDGE_GAP, state.y - height - TOOLTIP_EDGE_GAP)
+    }
+    setPosition((prev) => (prev.left === left && prev.top === top ? prev : { left, top }))
+  }, [state.x, state.y, state.content])
+
+  return (
+    <div
+      ref={ref}
+      className={[styles.tooltip, state.visible ? styles.tooltipVisible : ''].filter(Boolean).join(' ')}
+      style={{ ...position, background: background || undefined }}
+      role="tooltip"
+    >
+      {state.content}
+    </div>
+  )
 }
 
 function GridInner<T extends GridRow>({
@@ -1417,14 +1470,15 @@ function GridInner<T extends GridRow>({
     onEditorCancel: () => gridEditor.endEdit(false),
     onEditorKeyDown: gridEditor.handleEditorKeyDown,
     onEditorBlur: () => gridEditor.endEdit(true),
-    onCellMouseEnter: (e, rowId, colId) => {
+    onCellMouseEnter: (e, rowId, colId, content) => {
       if (!tooltip) return
       const row = displayData.find((r) => r.id === rowId)
       const column = displayColumns.find((c) => c.id === colId)
       if (row && column) {
-        gridTooltip.handleCellMouseEnter(e, rowId, colId, row as GridRow, column as GridColumn)
+        gridTooltip.handleCellMouseEnter(e, rowId, colId, row as GridRow, column as GridColumn, content)
       }
     },
+    tooltipEnabled: !!tooltip,
     onCellMouseLeave: gridTooltip.handleCellMouseLeave,
     getComputedValue: formulas
       ? (rowId, colId) => formulaHook.getComputedValue(rowId, columnIndexById.get(colId) ?? -1)
@@ -1925,21 +1979,7 @@ function GridInner<T extends GridRow>({
 
       {tooltip && gridTooltip.tooltipState
         ? createPortal(
-            <div
-              className={[
-                styles.tooltip,
-                gridTooltip.tooltipState.visible ? styles.tooltipVisible : '',
-              ]
-                .filter(Boolean)
-                .join(' ')}
-              style={{
-                left: gridTooltip.tooltipState.x + 12,
-                top: gridTooltip.tooltipState.y + 16,
-              }}
-              role="tooltip"
-            >
-              {gridTooltip.tooltipState.content}
-            </div>,
+            <GridTooltip state={gridTooltip.tooltipState} themeSource={rootRef.current} />,
             document.body,
           )
         : null}

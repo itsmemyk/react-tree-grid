@@ -20,6 +20,7 @@ interface GridTooltipResult {
     colId: string,
     row: GridRow,
     column: GridColumn,
+    contentOverride?: string,
   ) => void
   handleCellMouseLeave: () => void
 }
@@ -55,15 +56,18 @@ export function useGridTooltip(tooltipEnabled: boolean): GridTooltipResult {
       _colId: string,
       row: GridRow,
       column: GridColumn,
+      contentOverride?: string,
     ) => {
       if (!tooltipEnabled) return
       if (column.tooltip === false) return
 
-      // Compute content: tooltipTemplate → column.template → raw value
+      // Compute content: override → tooltipTemplate → column.template → raw value
       const rawValue = row[column.id]
       let content: string | null | undefined
 
-      if (column.tooltipTemplate) {
+      if (contentOverride !== undefined) {
+        content = contentOverride
+      } else if (column.tooltipTemplate) {
         content = column.tooltipTemplate(rawValue, row, column)
       } else if (column.template) {
         const rendered = column.template(rawValue, row, column)
