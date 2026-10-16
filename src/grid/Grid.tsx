@@ -455,15 +455,19 @@ const TOOLTIP_EDGE_GAP = 8
 /**
  * Cell tooltip, portaled to <body>. It measures itself to stay inside the
  * window (flipping above the pointer near the bottom) and copies the theme's
- * text colour, which doesn't reach <body> from the themed grid root.
+ * text colour and the grid's font, which don't reach <body> from the grid root.
  */
 function GridTooltip({ state, themeSource }: { state: TooltipState; themeSource: HTMLElement | null }) {
   const ref = useRef<HTMLDivElement | null>(null)
   const [position, setPosition] = useState({ left: state.x + TOOLTIP_OFFSET_X, top: state.y + TOOLTIP_OFFSET_Y })
-  const background = useMemo(
-    () => (themeSource ? getComputedStyle(themeSource).getPropertyValue('--react-tree-grid-color-text').trim() : ''),
-    [themeSource],
-  )
+  const theme = useMemo(() => {
+    if (!themeSource) return { background: '', fontFamily: '' }
+    const computed = getComputedStyle(themeSource)
+    return {
+      background: computed.getPropertyValue('--react-tree-grid-color-text').trim(),
+      fontFamily: computed.fontFamily,
+    }
+  }, [themeSource])
 
   useLayoutEffect(() => {
     const node = ref.current
@@ -484,7 +488,7 @@ function GridTooltip({ state, themeSource }: { state: TooltipState; themeSource:
     <div
       ref={ref}
       className={[styles.tooltip, state.visible ? styles.tooltipVisible : ''].filter(Boolean).join(' ')}
-      style={{ ...position, background: background || undefined }}
+      style={{ ...position, background: theme.background || undefined, fontFamily: theme.fontFamily || undefined }}
       role="tooltip"
     >
       {state.content}
