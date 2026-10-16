@@ -39,6 +39,9 @@ interface GridRegistryEntry<T extends GridRow> {
 const gridRegistry = new Map<string, GridRegistryEntry<any>>()
 const BODY_NO_SELECT_CLASS = 'rgs-no-select-drag'
 const DROP_LINE_HEIGHT = 2
+/** Matches DragManager's default auto-scroll threshold */
+const AUTO_SCROLL_EDGE = 24
+const AUTO_SCROLL_INTERVAL = 50
 
 /**
  * Clone a row for the drag ghost. The ghost lives on <body>, outside the grid
@@ -364,7 +367,9 @@ export function useRowDrag<T extends GridRow>(
     dragStateRef.current = startPayload
     events.onDragRowStart?.(startPayload, event.nativeEvent)
 
+    let lastMove: PointerEvent | null = null
     const handleMove = (moveEvent: PointerEvent) => {
+      lastMove = moveEvent
       dragManager.drag(moveEvent)
       const resolved = resolvePayload()
       if (!resolved) {
@@ -407,7 +412,18 @@ export function useRowDrag<T extends GridRow>(
         : null)
     }
 
+    // Auto-scroll runs from pointer moves, so keep feeding the last position
+    // while the pointer rests in the viewport's edge zone
+    const autoScrollTimer = window.setInterval(() => {
+      const viewport = config.viewportRef.current
+      if (!lastMove || !viewport) return
+      const rect = viewport.getBoundingClientRect()
+      const y = lastMove.clientY
+      if (y < rect.top + AUTO_SCROLL_EDGE || y > rect.bottom - AUTO_SCROLL_EDGE) handleMove(lastMove)
+    }, AUTO_SCROLL_INTERVAL)
+
     const handleUp = (upEvent: PointerEvent) => {
+      window.clearInterval(autoScrollTimer)
       window.removeEventListener('pointermove', handleMove)
       window.removeEventListener('pointerup', handleUp)
       document.body.classList.remove(BODY_NO_SELECT_CLASS)
@@ -445,7 +461,7 @@ export function useRowDrag<T extends GridRow>(
 
     window.addEventListener('pointermove', handleMove)
     window.addEventListener('pointerup', handleUp, { once: true })
-  }, [applyDrop, config.dragMode, enabled, events, resolvePayload])
+  }, [applyDrop, config.dragMode, config.viewportRef, enabled, events, resolvePayload])
 
   // Stable per-row refs, so React doesn't detach and re-attach every row on each render
   const rowRefsRef = useRef(new Map<string, (node: HTMLDivElement | null) => void>())
