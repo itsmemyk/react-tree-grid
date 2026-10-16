@@ -476,6 +476,8 @@ function GridInner<T extends GridRow>({
   const headerScrollRef = useRef<HTMLDivElement | null>(null)
   const footerScrollRef = useRef<HTMLDivElement | null>(null)
   const bodyRef = useRef<HTMLDivElement | null>(null)
+  // The flex-sized box the body scrolls in; its real size drives virtualization
+  const bodyViewportRef = useRef<HTMLDivElement | null>(null)
   const fixedLeftHeaderRef = useRef<HTMLDivElement | null>(null)
   const fixedLeftColumnsRef = useRef<HTMLDivElement | null>(null)
   const fixedTopCenterRef = useRef<HTMLDivElement | null>(null)
@@ -720,6 +722,13 @@ function GridInner<T extends GridRow>({
     height: typeof style?.height === 'number' ? style.height : 320,
   })
 
+  // Measured outer size of the body (scrollbars included); null until laid out
+  const [bodyBox, setBodyBox] = useState<{ width: number; height: number } | null>(null)
+  // autoWidth fills the body, minus the vertical scrollbar when rows will overflow
+  const autoWidthContainer = bodyBox
+    ? bodyBox.width - (baseDataRows.length * rowHeight > bodyBox.height ? getScrollbarWidth() : 0)
+    : viewportSize.width
+
   const adjustResult = useColumnAdjust<T>({
     columns: columnReorder.orderedColumns,
     data: rowDrag.orderedRows,
@@ -729,7 +738,7 @@ function GridInner<T extends GridRow>({
     headerAutoHeight,
     footerAutoHeight,
     sortable,
-    containerWidth: viewportSize.width,
+    containerWidth: autoWidthContainer,
     rowHeight,
     headerRowHeight,
     footerRowHeight,
@@ -926,7 +935,25 @@ function GridInner<T extends GridRow>({
     observer.observe(node)
     update(node.getBoundingClientRect())
 
-    return () => observer.disconnect()
+    // The root's border box also counts its borders, the header border and any
+    // panels above the body, so measure the body's own box for virtualization
+    const bodyNode = bodyViewportRef.current
+    const updateBody = () => {
+      if (!bodyNode) return
+      const width = bodyNode.clientWidth
+      const height = bodyNode.clientHeight
+      // Without layout (e.g. jsdom) fall back to the arithmetic from the root size
+      if (!width || !height) return
+      setBodyBox((prev) => (prev && prev.width === width && prev.height === height ? prev : { width, height }))
+    }
+    const bodyObserver = new ResizeObserver(updateBody)
+    if (bodyNode) bodyObserver.observe(bodyNode)
+    updateBody()
+
+    return () => {
+      observer.disconnect()
+      bodyObserver.disconnect()
+    }
   }, [style?.width, style?.height])
 
   const freezeHook = useFreeze({
@@ -967,7 +994,8 @@ function GridInner<T extends GridRow>({
   resizeTrack.current.columnIds = displayColumns.map(c => c.id)
   const fixedTopHeight = sumRowHeights(topRows, rowHeight)
   const fixedBottomHeight = sumRowHeights(bottomRows, rowHeight)
-  const baseBodyHeight = Math.max(
+  const bodyOuterWidth = bodyBox?.width ?? viewportSize.width
+  const baseBodyHeight = bodyBox?.height ?? Math.max(
     0,
     viewportSize.height - totalHeaderHeight - totalFooterHeight,
   )
@@ -975,7 +1003,7 @@ function GridInner<T extends GridRow>({
   let horizontalScrollbarHeight = 0
 
   for (let pass = 0; pass < 2; pass += 1) {
-    const bodyClientWidth = Math.max(0, viewportSize.width - verticalScrollbarWidth)
+    const bodyClientWidth = Math.max(0, bodyOuterWidth - verticalScrollbarWidth)
     const bodyClientHeight = Math.max(0, baseBodyHeight - horizontalScrollbarHeight)
 
     verticalScrollbarWidth =
@@ -984,7 +1012,7 @@ function GridInner<T extends GridRow>({
       totalWidth > bodyClientWidth ? getScrollbarHeight() : 0
   }
 
-  const bodyClientWidth = Math.max(0, viewportSize.width - verticalScrollbarWidth)
+  const bodyClientWidth = Math.max(0, bodyOuterWidth - verticalScrollbarWidth)
   const bodyClientHeight = Math.max(0, baseBodyHeight - horizontalScrollbarHeight)
   const rightFixedLeft = fixedRightWidth
     ? totalWidth < bodyClientWidth
@@ -1014,6 +1042,8 @@ function GridInner<T extends GridRow>({
   const visibleColumns = displayColumns.slice(virtual.xStart, virtual.xEnd + 1)
   const visibleRows = displayData.slice(virtual.yStart, virtual.yEnd + 1)
   const syncedScrollLeft = bodyRef.current?.scrollLeft ?? scrollSyncRef.current.left ?? virtual.scrollLeft
+  // Frozen side panels follow the browser's real scroll offset, not the virtualizer's clamp
+  const syncedScrollTop = bodyRef.current?.scrollTop ?? virtual.scrollTop
 
   const handleScroll = (event: UIEvent<HTMLDivElement>) => {
     const next = {
@@ -1600,7 +1630,7 @@ function GridInner<T extends GridRow>({
         ) : null}
       </div>
 
-      <div className={styles.bodyViewport}>
+      <div ref={bodyViewportRef} className={styles.bodyViewport}>
         {rowDrag.dropIndicator ? (
           <div
             className={styles.rowDropLine}
@@ -1778,7 +1808,7 @@ function GridInner<T extends GridRow>({
             <div
               style={{
                 position: 'absolute',
-                top: -virtual.scrollTop,
+                top: -syncedScrollTop,
                 height: totalHeight,
                 width: fixedLeftWidth,
               }}
@@ -1810,7 +1840,7 @@ function GridInner<T extends GridRow>({
             <div
               style={{
                 position: 'absolute',
-                top: -virtual.scrollTop,
+                top: -syncedScrollTop,
                 height: totalHeight,
                 width: fixedRightWidth,
               }}
