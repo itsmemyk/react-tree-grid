@@ -117,3 +117,8 @@
   background: var(--react-tree-grid-color-surface);
   font-weight: var(--react-tree-grid-font-weight-medium, 500);
 }
+
+.comboOptionActive {
+  background: var(--react-tree-grid-color-surface);
+  box-shadow: inset 2px 0 0 var(--react-tree-grid-color-primary, #0288d1);
+}

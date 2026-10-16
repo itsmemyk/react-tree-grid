@@ -6,6 +6,7 @@ import {
   useState,
   type CSSProperties,
   type ChangeEvent,
+  type KeyboardEvent,
   type MouseEvent,
 } from 'react'
 import { createPortal } from 'react-dom'
@@ -30,6 +31,8 @@ export function ComboFilter<T extends GridRow>({
   const [search, setSearch] = useState('')
   const [dropdownStyle, setDropdownStyle] = useState<CSSProperties>({})
   const [filterVersion, setFilterVersion] = useState(0)
+  // Keyboard-highlighted option; 0 is "(All)", then the filtered options
+  const [activeIndex, setActiveIndex] = useState(0)
   const triggerRef = useRef<HTMLButtonElement>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
@@ -95,15 +98,58 @@ export function ComboFilter<T extends GridRow>({
 
   const handleSearchChange = (event: ChangeEvent<HTMLInputElement>) => {
     setSearch(event.target.value)
+    setActiveIndex(event.target.value ? 1 : 0)
+  }
+
+  const choose = (opt: string) => {
+    onChange(opt === '' ? null : opt)
+    setOpen(false)
+    setSearch('')
+    triggerRef.current?.focus()
   }
 
   const handleSelect = (event: MouseEvent<HTMLDivElement>) => {
     const opt = event.currentTarget.dataset.value
     if (opt === undefined) return
-    onChange(opt === '' ? null : opt)
-    setOpen(false)
-    setSearch('')
+    choose(opt)
   }
+
+  const options = useMemo(() => ['', ...filtered], [filtered])
+
+  const handleSearchKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    switch (event.key) {
+      case 'ArrowDown':
+        setActiveIndex((index) => Math.min(index + 1, options.length - 1))
+        break
+      case 'ArrowUp':
+        setActiveIndex((index) => Math.max(index - 1, 0))
+        break
+      case 'Enter':
+        if (options[activeIndex] !== undefined) choose(options[activeIndex])
+        break
+      case 'Escape':
+        setOpen(false)
+        setSearch('')
+        triggerRef.current?.focus()
+        break
+      default:
+        return
+    }
+    event.preventDefault()
+    event.stopPropagation()
+  }
+
+  // Open with the current value highlighted
+  useEffect(() => {
+    if (open) setActiveIndex(Math.max(0, options.indexOf(value != null ? String(value) : '')))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open])
+
+  useEffect(() => {
+    dropdownRef.current
+      ?.querySelector(`[data-index="${activeIndex}"]`)
+      ?.scrollIntoView?.({ block: 'nearest' })
+  }, [activeIndex])
 
   const displayValue = value != null ? String(value) : ''
 
@@ -118,6 +164,14 @@ export function ComboFilter<T extends GridRow>({
         type="button"
         className={styles.comboTrigger}
         onClick={handleToggle}
+        onKeyDown={(event) => {
+          if (event.key === 'ArrowDown' && !open) {
+            event.preventDefault()
+            setOpen(true)
+          }
+        }}
+        aria-haspopup="listbox"
+        aria-expanded={open}
       >
         <span className={styles.comboValue}>{displayValue}</span>
         <span className={styles.comboArrow}>&#9662;</span>
@@ -134,31 +188,28 @@ export function ComboFilter<T extends GridRow>({
             className={styles.comboSearch}
             value={search}
             onChange={handleSearchChange}
+            onKeyDown={handleSearchKeyDown}
             placeholder="Search..."
+            aria-label={`Filter ${column.id}`}
             autoFocus
           />
-          <div className={styles.comboList}>
-            <div
-              className={[
-                styles.comboOption,
-                displayValue === '' ? styles.comboOptionSelected : '',
-              ].filter(Boolean).join(' ')}
-              data-value=""
-              onClick={handleSelect}
-            >
-              {'(All)'}
-            </div>
-            {filtered.map((opt) => (
+          <div className={styles.comboList} role="listbox">
+            {options.map((opt, index) => (
               <div
-                key={opt}
+                key={opt === '' ? '__all' : opt}
+                role="option"
+                aria-selected={opt === displayValue}
                 className={[
                   styles.comboOption,
                   opt === displayValue ? styles.comboOptionSelected : '',
+                  index === activeIndex ? styles.comboOptionActive : '',
                 ].filter(Boolean).join(' ')}
                 data-value={opt}
+                data-index={index}
                 onClick={handleSelect}
+                onMouseEnter={() => setActiveIndex(index)}
               >
-                {opt}
+                {opt === '' ? '(All)' : opt}
               </div>
             ))}
           </div>
